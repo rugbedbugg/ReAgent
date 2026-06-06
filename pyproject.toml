@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reagent"
+version = "0.1.0"
+description = "Agentic, evidence-grounded framework for automated retrosynthetic planning"
+readme = "README.md"
+requires-python = ">=3.10,<3.12"
+dependencies = [
+    "rdkit>=2023.9",
+    "aizynthfinder>=4.4",
+    "anthropic>=0.117",
+    "pymoo>=0.6",
+    "pydantic>=2.0",
+    "click>=8.0",
+]
+
+[project.optional-dependencies]
+rag = ["chromadb>=0.5", "sentence-transformers>=3.0"]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[project.scripts]
+reagent = "reagent.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["reagent*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
