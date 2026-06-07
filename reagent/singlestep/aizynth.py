@@ -13,12 +13,17 @@ from pathlib import Path
 from reagent.core.models import Molecule, Reaction, Route
 
 
-def _walk(node: dict, reactions: list[Reaction], leaves: list[Molecule]) -> None:
+def _walk(
+    node: dict,
+    reactions: list[Reaction],
+    leaves: list[Molecule],
+    parent_mol: str | None = None,
+) -> None:
     """Depth-first flatten of an AiZynthFinder route tree.
 
     Nodes alternate mol -> reaction -> mol. A mol node with no children is a
     leaf; we record its stock status. A reaction node's children are its
-    precursors and its parent mol is its product.
+    precursors and the molecule above it is the product it forms.
     """
     if node.get("type") == "mol":
         children = node.get("children") or []
@@ -26,15 +31,14 @@ def _walk(node: dict, reactions: list[Reaction], leaves: list[Molecule]) -> None
             leaves.append(Molecule(smiles=node["smiles"], in_stock=node.get("in_stock", False)))
             return
         for child in children:  # a solved mol has exactly one reaction child
-            _walk(child, reactions, leaves)
+            _walk(child, reactions, leaves, parent_mol=node["smiles"])
     elif node.get("type") == "reaction":
         precursors = [c["smiles"] for c in node.get("children", [])]
         reactions.append(
             Reaction(
-                product=node.get("smiles", ""),
+                product=parent_mol or "",
                 precursors=precursors,
-                rsmi=node.get("metadata", {}).get("mapped_reaction_smiles")
-                or node.get("smiles"),
+                rsmi=node.get("smiles"),
                 metadata=node.get("metadata", {}),
             )
         )
