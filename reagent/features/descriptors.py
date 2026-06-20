@@ -6,27 +6,32 @@ the agents later reason over; no interpretation happens at this layer.
 
 from __future__ import annotations
 
+import os
+import sys
+
 from rdkit import Chem
-from rdkit.Chem import Descriptors
+from rdkit.Chem import Descriptors, FilterCatalog, RDConfig
+from rdkit.Chem.FilterCatalog import FilterCatalogParams
 
-# Reactive or hazardous functional groups, matched as SMARTS. This is a
-# screening heuristic, not a GHS classification: presence flags a molecule an
-# expert should look at, it does not assign a hazard category.
-HAZARD_SMARTS: dict[str, str] = {
-    "acyl_halide": "[CX3](=O)[F,Cl,Br,I]",
-    "sulfonyl_halide": "[SX4](=O)(=O)[F,Cl,Br,I]",
-    "azide": "[N-]=[N+]=N",
-    "diazo": "[C]=[N+]=[N-]",
-    "peroxide": "[OX2][OX2]",
-    "nitro": "[NX3+](=O)[O-]",
-    "isocyanate": "[NX2]=C=O",
-    "epoxide": "[OX2r3]1[#6r3][#6r3]1",
-    "aldehyde": "[CX3H1](=O)[#6]",
-    "michael_acceptor": "[CX3]=[CX3][CX3]=O",
-    "alkyl_halide": "[CX4][F,Cl,Br,I]",
-}
+# Ertl & Schuffenhauer synthetic-accessibility score ships with RDKit's contrib
+# tree; it is a published estimate of how hard a molecule is to make, which is a
+# far better cost/rarity signal for a building block than raw atom count.
+_SA_DIR = os.path.join(RDConfig.RDContribDir, "SA_Score")
+if _SA_DIR not in sys.path:
+    sys.path.append(_SA_DIR)
+try:
+    import sascorer as _sascorer
+except Exception:  # pragma: no cover - contrib not present in some builds
+    _sascorer = None
 
-_HAZARD_PATTERNS = {name: Chem.MolFromSmarts(sm) for name, sm in HAZARD_SMARTS.items()}
+# Structural-alert screen using the published Brenk "unwanted functionality"
+# catalogue that ships with RDKit. These are medicinal-chemistry liability
+# alerts (reactive, toxic, or metabolically unstable groups), not GHS reagent
+# hazards: a hit flags a group worth an expert's attention, it does not assign a
+# hazard category.
+_ALERT_PARAMS = FilterCatalogParams()
+_ALERT_PARAMS.AddCatalog(FilterCatalogParams.FilterCatalogs.BRENK)
+_ALERT_CATALOG = FilterCatalog.FilterCatalog(_ALERT_PARAMS)
 
 
 def mol(smiles: str) -> Chem.Mol | None:
@@ -49,8 +54,19 @@ def ring_count(smiles: str) -> int:
 
 
 def hazard_groups(smiles: str) -> list[str]:
-    """Names of hazardous/reactive groups present in the molecule."""
+    """Distinct Brenk structural-alert names present in the molecule."""
     m = mol(smiles)
     if m is None:
         return []
-    return [name for name, patt in _HAZARD_PATTERNS.items() if patt and m.HasSubstructMatch(patt)]
+    return sorted({entry.GetDescription() for entry in _ALERT_CATALOG.GetMatches(m)})
+
+
+def sa_score(smiles: str) -> float:
+    """Synthetic-accessibility score (~1 easy to ~10 hard), or 0.0 if unavailable."""
+    m = mol(smiles)
+    if m is None or _sascorer is None:
+        return 0.0
+    try:
+        return float(_sascorer.calculateScore(m))
+    except Exception:
+        return 0.0
