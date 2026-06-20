@@ -56,18 +56,37 @@ def _tree_to_route(target: str, tree: dict, solved: bool) -> Route:
 class AiZynthBackend:
     """Runs AiZynthFinder for a target and returns normalized routes."""
 
-    def __init__(self, config_file: str | Path, stock: str = "zinc", expansion: str = "uspto"):
+    def __init__(
+        self,
+        config_file: str | Path,
+        stock: str = "zinc",
+        expansion: str = "uspto",
+        permissive_stock: int | None = None,
+        iterations: int | None = None,
+    ):
         # Imported lazily so importing reagent.core doesn't pull in the heavy
         # AiZynthFinder stack (and its slow numba/onnx imports).
         from aizynthfinder.aizynthfinder import AiZynthFinder
 
         self._finder = AiZynthFinder(configfile=str(config_file))
-        self._finder.stock.select(stock)
+        selected = [stock]
+        if permissive_stock is not None:
+            from reagent.singlestep.stock import SizeStock
+
+            self._finder.stock.load(SizeStock(max_heavy_atoms=permissive_stock), "permissive")
+            selected.append("permissive")
+        self._finder.stock.select(selected)
         self._finder.expansion_policy.select(expansion)
+        self._filter = None
         try:
             self._finder.filter_policy.select(expansion)
+            self._filter = self._finder.filter_policy[expansion]
         except (KeyError, ValueError):
             pass  # filter policy is optional
+        # More MCTS iterations find routes the default budget misses; the gain is
+        # real (measured) but linear in run time, so it stays an opt-in knob.
+        if iterations is not None:
+            self._finder.config.search.iteration_limit = iterations
 
     def plan(self, target_smiles: str, max_routes: int = 10) -> list[Route]:
         self._finder.target_smiles = target_smiles
@@ -78,8 +97,31 @@ class AiZynthBackend:
         collection = self._finder.routes
         for tree in collection.dicts[:max_routes]:
             solved = self._is_solved(tree)
-            routes.append(_tree_to_route(target_smiles, tree, solved))
+            route = _tree_to_route(target_smiles, tree, solved)
+            self._score_filter(route)
+            routes.append(route)
         return routes
+
+    def _score_filter(self, route: Route) -> None:
+        """Attach the filter model's forward-plausibility score to each reaction.
+
+        The expansion policy says how likely a disconnection is to be *suggested*;
+        the filter model says how plausible the resulting reaction actually is.
+        The two are different signals, and a route can score well on the first
+        while containing an implausible step the second catches.
+        """
+        if self._filter is None:
+            return
+        from aizynthfinder.chem import SmilesBasedRetroReaction, TreeMolecule
+
+        for rxn in route.reactions:
+            try:
+                product = TreeMolecule(parent=None, smiles=rxn.product)
+                retro = SmilesBasedRetroReaction(product, reactants_str=".".join(rxn.precursors))
+                _, prob = self._filter.feasibility(retro)
+                rxn.metadata["filter_feasibility"] = round(float(prob), 4)
+            except Exception:
+                pass  # skip steps the filter cannot score
 
     @staticmethod
     def _is_solved(tree: dict) -> bool:
