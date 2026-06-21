@@ -45,7 +45,7 @@ def _aspirin_route() -> Route:
 def test_descriptors():
     assert d.heavy_atoms("CC(=O)O") == 4
     assert d.mol_weight("O") > 17.9
-    assert "acyl_halide" in d.hazard_groups("CC(=O)Cl")
+    assert "acid_halide" in d.hazard_groups("CC(=O)Cl")  # Brenk alert name
     assert d.hazard_groups("CCO") == []
 
 
@@ -74,4 +74,4 @@ def test_safety_flags_acyl_chloride():
     route = _aspirin_route()
     route.reactions[0].precursors = ["CC(=O)Cl", "O=C(O)c1ccccc1O"]
     f = compute_features(route).features
-    assert "acyl_halide" in f["safety"]["distinct_hazards"]
+    assert "acid_halide" in f["safety"]["distinct_hazards"]  # Brenk alert name

@@ -48,22 +48,42 @@ def availability(route: Route) -> dict:
 def cost(route: Route) -> dict:
     """Proxy only: no price database offline.
 
-    Approximates procurement difficulty by the size of building blocks that are
-    not already in stock, plus a per-step handling penalty.
+    Rises with the drivers of real cost: reaction steps (reagents, workup, yield
+    loss), building blocks that must be sourced or synthesised because they are
+    not in stock, the number of building blocks, and ring complexity as a rough
+    price stand-in.
     """
     non_stock_ha = sum(d.heavy_atoms(m.smiles) for m in route.leaves if not m.in_stock)
     stock_ha = sum(d.heavy_atoms(m.smiles) for m in route.leaves if m.in_stock)
+    n_building_blocks = len(route.leaves)
+    # Synthetic accessibility of the building blocks stands in for their price:
+    # harder-to-make blocks are rarer and dearer than raw size suggests.
+    sa_total = round(sum(d.sa_score(m.smiles) for m in route.leaves), 2)
+    cost_proxy = round(
+        6 * route.num_steps
+        + 4 * non_stock_ha
+        + stock_ha
+        + 2 * n_building_blocks
+        + 2 * sa_total
+    )
     return {
         "non_stock_heavy_atoms": non_stock_ha,
         "stock_heavy_atoms": stock_ha,
-        "step_penalty": route.num_steps,
-        "cost_proxy": non_stock_ha * 2 + stock_ha + route.num_steps,
+        "building_blocks": n_building_blocks,
+        "synthetic_accessibility": sa_total,
+        "num_steps": route.num_steps,
+        "cost_proxy": cost_proxy,
         "is_proxy": True,
     }
 
 
 def safety(route: Route) -> dict:
-    """Reactive/hazardous functional-group screen over every molecule in the route."""
+    """Brenk structural-alert screen over every molecule in the route.
+
+    These are medicinal-chemistry liability alerts (reactive/toxic/unstable
+    groups), not GHS reagent-hazard classifications, so read them as "worth a
+    chemist's attention" rather than a formal safety category.
+    """
     hits: dict[str, list[str]] = {}
     molecules = {route.target}
     for rxn in route.reactions:
@@ -106,7 +126,13 @@ def sustainability(route: Route) -> dict:
 
 
 def feasibility(route: Route) -> dict:
-    """Model- and precedent-based confidence, read from the search metadata."""
+    """Model- and precedent-based confidence, read from the search metadata.
+
+    Two independent signals: the expansion policy's suggestion prior
+    (``policy_probability``) and the filter model's forward-plausibility of the
+    resulting reaction (``filter_feasibility``). The filter defaults to 1.0 when
+    unavailable so it only ever gates the score down, never inflates it.
+    """
     probs = [
         r.metadata["policy_probability"]
         for r in route.reactions
@@ -116,6 +142,11 @@ def feasibility(route: Route) -> dict:
         r.metadata["library_occurence"]
         for r in route.reactions
         if "library_occurence" in r.metadata
+    ]
+    filt = [
+        r.metadata["filter_feasibility"]
+        for r in route.reactions
+        if "filter_feasibility" in r.metadata
     ]
     recognized = [
         r.metadata.get("classification", "")
@@ -128,6 +159,8 @@ def feasibility(route: Route) -> dict:
         "mean_policy_probability": mean(probs) if probs else 0.0,
         "min_library_occurence": min(occ) if occ else 0,
         "mean_library_occurence": mean(occ) if occ else 0.0,
+        "min_filter_feasibility": min(filt) if filt else 1.0,
+        "mean_filter_feasibility": mean(filt) if filt else 1.0,
         "recognized_fraction": (len(recognized) / steps) if steps else 0.0,
     }
 
