@@ -23,12 +23,16 @@ CACHE_PATH = DATA_DIR / "ghs_cache.json"
 BASE = "https://pubchem.ncbi.nlm.nih.gov/rest"
 _CODE_RE = re.compile(r"H\d{3}")
 
-# H-code severity tiers, worst first. The worst tier a route's molecules trigger
-# sets the safety score (lower = more hazardous).
+# H-code severity tiers, worst first. The worst tier a route's reagents trigger
+# sets the safety score (lower = more hazardous). The floor is reserved for
+# acutely lethal and confirmed CMR codes; the merely suspected/chronic codes
+# (H341/H351/H360/H361), which are very common in PubChem, sit higher so they do
+# not flatten every route to the floor.
 SEVERITY_TIERS: list[tuple[float, set[str]]] = [
-    (0.10, {"H300", "H310", "H330", "H340", "H341", "H350", "H351", "H360", "H361"}),
-    (0.40, {"H301", "H311", "H331", "H302", "H312", "H332", "H314", "H318"}),
-    (0.70, {"H315", "H319", "H335", "H336", "H225", "H226"}),
+    (0.10, {"H300", "H310", "H330", "H340", "H350"}),          # fatal / confirmed mutagen or carcinogen
+    (0.25, {"H301", "H311", "H331", "H341", "H351", "H360", "H370", "H372"}),  # toxic / suspected CMR / organ
+    (0.45, {"H302", "H312", "H332", "H314", "H318", "H361", "H371", "H373"}),  # harmful / corrosive
+    (0.65, {"H315", "H319", "H335", "H336", "H225", "H226", "H228", "H290"}),  # irritant / flammable
 ]
 
 
@@ -74,20 +78,23 @@ def _score_from_codes(codes: set[str]) -> float:
     for score, tier in SEVERITY_TIERS:
         if codes & tier:
             return score
-    return 1.0 if not codes else 0.85
+    return 1.0 if not codes else 0.85  # listed but only mild/environmental
 
 
 def enrich_ghs(route, client: GHSClient) -> bool:
     """Add GHS facts and a GHS safety score to ``route.features['safety']``.
 
-    Returns True if any molecule in the route had GHS data, False otherwise
-    (caller keeps the Brenk score).
+    The score covers the reagents and intermediates the route actually handles,
+    excluding the final target, which is common to every route to this molecule
+    and would otherwise pin them all to the same floor. Returns True if any of
+    those molecules had GHS data, False otherwise (caller keeps the Brenk score).
     """
-    molecules: set[str] = {route.target}
-    molecules.update(m.smiles for m in route.leaves)
+    target = canonical(route.target) or route.target
+    molecules: set[str] = {m.smiles for m in route.leaves}
     for rxn in route.reactions:
         molecules.add(rxn.product)
         molecules.update(rxn.precursors)
+    molecules = {m for m in molecules if (canonical(m) or m) != target}
 
     all_codes: set[str] = set()
     covered = 0
