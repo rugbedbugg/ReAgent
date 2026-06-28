@@ -15,10 +15,12 @@ dependencies = [
     "pymoo>=0.6",
     "pydantic>=2.0",
     "click>=8.0",
+    "numpy>=1.26",
+    "pandas>=2.0",
+    "requests>=2.30",
 ]
 
 [project.optional-dependencies]
-rag = ["chromadb>=0.5", "sentence-transformers>=3.0"]
 dev = ["pytest>=8.0", "ruff>=0.6"]
 
 [project.scripts]
