@@ -58,9 +58,11 @@ reagent plan "CC(=O)Oc1ccccc1C(=O)O" --show-features
 ### plan flags
 
 - `--permissive-stock N`: treat any molecule with <= N heavy atoms as
-  purchasable. Stand-in for a fuller catalogue; raises solve-rate and diversity
-  (eval set: 9/10 to 10/10 at N=11). Heuristic, not a real catalogue, so treat
-  extra hits as optimistic.
+  purchasable. Raises solve-rate and diversity (eval set: 9/10 to 10/10 at
+  N=11), but it assumes availability rather than checking it, so treat the extra
+  hits as optimistic. `--stock-cache` with a real vendor catalogue is the
+  honest version of the same idea and should be preferred where one is
+  available.
 - `--iterations N`: MCTS search budget (default 100). Run time roughly linear
   in N, and the single most effective knob measured here: at N=500 the eval set
   goes from 9/10 to 10/10 solved on the real ZINC stock, with mean route length

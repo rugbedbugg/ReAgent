@@ -33,10 +33,11 @@ class SizeStock(StockQueryMixin):
     """Treat any molecule at or below a heavy-atom cutoff as purchasable.
 
     The bundled ZINC stock is a fixed snapshot: a target's real precursors may
-    simply be absent from it, which caps solve-rate. This is a deliberately
-    approximate stand-in for a fuller building-block catalogue, not a real one,
-    and is meant to be unioned with ZINC to probe how stock coverage limits
-    planning.
+    simply be absent from it, which caps solve-rate. This probes how much of that
+    cap is coverage by assuming anything small is buyable. It answers a different
+    question than :func:`build_catalogue_cache`, which checks a real vendor
+    catalogue instead of assuming -- prefer that when one is on hand, and use
+    this to bound what a better catalogue could be worth.
     """
 
     def __init__(self, max_heavy_atoms: int = 11):
