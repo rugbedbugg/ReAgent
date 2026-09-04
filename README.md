@@ -128,6 +128,30 @@ reagent plan "CC(=O)Oc1ccccc1C(=O)O" --show-features
   two collide is about 8e-6, and a collision would make one molecule look
   purchasable when it is not. A Bloom filter, the obvious alternative, applies
   its false-positive rate to every lookup and would inflate solve-rate.
+- `--stock-cache PATH`: plan against a different hashed catalogue than ZINC
+  (implies `--hashed-stock`). Build one with `reagent build-catalogue`:
+
+  ```sh
+  reagent build-catalogue data/catalogues/vendor.smi.gz \
+    --max-heavy-atoms 17 --merge-with data/zinc_stock.hashes.npy \
+    --output data/catalogues/zinc_plus_vendor.hashes.npy
+  reagent evaluate --hard --stock-cache data/catalogues/zinc_plus_vendor.hashes.npy
+  ```
+
+  Reads `.smi`/`.sdf`, plain or gzipped, so an Enamine or eMolecules download
+  goes straight in. Two decisions are worth understanding before trusting the
+  result:
+
+  `--max-heavy-atoms` is not a performance knob. Vendor files mix genuine
+  building blocks with screening compounds, and an uncapped catalogue makes
+  near-complete molecules purchasable -- which collapses multi-step targets to
+  one step and inflates solve-rate without describing a route anyone would run.
+  Cap it at building-block size unless you specifically want the screening set.
+
+  Salts are indexed twice by default, as listed and as their largest fragment.
+  Catalogues sell the amine hydrochloride; a route asks for the free amine, and
+  without the split a shelf of purchasable salts reads as empty stock. Pass
+  `--no-split-salts` to index only what the vendor literally lists.
 - `--ghs`: score safety from real GHS H-codes fetched from PubChem instead of the
   offline Brenk screen. Cached to `data/ghs_cache.json`; missing record or
   offline falls back to Brenk. Score is the worst hazard tier among reagents and

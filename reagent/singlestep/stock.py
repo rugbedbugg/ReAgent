@@ -6,12 +6,22 @@ roughly 2.3 GB of the ~2.9 GB a planning run needs, which is most of why the
 stack is memory-bound on a small machine and why searches get OOM-killed.
 :class:`HashedStock` keeps the same membership test over a sorted array of
 64-bit hashes instead, at about 136 MB.
+
+The same array is how a real vendor catalogue gets in. ZINC is a fixed snapshot
+and its gaps cap solve-rate; :func:`build_catalogue_cache` hashes an Enamine or
+eMolecules download into the identical format, and :func:`merge_caches` unions
+the two so the search sees both through one binary search.
 """
 
 from __future__ import annotations
 
+import functools
+import gzip
 import hashlib
-from collections.abc import Iterable
+import multiprocessing
+import os
+import re
+from collections.abc import Callable, Iterable, Iterator
 from pathlib import Path
 
 import numpy as np
@@ -78,6 +88,176 @@ def build_hash_cache(stock_path: str | Path, cache_path: str | Path | None = Non
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     np.save(cache_path, hashes)
     return cache_path
+
+
+def cache_path_for_catalogue(catalogue_path: str | Path) -> Path:
+    """``version.smi.gz`` -> ``version.hashes.npy``, stripping every suffix."""
+    path = Path(catalogue_path)
+    while path.suffix:
+        path = path.with_suffix("")
+    return path.with_suffix(".hashes.npy")
+
+
+def _open_text(path: Path):
+    opener = gzip.open if path.name.endswith(".gz") else open
+    return opener(path, "rt", encoding="utf-8", errors="replace")
+
+
+def iter_catalogue_smiles(path: str | Path) -> Iterator[str]:
+    """Yield one SMILES per catalogue entry, from plain or gzipped input.
+
+    Covers the two formats vendors actually ship: delimited text whose first
+    field is the structure (eMolecules' ``.smi``, most CSV exports) and SDF
+    (Enamine's building-block downloads). Header rows and junk are not filtered
+    here -- RDKit rejects them when the keys are computed, which is the same
+    test with no second guess about the file's shape.
+    """
+    path = Path(path)
+    stem = path.name[:-3] if path.name.endswith(".gz") else path.name
+    if stem.endswith((".sdf", ".sd")):
+        from rdkit import Chem
+
+        opener = gzip.open if path.name.endswith(".gz") else open
+        with opener(path, "rb") as handle:
+            for mol in Chem.ForwardSDMolSupplier(handle):
+                if mol is not None:
+                    yield Chem.MolToSmiles(mol)
+        return
+
+    with _open_text(path) as handle:
+        for line in handle:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                yield re.split(r"[\s,;]+", line, maxsplit=1)[0]
+
+
+def catalogue_keys(
+    smiles: str,
+    max_heavy_atoms: int | None = None,
+    split_salts: bool = True,
+) -> tuple[str, ...]:
+    """InChI keys for one catalogue entry: zero, one, or two.
+
+    Two when the entry is a salt. A catalogue lists what ships in the bottle --
+    an amine hydrochloride, say -- while a retrosynthesis asks for the free
+    amine, so both the whole entry and its largest fragment are indexed. Without
+    that, a shelf full of purchasable salts reads as empty stock.
+    """
+    from rdkit import Chem
+
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return ()
+
+    candidates = [mol]
+    if split_salts and "." in smiles:
+        fragments = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=False)
+        if len(fragments) > 1:
+            candidates.append(max(fragments, key=lambda f: f.GetNumHeavyAtoms()))
+
+    keys = []
+    for candidate in candidates:
+        if max_heavy_atoms is not None and candidate.GetNumHeavyAtoms() > max_heavy_atoms:
+            continue
+        try:
+            key = Chem.MolToInchiKey(candidate)
+        except Exception:
+            continue
+        if key:
+            keys.append(key)
+    return tuple(dict.fromkeys(keys))
+
+
+def _silence_rdkit() -> None:
+    from rdkit import RDLogger
+
+    RDLogger.DisableLog("rdApp.*")
+
+
+def _hashes_for_entry(
+    smiles: str,
+    max_heavy_atoms: int | None = None,
+    split_salts: bool = True,
+) -> list[int]:
+    return [_hash_key(key) for key in catalogue_keys(smiles, max_heavy_atoms, split_salts)]
+
+
+_BLOCK = 1_000_000
+
+
+def build_catalogue_cache(
+    catalogue_path: str | Path,
+    cache_path: str | Path | None = None,
+    *,
+    max_heavy_atoms: int | None = None,
+    split_salts: bool = True,
+    workers: int | None = None,
+    progress: Callable[[int, int], None] | None = None,
+) -> Path:
+    """Hash a vendor catalogue into the same format :class:`HashedStock` reads.
+
+    InChI-key generation is the whole cost -- roughly a millisecond per
+    structure -- so entries are parsed in a worker pool and only their 64-bit
+    digests cross the process boundary. Hashes accumulate in fixed-size uint64
+    blocks rather than a Python list, which keeps a 26M-entry catalogue in a few
+    hundred MB instead of a few GB.
+
+    ``max_heavy_atoms`` is the lever that decides what kind of catalogue this
+    becomes. Vendor files mix genuine building blocks with screening compounds;
+    leaving the cap off makes near-complete molecules purchasable and turns
+    multi-step targets into one-step ones, which flatters solve-rate without
+    reflecting a route anyone would run.
+    """
+    _silence_rdkit()
+
+    catalogue_path = Path(catalogue_path)
+    cache_path = Path(cache_path) if cache_path else cache_path_for_catalogue(catalogue_path)
+    workers = workers or max(1, (os.cpu_count() or 2) - 1)
+
+    worker = functools.partial(
+        _hashes_for_entry, max_heavy_atoms=max_heavy_atoms, split_salts=split_salts
+    )
+    blocks: list[np.ndarray] = []
+    buffer: list[int] = []
+    read = kept = 0
+
+    with multiprocessing.Pool(workers, initializer=_silence_rdkit) as pool:
+        entries = pool.imap_unordered(worker, iter_catalogue_smiles(catalogue_path), chunksize=2000)
+        for hashes in entries:
+            read += 1
+            kept += len(hashes)
+            buffer.extend(hashes)
+            if len(buffer) >= _BLOCK:
+                blocks.append(np.fromiter(buffer, dtype=np.uint64, count=len(buffer)))
+                buffer.clear()
+            if progress and read % 250_000 == 0:
+                progress(read, kept)
+
+    if buffer:
+        blocks.append(np.fromiter(buffer, dtype=np.uint64, count=len(buffer)))
+    merged = np.unique(np.concatenate(blocks)) if blocks else np.empty(0, dtype=np.uint64)
+
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(cache_path, merged)
+    return cache_path
+
+
+def merge_caches(cache_paths: Iterable[str | Path], out_path: str | Path) -> Path:
+    """Union several hashed catalogues into one, deduplicated and sorted.
+
+    Unioning at build time rather than searching several arrays at run time
+    keeps the lookup a single binary search, which is what makes the stock test
+    cheap enough to sit in the search's inner loop.
+    """
+    arrays = [np.load(Path(p)) for p in cache_paths]
+    if not arrays:
+        raise ValueError("No caches to merge.")
+    merged = np.unique(np.concatenate(arrays))
+
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(out_path, merged)
+    return out_path
 
 
 class HashedStock(StockQueryMixin):

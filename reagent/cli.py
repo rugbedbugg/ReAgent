@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import click
 
 from reagent.core.chem import canonical
@@ -27,6 +29,60 @@ def build_stock_cache() -> None:
     click.echo(f"Wrote {path} ({path.stat().st_size / 1e6:.1f} MB).")
 
 
+@main.command("build-catalogue")
+@click.argument("catalogue", type=click.Path(exists=True, dir_okay=False))
+@click.option("--output", type=click.Path(dir_okay=False), default=None,
+              help="Where to write the hashed cache (default: beside the catalogue).")
+@click.option("--max-heavy-atoms", type=int, default=None,
+              help="Drop entries larger than this. Vendor files mix building blocks "
+                   "with screening compounds; without a cap, near-complete molecules "
+                   "become purchasable and multi-step targets collapse to one step.")
+@click.option("--no-split-salts", is_flag=True,
+              help="Index only the entry as listed, not its largest fragment. "
+                   "Catalogues sell salts; routes ask for the free base.")
+@click.option("--merge-with", type=click.Path(exists=True, dir_okay=False), multiple=True,
+              help="Also union these existing caches into the output (repeatable). "
+                   "Pass data/zinc_stock.hashes.npy to keep ZINC alongside the vendor set.")
+def build_catalogue(catalogue: str, output: str | None, max_heavy_atoms: int | None,
+                    no_split_salts: bool, merge_with: tuple[str, ...]) -> None:
+    """Hash a vendor building-block catalogue (.smi/.sdf, plain or .gz) into a stock cache.
+
+    ZINC is a fixed snapshot whose gaps cap solve-rate. This turns an Enamine or
+    eMolecules download into the same hashed format, optionally unioned with ZINC,
+    for use with 'plan --hashed-stock --stock-cache'.
+    """
+    from reagent.singlestep.stock import (
+        build_catalogue_cache,
+        cache_path_for_catalogue,
+        merge_caches,
+    )
+
+    source = Path(catalogue)
+    destination = Path(output) if output else cache_path_for_catalogue(source)
+    target = destination.with_suffix(".vendor.npy") if merge_with else destination
+
+    click.echo(f"Hashing {source} (InChI keys are the cost; this takes a while)...")
+
+    def report(read: int, kept: int) -> None:
+        click.echo(f"  {read:,} entries read, {kept:,} keys kept")
+
+    written = build_catalogue_cache(
+        source,
+        target,
+        max_heavy_atoms=max_heavy_atoms,
+        split_salts=not no_split_salts,
+        progress=report,
+    )
+    import numpy as np
+
+    click.echo(f"Wrote {written} ({np.load(written).size:,} unique keys).")
+
+    if merge_with:
+        merged = merge_caches([written, *merge_with], destination)
+        click.echo(f"Merged with {len(merge_with)} cache(s) -> {merged} "
+                   f"({np.load(merged).size:,} unique keys).")
+
+
 @main.command()
 @click.argument("smiles")
 @click.option("--max-routes", default=5, help="Maximum number of routes to return.")
@@ -40,6 +96,8 @@ def build_stock_cache() -> None:
 @click.option("--hashed-stock", is_flag=True,
               help="Look stock up via hashed keys (~140 MB instead of ~2.3 GB). "
                    "Run 'reagent build-stock-cache' once first.")
+@click.option("--stock-cache", type=click.Path(exists=True, dir_okay=False), default=None,
+              help="Hashed stock cache to use instead of the ZINC default. Build one with 'reagent build-catalogue'. Implies --hashed-stock.")
 @click.option("--iterations", type=int, default=None,
               help="MCTS search budget (default 100); higher finds more routes, slower.")
 @click.option("--time-limit", type=int, default=None,
@@ -62,7 +120,7 @@ def build_stock_cache() -> None:
               help="Use real GHS reagent-hazard data from PubChem for safety (online, cached).")
 def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_model: str | None,
          rag: bool, permissive_stock: int | None, hashed_stock: bool,
-         iterations: int | None,
+         stock_cache: str | None, iterations: int | None,
          time_limit: int | None, expansion: str, algorithm: str,
          cutoff_number: int | None, hybrid: bool,
          ghs: bool) -> None:
@@ -78,7 +136,8 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
     backend = AiZynthBackend(
         aizynth_config(),
         permissive_stock=permissive_stock,
-        hashed_stock=hashed_stock,
+        hashed_stock=hashed_stock or stock_cache is not None,
+        stock_cache=stock_cache,
         iterations=iterations,
         time_limit=time_limit,
         expansion=[k.strip() for k in expansion.split(",") if k.strip()],
@@ -275,6 +334,8 @@ def feedback(smiles: str, prefer: int) -> None:
 @click.option("--hashed-stock", is_flag=True,
               help="Look stock up via hashed keys (~140 MB instead of ~2.3 GB). "
                    "Run 'reagent build-stock-cache' once first.")
+@click.option("--stock-cache", type=click.Path(exists=True, dir_okay=False), default=None,
+              help="Hashed stock cache to use instead of the ZINC default. Build one with 'reagent build-catalogue'. Implies --hashed-stock.")
 @click.option("--iterations", type=int, default=None,
               help="MCTS search budget (default 100); higher finds more routes, slower.")
 @click.option("--time-limit", type=int, default=None,
@@ -293,7 +354,7 @@ def feedback(smiles: str, prefer: int) -> None:
                    "branching factor, run time, and memory.")
 @click.option("--hard", is_flag=True, help="Use the harder multi-step target set.")
 def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
-             hashed_stock: bool, iterations: int | None,
+             hashed_stock: bool, stock_cache: str | None, iterations: int | None,
              time_limit: int | None, expansion: str, algorithm: str,
              cutoff_number: int | None, hard: bool) -> None:
     """Measure solve-rate and baseline-vs-REAGENT route quality."""
@@ -306,7 +367,8 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
     backend = AiZynthBackend(
         aizynth_config(),
         permissive_stock=permissive_stock,
-        hashed_stock=hashed_stock,
+        hashed_stock=hashed_stock or stock_cache is not None,
+        stock_cache=stock_cache,
         iterations=iterations,
         time_limit=time_limit,
         expansion=[k.strip() for k in expansion.split(",") if k.strip()],
