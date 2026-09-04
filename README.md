@@ -31,6 +31,9 @@ mise run install    # editable install with dev extras
 
 # Pretrained single-step model + building-block stock (~760 MB)
 download_public_data data
+
+# One-time: hash the stock so later runs need ~0.6 GB instead of ~4.9 GB
+reagent build-stock-cache
 ```
 
 Without mise, any Python 3.10 or 3.11 interpreter works:
@@ -102,6 +105,21 @@ reagent plan "CC(=O)Oc1ccccc1C(=O)O" --show-features
   50 for every molecule, so the next-best disconnections never reach the search.
   Raising it widens the disconnection space at a cost in branching, time, and
   memory.
+- `--hashed-stock`: look purchasability up in a sorted array of 64-bit hashed
+  InChI keys instead of AiZynthFinder's set of 17M key strings. Measured on
+  aspirin at `--iterations 500`: identical results (15 candidates, 15 solved,
+  30/30 leaves in stock) at **0.63 GB peak RSS against 4.91 GB**.
+
+  The saving comes from never building the original catalogue, not from the
+  hashes being smaller. Loading it holds a pandas frame and the string set at
+  once and peaks at 4.83 GB -- that transient, not the 2.24 GB steady state, is
+  what gets runs OOM-killed. So this flag hands AiZynthFinder a config with no
+  `stock` section at all and loads the 140 MB cache instead.
+
+  Hash collisions are the trade: with 17M keys in a 64-bit space the chance any
+  two collide is about 8e-6, and a collision would make one molecule look
+  purchasable when it is not. A Bloom filter, the obvious alternative, applies
+  its false-positive rate to every lookup and would inflate solve-rate.
 - `--ghs`: score safety from real GHS H-codes fetched from PubChem instead of the
   offline Brenk screen. Cached to `data/ghs_cache.json`; missing record or
   offline falls back to Brenk. Score is the worst hazard tier among reagents and
@@ -254,9 +272,10 @@ the system and every number here:
 
 - **Small local agent model.** Defaults to 3B because larger models do not fit
   alongside the planner and stock in memory. Larger local models not benchmarked.
-- **Memory-bound pipeline.** The full stack (17M-molecule stock, ONNX planner,
-  local model) exhausts memory and swaps, so scored runs are slow.
-  `--iterations` is left at the low default for this reason.
+- **Memory-bound pipeline** (largely fixed). The stock load peaked at 4.83 GB and
+  the kernel OOM-killed runs on an 8 GB machine. `--hashed-stock` brings a
+  planning run to 0.63 GB peak, so the low `--iterations` default is no longer
+  forced by memory.
 - **Heuristics stand in for missing data.** `--permissive-stock` approximates a
   catalogue; cost and greenness are proxies; default safety is Brenk. Only
   `--ghs` uses real hazard data, and only online.

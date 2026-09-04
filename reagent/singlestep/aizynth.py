@@ -63,6 +63,8 @@ class AiZynthBackend:
         stock: str = "zinc",
         expansion: str | Sequence[str] = "uspto",
         permissive_stock: int | None = None,
+        hashed_stock: bool = False,
+        stock_cache: str | Path | None = None,
         iterations: int | None = None,
         time_limit: int | None = None,
         algorithm: str = "mcts",
@@ -73,8 +75,37 @@ class AiZynthBackend:
         # AiZynthFinder stack (and its slow numba/onnx imports).
         from aizynthfinder.aizynthfinder import AiZynthFinder
 
-        self._finder = AiZynthFinder(configfile=str(config_file))
-        selected = [stock]
+        if not hashed_stock:
+            self._finder = AiZynthFinder(configfile=str(config_file))
+            selected = [stock]
+        else:
+            # The hashed catalogue only pays off if the original is never built.
+            # AiZynthFinder loads every stock named in the config eagerly, and
+            # that load -- pandas DataFrame and the string set alive at once --
+            # is what peaks at ~4.8 GB and gets runs OOM-killed. Steady state is
+            # 2.24 GB, of which the string set is 1.76 GB. Handing it a config
+            # with no stock section keeps both costs off the table; the hashed
+            # keys are loaded instead, at ~140 MB.
+            import yaml
+
+            from reagent.core.config import DATA_DIR
+            from reagent.singlestep.stock import HashedStock, cache_path_for
+
+            cache = (
+                Path(stock_cache)
+                if stock_cache
+                else cache_path_for(DATA_DIR / "zinc_stock.hdf5")
+            )
+            if not cache.exists():
+                raise FileNotFoundError(
+                    f"No hashed stock cache at {cache}. Build it once with:\n"
+                    "  reagent build-stock-cache"
+                )
+            config = yaml.safe_load(Path(config_file).read_text(encoding="utf-8"))
+            config.pop("stock", None)
+            self._finder = AiZynthFinder(configdict=config)
+            self._finder.stock.load(HashedStock(cache), "zinc_hashed")
+            selected = ["zinc_hashed"]
         if permissive_stock is not None:
             from reagent.singlestep.stock import SizeStock
 

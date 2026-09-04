@@ -13,6 +13,20 @@ def main() -> None:
     """REAGENT: agentic, evidence-grounded retrosynthetic planning."""
 
 
+@main.command("build-stock-cache")
+def build_stock_cache() -> None:
+    """Hash the ZINC stock once so later runs load ~140 MB instead of ~2.3 GB."""
+    from reagent.core.config import DATA_DIR
+    from reagent.singlestep.stock import build_hash_cache
+
+    stock = DATA_DIR / "zinc_stock.hdf5"
+    if not stock.exists():
+        raise click.ClickException(f"Stock file not found at {stock}.")
+    click.echo(f"Hashing {stock} (one-time, needs ~5 GB while it runs)...")
+    path = build_hash_cache(stock)
+    click.echo(f"Wrote {path} ({path.stat().st_size / 1e6:.1f} MB).")
+
+
 @main.command()
 @click.argument("smiles")
 @click.option("--max-routes", default=5, help="Maximum number of routes to return.")
@@ -23,6 +37,9 @@ def main() -> None:
 @click.option("--rag", is_flag=True, help="Ground each disconnection in retrieved reaction precedent.")
 @click.option("--permissive-stock", type=int, default=None,
               help="Also treat any molecule at or below this heavy-atom count as purchasable.")
+@click.option("--hashed-stock", is_flag=True,
+              help="Look stock up via hashed keys (~140 MB instead of ~2.3 GB). "
+                   "Run 'reagent build-stock-cache' once first.")
 @click.option("--iterations", type=int, default=None,
               help="MCTS search budget (default 100); higher finds more routes, slower.")
 @click.option("--time-limit", type=int, default=None,
@@ -44,7 +61,8 @@ def main() -> None:
 @click.option("--ghs", is_flag=True,
               help="Use real GHS reagent-hazard data from PubChem for safety (online, cached).")
 def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_model: str | None,
-         rag: bool, permissive_stock: int | None, iterations: int | None,
+         rag: bool, permissive_stock: int | None, hashed_stock: bool,
+         iterations: int | None,
          time_limit: int | None, expansion: str, algorithm: str,
          cutoff_number: int | None, hybrid: bool,
          ghs: bool) -> None:
@@ -60,6 +78,7 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
     backend = AiZynthBackend(
         aizynth_config(),
         permissive_stock=permissive_stock,
+        hashed_stock=hashed_stock,
         iterations=iterations,
         time_limit=time_limit,
         expansion=[k.strip() for k in expansion.split(",") if k.strip()],
@@ -253,6 +272,9 @@ def feedback(smiles: str, prefer: int) -> None:
 @click.option("--max-routes", default=25, help="Candidate routes to consider per target.")
 @click.option("--permissive-stock", type=int, default=None,
               help="Also treat any molecule at or below this heavy-atom count as purchasable.")
+@click.option("--hashed-stock", is_flag=True,
+              help="Look stock up via hashed keys (~140 MB instead of ~2.3 GB). "
+                   "Run 'reagent build-stock-cache' once first.")
 @click.option("--iterations", type=int, default=None,
               help="MCTS search budget (default 100); higher finds more routes, slower.")
 @click.option("--time-limit", type=int, default=None,
@@ -270,7 +292,8 @@ def feedback(smiles: str, prefer: int) -> None:
                    "binds today). Higher widens the disconnection space, at a cost in "
                    "branching factor, run time, and memory.")
 @click.option("--hard", is_flag=True, help="Use the harder multi-step target set.")
-def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None, iterations: int | None,
+def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
+             hashed_stock: bool, iterations: int | None,
              time_limit: int | None, expansion: str, algorithm: str,
              cutoff_number: int | None, hard: bool) -> None:
     """Measure solve-rate and baseline-vs-REAGENT route quality."""
@@ -283,6 +306,7 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None, it
     backend = AiZynthBackend(
         aizynth_config(),
         permissive_stock=permissive_stock,
+        hashed_stock=hashed_stock,
         iterations=iterations,
         time_limit=time_limit,
         expansion=[k.strip() for k in expansion.split(",") if k.strip()],
@@ -337,6 +361,9 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None, it
 @click.option("--hard", is_flag=True, help="Use the harder multi-step target set.")
 @click.option("--permissive-stock", type=int, default=None,
               help="Also treat any molecule at or below this heavy-atom count as purchasable.")
+@click.option("--hashed-stock", is_flag=True,
+              help="Look stock up via hashed keys (~140 MB instead of ~2.3 GB). "
+                   "Run 'reagent build-stock-cache' once first.")
 @click.option("--hybrid", is_flag=True,
               help="Score objectives deterministically; the LLM only writes the rationale.")
 def check_agents(max_targets: int, routes_per: int, max_routes: int, local_model: str | None,
