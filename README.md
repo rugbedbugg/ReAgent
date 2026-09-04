@@ -59,7 +59,10 @@ reagent plan "CC(=O)Oc1ccccc1C(=O)O" --show-features
   (eval set: 9/10 to 10/10 at N=11). Heuristic, not a real catalogue, so treat
   extra hits as optimistic.
 - `--iterations N`: MCTS search budget (default 100). Run time roughly linear
-  in N.
+  in N, and the single most effective knob measured here: at N=500 the eval set
+  goes from 9/10 to 10/10 solved on the real ZINC stock, with mean route length
+  1.11 to 1.30. That is a better 10/10 than `--permissive-stock` buys, because
+  every leaf is genuinely purchasable rather than assumed so.
 - `--time-limit SECONDS`: wall-clock limit on the search (default 120). The
   search loop stops on whichever limit binds first
   (`while time_past < time_limit and i <= iteration_limit`), so raising
@@ -124,12 +127,21 @@ multi-objective selection. Reports solve-rate and mean safety, sustainability,
 and cost under two weight profiles. Scoring is deterministic (rubrics applied
 numerically), so the measurement isolates selection strategy, not LLM variance.
 
-Results on the bundled 10-target set:
+Results on the bundled 10-target set, at the default budget:
 
 - Solve-rate 0.90 for both strategies (selection does not change solvability).
 - Feasibility-led default weights: pick changes on 2/10, mean safety 0.43 to 0.49.
 - Safety-tilted weights: pick changes on 6/10, mean safety 0.43 to 0.64 and
   sustainability 0.82 to 0.88, at the same solve-rate.
+
+At `--iterations 500 --time-limit 1800` on the same set and stock:
+
+- Solve-rate 1.00; mean route length 1.30.
+- Feasibility-led: pick changes on 2/10, mean safety 0.44 to 0.54.
+- Safety-tilted: pick changes on 6/10, mean safety 0.44 to 0.68, sustainability
+  0.83 to 0.88.
+- Budget therefore buys solvability, and the selection layer's contribution is
+  unchanged in shape by it: the same 2 and 6 targets respond to the weights.
 - The multi-objective layer earns its value when objectives beyond feasibility
   are weighted, which is what the feedback loop tunes. (Figures use the offline
   Brenk screen; exact values shift with the objective data sources chosen.)
@@ -221,11 +233,15 @@ and adaptation layer on top.
 
 ### Known limitations
 
-- **Route generation is the ceiling.** Reuses AiZynthFinder's pretrained model;
-  does not improve generation. Better routes need proprietary reaction data
-  (e.g. Reaxys) and/or GPU training. Two no-training levers had no effect
-  (ringbreaker policy; raising the filter cutoff to prune during search); search
-  budget helps only borderline targets, then plateaus.
+- **Route generation is the ceiling for route *quality*.** Reuses
+  AiZynthFinder's pretrained model and does not improve the disconnections it
+  proposes. Two no-training levers had no effect (ringbreaker policy as a
+  replacement for the USPTO policy; raising the filter cutoff to prune during
+  search). Search budget, though, is not one of those dead ends: N=500 lifts
+  solve-rate to 1.00 on the eval set (see the flag notes). Untried levers
+  remain -- combining the two expansion policies rather than swapping them,
+  the `retrostar`/`dfpn` search backends, the policy `cutoff_number`, and a real
+  building-block catalogue in place of ZINC plus a size heuristic.
 - **Greenness is atom economy only.** No solvent-driven PMI or E-factor without
   reaction-condition data.
 - **Cost is a proxy** from synthetic accessibility, not supplier prices.
