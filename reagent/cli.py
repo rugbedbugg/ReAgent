@@ -28,13 +28,17 @@ def main() -> None:
 @click.option("--time-limit", type=int, default=None,
               help="Wall-clock seconds for the search (default 120). Raise it with "
                    "--iterations, or the clock stops the search before the budget is spent.")
+@click.option("--expansion", default="uspto",
+              help="Comma-separated expansion policies to run together (e.g. "
+                   "'uspto,ringbreaker'). Their suggestions are combined, which is "
+                   "not the same as swapping one policy for the other.")
 @click.option("--hybrid", is_flag=True,
               help="Score objectives deterministically; the LLM only writes the rationale.")
 @click.option("--ghs", is_flag=True,
               help="Use real GHS reagent-hazard data from PubChem for safety (online, cached).")
 def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_model: str | None,
          rag: bool, permissive_stock: int | None, iterations: int | None,
-         time_limit: int | None, hybrid: bool,
+         time_limit: int | None, expansion: str, hybrid: bool,
          ghs: bool) -> None:
     """Plan retrosynthetic routes for a target SMILES."""
     canon = canonical(smiles)
@@ -50,6 +54,7 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
         permissive_stock=permissive_stock,
         iterations=iterations,
         time_limit=time_limit,
+        expansion=[k.strip() for k in expansion.split(",") if k.strip()],
     )
 
     routes = backend.plan(canon, max_routes=max_routes)
@@ -243,9 +248,13 @@ def feedback(smiles: str, prefer: int) -> None:
 @click.option("--time-limit", type=int, default=None,
               help="Wall-clock seconds for the search (default 120). Raise it with "
                    "--iterations, or the clock stops the search before the budget is spent.")
+@click.option("--expansion", default="uspto",
+              help="Comma-separated expansion policies to run together (e.g. "
+                   "'uspto,ringbreaker'). Their suggestions are combined, which is "
+                   "not the same as swapping one policy for the other.")
 @click.option("--hard", is_flag=True, help="Use the harder multi-step target set.")
 def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None, iterations: int | None,
-             time_limit: int | None, hard: bool) -> None:
+             time_limit: int | None, expansion: str, hard: bool) -> None:
     """Measure solve-rate and baseline-vs-REAGENT route quality."""
     from reagent.eval.harness import WEIGHT_PROFILES
     from reagent.eval.harness import evaluate as run_eval
@@ -258,6 +267,7 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None, it
         permissive_stock=permissive_stock,
         iterations=iterations,
         time_limit=time_limit,
+        expansion=[k.strip() for k in expansion.split(",") if k.strip()],
     )
     targets = (HARD_TARGETS if hard else TARGETS)[:max_targets]
 

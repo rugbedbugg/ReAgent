@@ -8,6 +8,7 @@ of REAGENT never imports AiZynthFinder directly.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 from reagent.core.models import Molecule, Reaction, Route
@@ -60,7 +61,7 @@ class AiZynthBackend:
         self,
         config_file: str | Path,
         stock: str = "zinc",
-        expansion: str = "uspto",
+        expansion: str | Sequence[str] = "uspto",
         permissive_stock: int | None = None,
         iterations: int | None = None,
         time_limit: int | None = None,
@@ -77,11 +78,27 @@ class AiZynthBackend:
             self._finder.stock.load(SizeStock(max_heavy_atoms=permissive_stock), "permissive")
             selected.append("permissive")
         self._finder.stock.select(selected)
-        self._finder.expansion_policy.select(expansion)
+
+        # Several expansion policies can run together: the policy collection
+        # concatenates the actions and priors of every selected policy, so the
+        # search sees the union of their disconnections. Combining the USPTO and
+        # ringbreaker models is not the same experiment as swapping one for the
+        # other -- ringbreaker alone proposes ring disconnections at the expense
+        # of everything else, which is why it does nothing as a replacement.
+        #
+        # Priors from different models are concatenated without renormalization,
+        # so the combined list need not sum to one. MCTS uses priors to order
+        # and weight children, which tolerates that.
+        self.expansion_keys = [expansion] if isinstance(expansion, str) else list(expansion)
+        self._finder.expansion_policy.select(self.expansion_keys)
+
+        # The filter model is trained alongside the primary policy, so it keys
+        # off the first-named expansion policy.
+        primary = self.expansion_keys[0]
         self._filter = None
         try:
-            self._finder.filter_policy.select(expansion)
-            self._filter = self._finder.filter_policy[expansion]
+            self._finder.filter_policy.select(primary)
+            self._filter = self._finder.filter_policy[primary]
         except (KeyError, ValueError):
             pass  # filter policy is optional
         # More MCTS iterations find routes the default budget misses; the gain is

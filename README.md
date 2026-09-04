@@ -77,6 +77,17 @@ reagent plan "CC(=O)Oc1ccccc1C(=O)O" --show-features
 - `--hybrid`: score objectives deterministically (rubrics applied numerically),
   LLM writes the rationale only. Removes small-model arithmetic drift over
   multi-step routes (hazard counts, cost sums) while keeping the prose.
+- `--expansion A,B`: run several expansion policies together. The policy
+  collection concatenates every selected policy's actions, so the search sees
+  the union of their disconnections -- a different experiment from swapping one
+  policy for another. Measured on the drug-like eval set,
+  `--expansion uspto,ringbreaker` changed nothing: solve-rate, route length, and
+  every selected route were identical to `uspto` alone. It is not free, though.
+  Ringbreaker returns its full 50-template quota for every molecule (including
+  aspirin, where breaking the benzene ring is nonsense), so the branching factor
+  doubles from 50 to 100 and the extra branches lead to precursors that are not
+  purchasable. The budget is spent on routes that cannot solve. Worth revisiting
+  only on targets whose synthesis actually forms a ring.
 - `--ghs`: score safety from real GHS H-codes fetched from PubChem instead of the
   offline Brenk screen. Cached to `data/ghs_cache.json`; missing record or
   offline falls back to Brenk. Score is the worst hazard tier among reagents and
@@ -237,11 +248,13 @@ and adaptation layer on top.
   AiZynthFinder's pretrained model and does not improve the disconnections it
   proposes. Two no-training levers had no effect (ringbreaker policy as a
   replacement for the USPTO policy; raising the filter cutoff to prune during
-  search). Search budget, though, is not one of those dead ends: N=500 lifts
-  solve-rate to 1.00 on the eval set (see the flag notes). Untried levers
-  remain -- combining the two expansion policies rather than swapping them,
-  the `retrostar`/`dfpn` search backends, the policy `cutoff_number`, and a real
-  building-block catalogue in place of ZINC plus a size heuristic.
+  search). Combining the two policies rather than swapping them was tried since
+  (`--expansion uspto,ringbreaker`) and is a third dead end on this target set:
+  identical results at double the branching factor. Search budget is the one
+  lever that did pay: N=500 lifts solve-rate to 1.00 on the eval set (see the
+  flag notes). Untried levers remain -- the `retrostar`/`dfpn` search backends,
+  the policy `cutoff_number`, and a real building-block catalogue in place of
+  ZINC plus a size heuristic.
 - **Greenness is atom economy only.** No solvent-driven PMI or E-factor without
   reaction-condition data.
 - **Cost is a proxy** from synthetic accessibility, not supplier prices.

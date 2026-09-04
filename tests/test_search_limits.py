@@ -17,8 +17,11 @@ from reagent.singlestep.aizynth import AiZynthBackend
 class _StubPolicy:
     """Selectable and subscriptable, like AiZynthFinder's policy containers."""
 
-    def select(self, *_args, **_kwargs):
-        return None
+    def __init__(self):
+        self.selected = None
+
+    def select(self, value, *_args, **_kwargs):
+        self.selected = value
 
     def __getitem__(self, _key):
         return SimpleNamespace(feasibility=lambda _rxn: (True, 1.0))
@@ -80,3 +83,23 @@ def test_early_solve_is_not_reported_as_a_cap(backend_factory):
     backend = backend_factory(iterations=500, time_limit=1800)
     backend.last_search_stats = {"iterations": 12, "returned_first": True}
     assert backend.search_hit_time_limit is False
+
+
+def test_single_expansion_policy_is_selected_by_name(backend_factory):
+    backend = backend_factory()
+    assert backend.expansion_keys == ["uspto"]
+    assert backend._finder.expansion_policy.selected == ["uspto"]
+
+
+def test_multiple_expansion_policies_are_selected_together(backend_factory):
+    # The union of two policies' suggestions, not one replacing the other.
+    backend = backend_factory(expansion=["uspto", "ringbreaker"])
+    assert backend.expansion_keys == ["uspto", "ringbreaker"]
+    assert backend._finder.expansion_policy.selected == ["uspto", "ringbreaker"]
+
+
+def test_filter_policy_keys_off_the_primary_expansion(backend_factory):
+    # The filter model is trained with the primary policy, so an ensemble must
+    # not try to look it up under the secondary policy's name.
+    backend = backend_factory(expansion=["uspto", "ringbreaker"])
+    assert backend._finder.filter_policy.selected == "uspto"
