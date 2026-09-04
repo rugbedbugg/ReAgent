@@ -104,7 +104,15 @@ reagent plan "CC(=O)Oc1ccccc1C(=O)O" --show-features
   templates, and the count is what binds: every policy measured returned exactly
   50 for every molecule, so the next-best disconnections never reach the search.
   Raising it widens the disconnection space at a cost in branching, time, and
-  memory.
+  memory, and whether that pays is target-dependent. Measured on Retro* at
+  `--iterations 500`, solved routes at cutoff 50 vs 200: aspirin 15 to 13,
+  naproxen 9 to 8, lidocaine 5 to 9 -- net +1 route across the three, for 51%
+  more peak memory (1.25 GB to 1.89 GB).
+
+  The cap really does discard templates that would have helped lidocaine, whose
+  useful disconnections rank below the top 50. On the other two, spreading a
+  fixed iteration budget over more branches finished fewer routes than it
+  gained. Raise it for a target that will not solve; leave it alone otherwise.
 - `--hashed-stock`: look purchasability up in a sorted array of 64-bit hashed
   InChI keys instead of AiZynthFinder's set of 17M key strings. Measured on
   aspirin at `--iterations 500`: identical results (15 candidates, 15 solved,
