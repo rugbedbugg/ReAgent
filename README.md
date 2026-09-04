@@ -210,6 +210,30 @@ At `--iterations 500 --time-limit 1800` with the default MCTS search:
   are weighted, which is what the feedback loop tunes. (Figures use the offline
   Brenk screen; exact values shift with the objective data sources chosen.)
 
+### The harder target set
+
+```sh
+reagent evaluate --hard --max-targets 10 --max-routes 15 \
+  --hashed-stock --algorithm retrostar --iterations 500 --time-limit 1800
+```
+
+`--hard` swaps in ten multi-step drugs (fluoxetine, sertraline, celecoxib and
+friends). Under the same best-measured configuration as above:
+
+- Solve-rate 0.70; mean route length 1.71.
+- Both weight profiles produce **identical** output: pick changes on 3/10, mean
+  safety 0.471 to 0.600, sustainability 0.914 to 0.922, cost 0.593 to 0.613.
+
+The two profiles agreeing exactly is the finding, not a bug. Selection can only
+express a preference when the candidate pool holds routes that trade one
+objective against another. Three of the ten targets go unsolved, and on four of
+the seven that do solve the baseline's pick is already the weighted pick under
+either profile -- so tilting the weights has nothing left to move. The
+multi-objective layer needs candidate diversity to be worth anything, and that
+diversity comes from the single-step model and the stock, not from the selection
+layer. A richer building-block catalogue would do more for these targets than
+any change to the scoring.
+
 ### Aggregation
 
 Objectives are min-max normalized across the candidate routes before the
@@ -268,7 +292,7 @@ routes). `--hybrid` removes that drift.
 | `reagent/rag` | Reaction-precedent fingerprints, index, retrieval | implemented |
 | `reagent/adaptive` | Episodic memory and feedback-driven weight tuning | implemented |
 | `reagent/eval` | Solve-rate, deterministic scoring, baseline-vs-ReAgent harness | implemented |
-| `reagent/search` | Alternative search backend adapter | placeholder |
+| `reagent/search` | Search-algorithm registry (`mcts`, `retrostar`, `dfpn`, `breadth-first`) | implemented |
 
 ## Development hardware and its consequences
 
@@ -278,8 +302,9 @@ AiZynthFinder's pretrained USPTO model reused unchanged, and the local agent
 model (`qwen2.5:3b-instruct`) is downloaded, not trained. That environment shaped
 the system and every number here:
 
-- **Small local agent model.** Defaults to 3B because larger models do not fit
-  alongside the planner and stock in memory. Larger local models not benchmarked.
+- **Small local agent model.** Defaults to 3B because larger models did not fit
+  alongside the planner and stock in memory. `--hashed-stock` has since freed
+  ~4 GB, so a larger local model is now worth trying; not benchmarked.
 - **Memory-bound pipeline** (largely fixed). The stock load peaked at 4.83 GB and
   the kernel OOM-killed runs on an 8 GB machine. `--hashed-stock` brings a
   planning run to 0.63 GB peak, so the low `--iterations` default is no longer
@@ -290,7 +315,8 @@ the system and every number here:
 - **Benchmark numbers reflect these choices.** Measured with this model, stock,
   and budget on a small drug-like target set with short-to-moderate routes. They
   characterize this configuration, not an upper bound with a better model, a real
-  catalogue, or a GPU.
+  catalogue, or a GPU. On the harder multi-step set the same configuration drops
+  to solve-rate 0.70 and the selection layer stops responding to weights at all.
 
 Ceiling on route quality is the pretrained single-step model and stock, neither
 improvable in this environment. ReAgent is the evaluation, selection, grounding,
@@ -306,9 +332,11 @@ and adaptation layer on top.
   (`--expansion uspto,ringbreaker`) and is a third dead end on this target set:
   identical results at double the branching factor. Search budget is the one
   lever that did pay: N=500 lifts solve-rate to 1.00 on the eval set (see the
-  flag notes). Untried levers remain -- the `retrostar`/`dfpn` search backends,
-  the policy `cutoff_number`, and a real building-block catalogue in place of
-  ZINC plus a size heuristic.
+  flag notes). `--algorithm retrostar` pays a second time, improving the
+  candidate pool before selection runs (baseline safety 0.52 against MCTS's
+  0.44). Raising `cutoff_number` from 50 to 200 is target-dependent and roughly
+  a wash. The untried lever that remains is a real building-block catalogue in
+  place of ZINC plus a size heuristic.
 - **Greenness is atom economy only.** No solvent-driven PMI or E-factor without
   reaction-condition data.
 - **Cost is a proxy** from synthetic accessibility, not supplier prices.
@@ -317,8 +345,9 @@ and adaptation layer on top.
   reagents, blunt when routes share a reagent.
 - **Small-model rationale can misstate values** even when the score is correct.
   Hybrid mode keeps scores exact.
-- **Memory-bound and slow.** A rationale-batching speedup and a lighter
-  (bloom-filter) stock were identified but not implemented.
+- **Slow.** A rationale-batching speedup was identified but not implemented.
+  The memory ceiling is fixed: `--hashed-stock` replaced the in-memory InChI-key
+  set with a sorted array of 64-bit digests, 4.91 GB peak down to 0.63 GB.
 - **Narrow validation.** Small drug-like target set, short-to-moderate routes.
 - **Multi-objective advantage is conditional** on objectives beyond feasibility
   carrying weight (what the feedback loop tunes).
