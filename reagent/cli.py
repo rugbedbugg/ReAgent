@@ -25,12 +25,16 @@ def main() -> None:
               help="Also treat any molecule at or below this heavy-atom count as purchasable.")
 @click.option("--iterations", type=int, default=None,
               help="MCTS search budget (default 100); higher finds more routes, slower.")
+@click.option("--time-limit", type=int, default=None,
+              help="Wall-clock seconds for the search (default 120). Raise it with "
+                   "--iterations, or the clock stops the search before the budget is spent.")
 @click.option("--hybrid", is_flag=True,
               help="Score objectives deterministically; the LLM only writes the rationale.")
 @click.option("--ghs", is_flag=True,
               help="Use real GHS reagent-hazard data from PubChem for safety (online, cached).")
 def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_model: str | None,
-         rag: bool, permissive_stock: int | None, iterations: int | None, hybrid: bool,
+         rag: bool, permissive_stock: int | None, iterations: int | None,
+         time_limit: int | None, hybrid: bool,
          ghs: bool) -> None:
     """Plan retrosynthetic routes for a target SMILES."""
     canon = canonical(smiles)
@@ -42,10 +46,20 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
 
     click.echo("Loading search backend...")
     backend = AiZynthBackend(
-        aizynth_config(), permissive_stock=permissive_stock, iterations=iterations
+        aizynth_config(),
+        permissive_stock=permissive_stock,
+        iterations=iterations,
+        time_limit=time_limit,
     )
 
     routes = backend.plan(canon, max_routes=max_routes)
+    if backend.search_hit_time_limit:
+        click.echo(
+            f"NOTE: the search stopped on the {backend.search_time_limit}s clock after "
+            f"{backend.last_search_stats.get('iterations', 0)} of "
+            f"{backend.search_iteration_limit} iterations. Raise --time-limit to "
+            "actually spend the iteration budget."
+        )
     if not routes:
         click.echo("No routes found.")
         return
@@ -226,9 +240,12 @@ def feedback(smiles: str, prefer: int) -> None:
               help="Also treat any molecule at or below this heavy-atom count as purchasable.")
 @click.option("--iterations", type=int, default=None,
               help="MCTS search budget (default 100); higher finds more routes, slower.")
+@click.option("--time-limit", type=int, default=None,
+              help="Wall-clock seconds for the search (default 120). Raise it with "
+                   "--iterations, or the clock stops the search before the budget is spent.")
 @click.option("--hard", is_flag=True, help="Use the harder multi-step target set.")
 def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None, iterations: int | None,
-             hard: bool) -> None:
+             time_limit: int | None, hard: bool) -> None:
     """Measure solve-rate and baseline-vs-REAGENT route quality."""
     from reagent.eval.harness import WEIGHT_PROFILES
     from reagent.eval.harness import evaluate as run_eval
@@ -237,19 +254,32 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None, it
 
     click.echo("Loading search backend...")
     backend = AiZynthBackend(
-        aizynth_config(), permissive_stock=permissive_stock, iterations=iterations
+        aizynth_config(),
+        permissive_stock=permissive_stock,
+        iterations=iterations,
+        time_limit=time_limit,
     )
     targets = (HARD_TARGETS if hard else TARGETS)[:max_targets]
 
     # Plan each target once, then score under every weight profile.
     cache: dict[str, list] = {}
+    time_capped = 0
     for name, smiles in targets:
         canon = canonical(smiles) or smiles
         click.echo(f"  planning {name} ...")
         cache[canon] = backend.plan(canon, max_routes=max_routes)
+        if backend.search_hit_time_limit:
+            time_capped += 1
 
     def planner(smiles: str):
         return cache[canonical(smiles) or smiles]
+
+    if time_capped:
+        click.echo(
+            f"\nNOTE: {time_capped} of {len(targets)} searches stopped on the "
+            f"{backend.search_time_limit}s clock rather than the iteration budget. "
+            "Raise --time-limit before reading anything into --iterations."
+        )
 
     for profile, weights in WEIGHT_PROFILES.items():
         result = run_eval(targets, planner, weights=weights)

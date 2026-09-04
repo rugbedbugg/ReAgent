@@ -58,10 +58,15 @@ reagent plan "CC(=O)Oc1ccccc1C(=O)O" --show-features
   purchasable. Stand-in for a fuller catalogue; raises solve-rate and diversity
   (eval set: 9/10 to 10/10 at N=11). Heuristic, not a real catalogue, so treat
   extra hits as optimistic.
-- `--iterations N`: MCTS search budget (default 100). Larger budget finds routes
-  the default misses (300 solves one more eval target); run time roughly linear
-  in N. Gain is confined to borderline targets (100 to 500 changed nothing on the
-  hard set), so budget is not a substitute for a better model or stock.
+- `--iterations N`: MCTS search budget (default 100). Run time roughly linear
+  in N.
+- `--time-limit SECONDS`: wall-clock limit on the search (default 120). The
+  search loop stops on whichever limit binds first
+  (`while time_past < time_limit and i <= iteration_limit`), so raising
+  `--iterations` alone changes nothing once the clock binds -- which it does on
+  a slow machine well before a few hundred iterations. Raise both together, or
+  the run measures the timeout rather than the budget. `plan` and `evaluate`
+  both report when a search stopped on the clock.
 - `--local [MODEL]`: score with a local Ollama model (offline, no API key).
   Default `qwen2.5:3b-instruct`; server from `OLLAMA_HOST` (default
   `http://localhost:11434`). A 3B instruct model follows the rubric reliably;
