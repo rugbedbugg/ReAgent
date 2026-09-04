@@ -65,6 +65,9 @@ class AiZynthBackend:
         permissive_stock: int | None = None,
         iterations: int | None = None,
         time_limit: int | None = None,
+        algorithm: str = "mcts",
+        cutoff_number: int | None = None,
+        cutoff_cumulative: float | None = None,
     ):
         # Imported lazily so importing reagent.core doesn't pull in the heavy
         # AiZynthFinder stack (and its slow numba/onnx imports).
@@ -110,6 +113,25 @@ class AiZynthBackend:
         # default (120 s) binds, which it does on a slow machine well before a
         # few hundred iterations. Raising one without the other silently
         # measures the timeout instead of the budget.
+        # How many templates each expansion offers. The policy returns
+        #     min(index where cumulative prior >= cutoff_cumulative, cutoff_number)
+        # templates, and measurement shows the count cap is what binds: every
+        # policy returns exactly its 50-template default for every molecule
+        # tried, so the next-best disconnections are being discarded before the
+        # search ever sees them. Raising it widens the disconnection space with
+        # more of the same policy's suggestions, at a cost in branching factor,
+        # run time, and memory.
+        for key in self.expansion_keys:
+            strategy = self._finder.expansion_policy[key]
+            if cutoff_number is not None:
+                strategy.cutoff_number = cutoff_number
+            if cutoff_cumulative is not None:
+                strategy.cutoff_cumulative = cutoff_cumulative
+
+        from reagent.search import resolve as resolve_algorithm
+
+        self.algorithm = algorithm
+        self._finder.config.search.algorithm = resolve_algorithm(algorithm)
         if iterations is not None:
             self._finder.config.search.iteration_limit = iterations
         if time_limit is not None:

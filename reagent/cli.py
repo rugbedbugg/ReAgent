@@ -32,13 +32,21 @@ def main() -> None:
               help="Comma-separated expansion policies to run together (e.g. "
                    "'uspto,ringbreaker'). Their suggestions are combined, which is "
                    "not the same as swapping one policy for the other.")
+@click.option("--algorithm", default="mcts",
+              type=click.Choice(["mcts", "retrostar", "dfpn", "breadth-first"]),
+              help="Tree search over the same single-step model (default mcts).")
+@click.option("--cutoff-number", type=int, default=None,
+              help="Templates each expansion may offer (default 50, which is what "
+                   "binds today). Higher widens the disconnection space, at a cost in "
+                   "branching factor, run time, and memory.")
 @click.option("--hybrid", is_flag=True,
               help="Score objectives deterministically; the LLM only writes the rationale.")
 @click.option("--ghs", is_flag=True,
               help="Use real GHS reagent-hazard data from PubChem for safety (online, cached).")
 def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_model: str | None,
          rag: bool, permissive_stock: int | None, iterations: int | None,
-         time_limit: int | None, expansion: str, hybrid: bool,
+         time_limit: int | None, expansion: str, algorithm: str,
+         cutoff_number: int | None, hybrid: bool,
          ghs: bool) -> None:
     """Plan retrosynthetic routes for a target SMILES."""
     canon = canonical(smiles)
@@ -55,6 +63,8 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
         iterations=iterations,
         time_limit=time_limit,
         expansion=[k.strip() for k in expansion.split(",") if k.strip()],
+        algorithm=algorithm,
+        cutoff_number=cutoff_number,
     )
 
     routes = backend.plan(canon, max_routes=max_routes)
@@ -252,9 +262,17 @@ def feedback(smiles: str, prefer: int) -> None:
               help="Comma-separated expansion policies to run together (e.g. "
                    "'uspto,ringbreaker'). Their suggestions are combined, which is "
                    "not the same as swapping one policy for the other.")
+@click.option("--algorithm", default="mcts",
+              type=click.Choice(["mcts", "retrostar", "dfpn", "breadth-first"]),
+              help="Tree search over the same single-step model (default mcts).")
+@click.option("--cutoff-number", type=int, default=None,
+              help="Templates each expansion may offer (default 50, which is what "
+                   "binds today). Higher widens the disconnection space, at a cost in "
+                   "branching factor, run time, and memory.")
 @click.option("--hard", is_flag=True, help="Use the harder multi-step target set.")
 def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None, iterations: int | None,
-             time_limit: int | None, expansion: str, hard: bool) -> None:
+             time_limit: int | None, expansion: str, algorithm: str,
+             cutoff_number: int | None, hard: bool) -> None:
     """Measure solve-rate and baseline-vs-REAGENT route quality."""
     from reagent.eval.harness import WEIGHT_PROFILES
     from reagent.eval.harness import evaluate as run_eval
@@ -268,6 +286,8 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None, it
         iterations=iterations,
         time_limit=time_limit,
         expansion=[k.strip() for k in expansion.split(",") if k.strip()],
+        algorithm=algorithm,
+        cutoff_number=cutoff_number,
     )
     targets = (HARD_TARGETS if hard else TARGETS)[:max_targets]
 

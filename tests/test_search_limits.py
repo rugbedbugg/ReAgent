@@ -14,17 +14,32 @@ import pytest
 from reagent.singlestep.aizynth import AiZynthBackend
 
 
+class _StubStrategy(SimpleNamespace):
+    """One expansion/filter strategy, carrying AiZynthFinder's cutoff defaults."""
+
+    def __init__(self):
+        super().__init__(cutoff_number=50, cutoff_cumulative=0.995)
+
+    def feasibility(self, _rxn):
+        return (True, 1.0)
+
+
 class _StubPolicy:
-    """Selectable and subscriptable, like AiZynthFinder's policy containers."""
+    """Selectable and subscriptable, like AiZynthFinder's policy containers.
+
+    Strategies are held per key so attributes set on them survive lookup, which
+    is how the real collection behaves and what the cutoff wiring relies on.
+    """
 
     def __init__(self):
         self.selected = None
+        self._strategies: dict = {}
 
     def select(self, value, *_args, **_kwargs):
         self.selected = value
 
-    def __getitem__(self, _key):
-        return SimpleNamespace(feasibility=lambda _rxn: (True, 1.0))
+    def __getitem__(self, key):
+        return self._strategies.setdefault(key, _StubStrategy())
 
 
 class _StubFinder:
@@ -103,3 +118,39 @@ def test_filter_policy_keys_off_the_primary_expansion(backend_factory):
     # not try to look it up under the secondary policy's name.
     backend = backend_factory(expansion=["uspto", "ringbreaker"])
     assert backend._finder.filter_policy.selected == "uspto"
+
+
+def test_mcts_stays_a_bare_name(backend_factory):
+    # AiZynthFinder special-cases "mcts"; handing it a class path would break it.
+    backend = backend_factory()
+    assert backend._finder.config.search.algorithm == "mcts"
+
+
+def test_alternative_algorithms_resolve_to_class_paths(backend_factory):
+    backend = backend_factory(algorithm="retrostar")
+    assert backend._finder.config.search.algorithm == (
+        "aizynthfinder.search.retrostar.search_tree.SearchTree"
+    )
+
+
+def test_unknown_algorithm_is_rejected(backend_factory):
+    with pytest.raises(ValueError, match="Unknown search algorithm"):
+        backend_factory(algorithm="nope")
+
+
+def test_cutoff_number_defaults_are_left_alone(backend_factory):
+    backend = backend_factory()
+    assert backend._finder.expansion_policy["uspto"].cutoff_number == 50
+
+
+def test_cutoff_number_is_applied_to_every_selected_policy(backend_factory):
+    # The measured cap: every policy returns exactly 50 templates per molecule,
+    # so the next-best disconnections never reach the search.
+    backend = backend_factory(expansion=["uspto", "ringbreaker"], cutoff_number=150)
+    for key in ("uspto", "ringbreaker"):
+        assert backend._finder.expansion_policy[key].cutoff_number == 150
+
+
+def test_cutoff_cumulative_is_applied_when_given(backend_factory):
+    backend = backend_factory(cutoff_cumulative=0.999)
+    assert backend._finder.expansion_policy["uspto"].cutoff_cumulative == 0.999

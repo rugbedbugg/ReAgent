@@ -88,6 +88,20 @@ reagent plan "CC(=O)Oc1ccccc1C(=O)O" --show-features
   doubles from 50 to 100 and the extra branches lead to precursors that are not
   purchasable. The budget is spent on routes that cannot solve. Worth revisiting
   only on targets whose synthesis actually forms a ring.
+- `--algorithm NAME`: which tree search runs over the same single-step model --
+  `mcts` (default), `retrostar`, `dfpn`, or `breadth-first`. Retro* needs no
+  extra model: its molecule cost defaults to `ZeroMoleculeCost`, so it runs on
+  the files `download_public_data` already fetched. On naproxen at
+  `--iterations 500` it returned 9 solved, structurally distinct routes against
+  MCTS's 5, with a shorter worst case (5 steps vs 7). More candidates is
+  precisely what the selection layer needs. It costs memory: peak RSS 4.3 GB
+  against MCTS's ~2.9 GB, which is close to the limit on an 8 GB machine.
+- `--cutoff-number N`: how many templates each expansion may offer (default 50).
+  The policy returns `min(cumulative-probability index, cutoff_number)`
+  templates, and the count is what binds: every policy measured returned exactly
+  50 for every molecule, so the next-best disconnections never reach the search.
+  Raising it widens the disconnection space at a cost in branching, time, and
+  memory.
 - `--ghs`: score safety from real GHS H-codes fetched from PubChem instead of the
   offline Brenk screen. Cached to `data/ghs_cache.json`; missing record or
   offline falls back to Brenk. Score is the worst hazard tier among reagents and
