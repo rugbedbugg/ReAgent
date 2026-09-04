@@ -8,3 +8,7 @@ data/
 .env
 .pytest_cache/
 .ruff_cache/
+
+# mise
+mise.local.toml
+.mise.local.toml
