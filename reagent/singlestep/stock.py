@@ -18,6 +18,7 @@ from __future__ import annotations
 import functools
 import gzip
 import hashlib
+import itertools
 import multiprocessing
 import os
 import re
@@ -183,6 +184,7 @@ def _hashes_for_entry(
 
 
 _BLOCK = 1_000_000
+_SLICE = 250_000
 
 
 def build_catalogue_cache(
@@ -222,15 +224,24 @@ def build_catalogue_cache(
     read = kept = 0
 
     with multiprocessing.Pool(workers, initializer=_silence_rdkit) as pool:
-        entries = pool.imap_unordered(worker, iter_catalogue_smiles(catalogue_path), chunksize=2000)
-        for hashes in entries:
-            read += 1
-            kept += len(hashes)
-            buffer.extend(hashes)
+        entries = iter_catalogue_smiles(catalogue_path)
+        while True:
+            # Fed a slice at a time on purpose. ``Pool.imap`` drains its input
+            # iterable as fast as the feeder thread can run, into a queue with
+            # no bound, so handing it a 78M-entry catalogue buffers gigabytes of
+            # SMILES in this process -- the same unbounded-load failure that
+            # :class:`HashedStock` exists to avoid.
+            batch = list(itertools.islice(entries, _SLICE))
+            if not batch:
+                break
+            read += len(batch)
+            for hashes in pool.map(worker, batch, chunksize=2000):
+                kept += len(hashes)
+                buffer.extend(hashes)
             if len(buffer) >= _BLOCK:
                 blocks.append(np.fromiter(buffer, dtype=np.uint64, count=len(buffer)))
                 buffer.clear()
-            if progress and read % 250_000 == 0:
+            if progress:
                 progress(read, kept)
 
     if buffer:
