@@ -146,13 +146,14 @@ def _rank_report(target: str, routes: list) -> None:
             pref = f", you preferred Route {episode.feedback}" if episode.feedback else ""
             click.echo(f"  {sim:.2f}  {episode.target}{pref}")
 
-    click.echo("\n=== Ranking (weighted score) ===")
+    click.echo("\n=== Ranking (score is relative to these candidates; abs is absolute) ===")
     for rank, route in enumerate(ranked, 1):
         tag = " [Pareto]" if id(route) in front_ids else ""
         conf, prob = route_confidence(route)
         click.echo(
             f"  {rank}. Route {numbers[id(route)]}  "
-            f"score={route.scores['weighted']:.3f}  ({route.num_steps} steps)  "
+            f"score={route.scores['weighted']:.3f} (abs {route.scores['weighted_raw']:.3f})  "
+            f"({route.num_steps} steps)  "
             f"confidence={conf} ({prob:.2f}){tag}"
         )
     click.echo(f"Pareto front: {len(front_ids)} non-dominated route(s) of {len(routes)}.")
@@ -173,6 +174,7 @@ def _rank_report(target: str, routes: list) -> None:
             target=target,
             weights=weights,
             score_vectors=[r.scores["vector"] for r in ranked],
+            normalized_vectors=[r.scores["normalized"] for r in ranked],
             weighted_scores=[r.scores["weighted"] for r in ranked],
             recommended=numbers[id(ranked[0])],
         )
@@ -198,8 +200,12 @@ def feedback(smiles: str, prefer: int) -> None:
     if not 1 <= prefer <= len(episode.score_vectors):
         raise click.ClickException(f"--prefer must be between 1 and {len(episode.score_vectors)}.")
 
-    preferred = episode.score_vectors[prefer - 1]
-    others = [v for i, v in enumerate(episode.score_vectors, 1) if i != prefer]
+    # Prefer the normalized vectors: the update nudges weights by how far the
+    # preferred route beats its rivals per objective, which is only comparable
+    # across objectives on a common scale. Older episodes carry raw vectors only.
+    vectors = episode.normalized_vectors or episode.score_vectors
+    preferred = vectors[prefer - 1]
+    others = [v for i, v in enumerate(vectors, 1) if i != prefer]
 
     old = load_weights()
     new = update_from_preference(old, preferred, others)

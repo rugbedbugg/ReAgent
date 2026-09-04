@@ -15,8 +15,23 @@ NOTABLE_GAP = 0.2
 
 
 def _lead_objectives(route: Route, n: int = 3) -> list[tuple[str, float]]:
+    """The objectives that carried the route, reported with their raw scores.
+
+    Ordered by the candidate-normalized vector -- how far this route beats the
+    rest of the field on each objective -- because that is what the ranking
+    actually used. Ordering by raw score instead would credit whichever
+    objective happens to sit highest on its own scale, including ones every
+    candidate ties on, which decided nothing.
+    """
     vector = route.scores.get("vector", {})
-    return sorted(vector.items(), key=lambda kv: kv[1], reverse=True)[:n]
+    ordering = route.scores.get("normalized") or vector
+    # Ties on the normalized scale (several objectives can separate the winner
+    # from the field equally) break on the raw score, so the strongest
+    # performer leads rather than whichever name sorts first.
+    leads = sorted(
+        ordering, key=lambda o: (ordering[o], vector.get(o, 0.0)), reverse=True
+    )[:n]
+    return [(objective, vector.get(objective, ordering[objective])) for objective in leads]
 
 
 def _rationale_for(route: Route, objective: str) -> str:

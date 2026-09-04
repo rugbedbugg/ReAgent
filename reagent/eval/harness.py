@@ -18,7 +18,11 @@ from statistics import mean
 
 from reagent.core.models import Route
 from reagent.features.scoring import deterministic_scores
-from reagent.optimize.aggregate import DEFAULT_WEIGHTS
+from reagent.optimize.aggregate import (
+    DEFAULT_WEIGHTS,
+    normalized_vectors,
+    weighted_from_vector,
+)
 
 # The multi-objective effect only shows when objectives beyond feasibility carry
 # weight, so evaluation reports both the feasibility-led default and a profile a
@@ -36,19 +40,17 @@ WEIGHT_PROFILES: dict[str, dict[str, float]] = {
 }
 
 
-def _weighted(scores: dict[str, float], weights: dict[str, float]) -> float:
-    total_w = sum(weights.get(o, 0.0) for o in scores)
-    if total_w == 0:
-        return 0.0
-    return sum(weights.get(o, 0.0) * s for o, s in scores.items()) / total_w
-
-
 def _select(routes: list[Route], weights: dict[str, float]) -> tuple[Route, Route]:
-    """Return (baseline_pick, reagent_pick) over solved routes."""
-    scored = [(r, deterministic_scores(r)) for r in routes]
-    baseline = max(scored, key=lambda rs: rs[1]["feasibility"])[0]
-    reagent = max(scored, key=lambda rs: _weighted(rs[1], weights))[0]
-    return baseline, reagent
+    """Return (baseline_pick, reagent_pick) over solved routes.
+
+    ReAgent's pick uses the same candidate-normalized aggregation the CLI ranks
+    with, so the comparison measures the real selection strategy.
+    """
+    vectors = [deterministic_scores(r) for r in routes]
+    normalized = normalized_vectors(vectors)
+    baseline = max(range(len(routes)), key=lambda i: vectors[i]["feasibility"])
+    reagent = max(range(len(routes)), key=lambda i: weighted_from_vector(normalized[i], weights))
+    return routes[baseline], routes[reagent]
 
 
 def evaluate(

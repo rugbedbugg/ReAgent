@@ -52,3 +52,25 @@ def test_orchestrator_full_team():
     assert all(a.score == 0.6 for a in route.assessments)
     # features were auto-computed by the orchestrator
     assert route.features
+
+
+def test_rationale_does_not_credit_an_objective_that_decided_nothing():
+    # Availability is 1.0 for every solved route, so it is the highest raw score
+    # but cannot have carried the winner. Feasibility is what separated them.
+    from reagent.agents.rationale import build_rationale
+    from reagent.core.models import Assessment, Route
+    from reagent.optimize.aggregate import rank_routes
+
+    def _r(scores):
+        r = Route(target="T", solved=True)
+        r.assessments = [Assessment(objective=o, score=s, rationale="") for o, s in scores.items()]
+        return r
+
+    win = _r({"feasibility": 0.72, "availability": 1.0, "safety": 0.40})
+    lose = _r({"feasibility": 0.05, "availability": 1.0, "safety": 0.35})
+    ranked = rank_routes([win, lose])
+    text = build_rationale(ranked, {id(win): 1, id(lose): 2})
+
+    carried = next(line for line in text.splitlines() if line.startswith("Carried by:"))
+    assert "feasibility" in carried
+    assert "availability" not in carried

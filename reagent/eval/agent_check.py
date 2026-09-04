@@ -15,12 +15,18 @@ from statistics import mean
 from reagent.agents.orchestrator import Orchestrator
 from reagent.core.models import Route
 from reagent.features.scoring import deterministic_scores
-from reagent.optimize.aggregate import DEFAULT_WEIGHTS, weighted_score
+from reagent.optimize.aggregate import (
+    DEFAULT_WEIGHTS,
+    normalized_vectors,
+    score_vector,
+    weighted_from_vector,
+)
 
 
-def _weighted_from_scores(scores: dict[str, float], weights: dict[str, float]) -> float:
-    total_w = sum(weights.get(o, 0.0) for o in scores)
-    return sum(weights.get(o, 0.0) * s for o, s in scores.items()) / total_w if total_w else 0.0
+def _best(vectors: list[dict[str, float]], weights: dict[str, float]) -> int:
+    """Index of the top route under the normalized weighted aggregation."""
+    normalized = normalized_vectors(vectors)
+    return max(range(len(vectors)), key=lambda i: weighted_from_vector(normalized[i], weights))
 
 
 def check_agents(
@@ -58,8 +64,8 @@ def check_agents(
 
         if len(routes) > 1:
             ranked_targets += 1
-            agent_top = max(routes, key=lambda r: weighted_score(r, weights))
-            ref_top = max(routes, key=lambda r: _weighted_from_scores(deterministic_scores(r), weights))
+            agent_top = routes[_best([score_vector(r) for r in routes], weights)]
+            ref_top = routes[_best([deterministic_scores(r) for r in routes], weights)]
             agree = agent_top is ref_top
             ranking_agree += int(agree)
             per_target.append({"name": name, "routes": len(routes), "ranking_agrees": agree})

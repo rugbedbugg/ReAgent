@@ -24,6 +24,11 @@ class Episode(BaseModel):
     target: str
     weights: dict[str, float] = Field(default_factory=dict)
     score_vectors: list[dict[str, float]] = Field(default_factory=list)
+    # Candidate-normalized copies of the same vectors. The preference update
+    # compares objectives against each other, so it needs the comparable
+    # scale for the same reason ranking does. Empty on episodes written
+    # before normalization existed; those fall back to the raw vectors.
+    normalized_vectors: list[dict[str, float]] = Field(default_factory=list)
     weighted_scores: list[float] = Field(default_factory=list)
     recommended: int = 0  # 1-based route number
     feedback: int | None = None  # route number the user actually preferred

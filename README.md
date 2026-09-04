@@ -122,12 +122,35 @@ numerically), so the measurement isolates selection strategy, not LLM variance.
 Results on the bundled 10-target set:
 
 - Solve-rate 0.90 for both strategies (selection does not change solvability).
-- Feasibility-led default weights: pick changes on 1/10, mean safety 0.43 to 0.49.
-- Safety-tilted weights: pick changes on 4/10, mean safety 0.43 to 0.63 at the
-  same solve-rate.
+- Feasibility-led default weights: pick changes on 2/10, mean safety 0.43 to 0.49.
+- Safety-tilted weights: pick changes on 6/10, mean safety 0.43 to 0.64 and
+  sustainability 0.82 to 0.88, at the same solve-rate.
 - The multi-objective layer earns its value when objectives beyond feasibility
   are weighted, which is what the feedback loop tunes. (Figures use the offline
   Brenk screen; exact values shift with the objective data sources chosen.)
+
+### Aggregation
+
+Objectives are min-max normalized across the candidate routes before the
+weighted sum. Raw scores do not span comparable ranges -- on a typical target
+feasibility varies 0.47-0.73 across candidates while safety varies 0.20-0.30 and
+cost 0.11-0.15 -- so weighting the raw values lets the widest-ranging objective
+decide the ranking whatever the weights say. Normalizing makes a weight express
+preference rather than range; it is why the safety-tilted profile shifts the pick
+on 6 targets rather than 4.
+
+Two details keep that from overcorrecting:
+
+- Rescaling is floored at a minimum spread (`MIN_SPAN`), so a difference too
+  small to be meaningful is not stretched into a decisive one.
+- An objective every candidate scores identically is dropped rather than
+  weighted. Among solved routes `availability` is always 1.0 by construction (a
+  route is solved iff every leaf is in stock), and on single-step targets
+  `efficiency` is constant too; left in, they would consume weight while being
+  unable to change any ranking.
+
+Each route reports both figures: the score it is ranked by (relative to the
+candidates on offer) and `abs`, the absolute weighted mean of its raw scores.
 
 Objective signals:
 

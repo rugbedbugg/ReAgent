@@ -1,8 +1,22 @@
 """Weighted-sum aggregation over the per-objective assessment scores.
 
 Collapses a route's six Assessment scores into one ranking number. Weights are
-tunable (the adaptive layer will learn them later); the raw score vector is kept
-alongside so nothing is lost to the scalar and the Pareto view can use it.
+tunable (the adaptive layer learns them from feedback); the raw score vector is
+kept alongside so nothing is lost to the scalar and the Pareto view can use it.
+
+Objectives are min-max normalized across the candidate set before weighting.
+Raw scores are not on comparable scales: over a typical candidate set
+feasibility swings several times wider than cost, safety, or efficiency, so
+weighting the raw values lets the widest-ranging objective decide the ranking
+regardless of what the weights say. Normalizing first is what makes a weight
+mean "how much I care about this" rather than "how much this objective happens
+to vary".
+
+Rescaling is floored at ``MIN_SPAN``. Pure min-max would stretch whatever spread
+a candidate set happens to show into a full 0..1 swing, so on a small set a
+meaningless 0.02 feasibility gap would count as heavily as a decisive safety
+gap. The floor keeps small real differences small while still removing the
+scale advantage of a genuinely wide-ranging objective.
 """
 
 from __future__ import annotations
@@ -25,25 +39,85 @@ def score_vector(route: Route) -> dict[str, float]:
     return {a.objective: a.score for a in route.assessments}
 
 
-def weighted_score(route: Route, weights: dict[str, float] | None = None) -> float:
-    """Weighted mean of the assessment scores over the objectives present.
+# Objectives whose candidates differ by less than this are treated as nearly
+# tied rather than rescaled to a full swing. It has to sit *below* the spread a
+# real objective shows, or that objective stays permanently handicapped against
+# a wider-ranging one and the normalization achieves nothing: measured spreads
+# run 0.11-0.15 for cost, 0.20-0.30 for safety and sustainability, and 0.47-0.73
+# for feasibility. At 0.10 every one of those is normalized on its own range,
+# while a difference too small to mean anything on a 0..1 rubric stays small.
+MIN_SPAN = 0.10
 
-    Weights are renormalized over whichever objectives the route actually has,
-    so a missing agent does not silently drag the total toward zero.
+
+def normalized_vectors(vectors: list[dict[str, float]]) -> list[dict[str, float]]:
+    """Min-max normalize each objective across the candidate set.
+
+    Each objective is rescaled over the candidates actually on offer, so the
+    weights decide the trade-off rather than the spread each objective happens
+    to show. The divisor is floored at :data:`MIN_SPAN`, so an objective whose
+    candidates barely differ contributes a correspondingly small difference
+    instead of being stretched to a full 0..1 swing.
+
+    An objective every candidate scores identically carries no comparative
+    information and is dropped: among solved routes availability is 1.0 by
+    construction (a route is solved iff every leaf is in stock), and on
+    single-step targets efficiency is constant too. Dropping them beats adding a
+    constant that dilutes the objectives which do separate the routes.
+    """
+    objectives = sorted({o for v in vectors for o in v})
+    spans: dict[str, tuple[float, float]] = {}
+    for objective in objectives:
+        column = [v[objective] for v in vectors if objective in v]
+        if column and max(column) > min(column):
+            spans[objective] = (min(column), max(max(column) - min(column), MIN_SPAN))
+    return [
+        {o: (v[o] - lo) / span for o, (lo, span) in spans.items() if o in v}
+        for v in vectors
+    ]
+
+
+def weighted_from_vector(
+    vector: dict[str, float], weights: dict[str, float] | None = None
+) -> float:
+    """Weighted mean over whichever objectives the vector actually carries.
+
+    Weights are renormalized over those objectives, so a missing agent -- or an
+    objective dropped for being constant -- does not drag the total toward zero.
     """
     weights = weights or DEFAULT_WEIGHTS
-    vec = score_vector(route)
-    total_w = sum(weights.get(o, 0.0) for o in vec)
+    total_w = sum(weights.get(o, 0.0) for o in vector)
     if total_w == 0.0:
         return 0.0
-    return sum(weights.get(o, 0.0) * s for o, s in vec.items()) / total_w
+    return sum(weights.get(o, 0.0) * s for o, s in vector.items()) / total_w
+
+
+def weighted_score(route: Route, weights: dict[str, float] | None = None) -> float:
+    """Absolute weighted mean of one route's raw scores.
+
+    Standalone quality figure for a single route. Ranking a candidate set goes
+    through :func:`rank_routes`, which normalizes across candidates first.
+    """
+    return weighted_from_vector(score_vector(route), weights)
 
 
 def rank_routes(routes: list[Route], weights: dict[str, float] | None = None) -> list[Route]:
-    """Return routes sorted best-first, recording scores on each route."""
-    for route in routes:
+    """Return routes sorted best-first, recording scores on each route.
+
+    Ordering uses the candidate-normalized score (``weighted``). The absolute
+    figure is kept as ``weighted_raw`` and the raw vector as ``vector``, so the
+    Pareto view, the rationale, and episodic memory still see real scores.
+    """
+    vectors = [score_vector(route) for route in routes]
+    normalized = normalized_vectors(vectors)
+    if not any(normalized):
+        # Nothing separates the candidates (a lone route, or exact ties): fall
+        # back to raw scores so the reported number stays meaningful.
+        normalized = vectors
+    for route, raw, norm in zip(routes, vectors, normalized, strict=True):
         route.scores = {
-            "weighted": weighted_score(route, weights),
-            "vector": score_vector(route),
+            "weighted": weighted_from_vector(norm, weights),
+            "weighted_raw": weighted_from_vector(raw, weights),
+            "vector": raw,
+            "normalized": norm,
         }
     return sorted(routes, key=lambda r: r.scores["weighted"], reverse=True)
