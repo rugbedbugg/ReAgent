@@ -9,8 +9,8 @@ fails to parse.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from statistics import mean
-from typing import Callable
 
 from reagent.agents.orchestrator import Orchestrator
 from reagent.core.models import Route

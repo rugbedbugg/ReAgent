@@ -42,7 +42,7 @@ class FingerprintIndex:
         )
 
     @classmethod
-    def load(cls, path: str | Path) -> "FingerprintIndex":
+    def load(cls, path: str | Path) -> FingerprintIndex:
         data = np.load(path, allow_pickle=False)
         n_bits = int(data["n_bits"][0])
         matrix = np.unpackbits(data["matrix"], axis=1)[:, :n_bits].astype(np.uint8)

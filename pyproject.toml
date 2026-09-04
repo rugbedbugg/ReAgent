@@ -32,4 +32,12 @@ include = ["reagent*"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+# Lowest supported interpreter, so lint never suggests syntax that breaks 3.10.
+target-version = "py310"
+
+[tool.ruff.lint]
+# Pinned explicitly: Ruff's default rule set changes between releases, which
+# silently changes what CI enforces.
+# E501 (line-too-long) is deliberately absent: 16 lines currently run 101-110
+# chars. Add "E5" once those are wrapped to enforce the 100-char limit.
+select = ["E4", "E7", "E9", "F", "I", "UP"]

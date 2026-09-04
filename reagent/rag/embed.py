@@ -10,8 +10,7 @@ from __future__ import annotations
 
 import numpy as np
 from rdkit import RDLogger
-from rdkit.Chem import DataStructs
-from rdkit.Chem import rdChemReactions
+from rdkit.Chem import DataStructs, rdChemReactions
 
 RDLogger.DisableLog("rdApp.*")
 

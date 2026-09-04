@@ -13,8 +13,8 @@ selecting routes with better multi-objective quality.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from statistics import mean
-from typing import Callable
 
 from reagent.core.models import Route
 from reagent.features.scoring import deterministic_scores

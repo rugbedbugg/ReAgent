@@ -52,7 +52,7 @@ class Route(BaseModel):
     tree: dict | None = None
     # Populated by the features, agent, and optimization layers respectively.
     features: dict = Field(default_factory=dict)
-    assessments: list["Assessment"] = Field(default_factory=list)
+    assessments: list[Assessment] = Field(default_factory=list)
     scores: dict = Field(default_factory=dict)
 
     @property
