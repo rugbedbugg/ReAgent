@@ -4,10 +4,22 @@ ReAgent combines retrosynthetic planning, cheminformatics, optimization, and LLM
 
 ## Development setup
 
-The project supports Python 3.10 and 3.11 and is pinned locally to uv-managed 3.11:
+The project supports Python 3.10 and 3.11. `mise.toml` pins the local toolchain to
+Python 3.11 with uv and creates `.venv` on entering the directory; CI runs both
+versions.
 
 ```sh
-uv venv --python 3.11
+mise trust
+mise install        # Python 3.11 + uv; creates .venv
+mise run install    # editable install with dev extras
+mise run test
+mise run lint
+```
+
+Without mise (`.python-version` selects 3.11 for uv):
+
+```sh
+uv venv
 uv pip install -e ".[dev]"
 uv run pytest
 uv run ruff check .
@@ -18,7 +30,9 @@ Some workflows require pretrained models, building-block data, or provider crede
 ## Change guidelines
 
 - Keep package code under `reagent/` and tests under `tests/`.
-- Use the configured 100-character Ruff line length and Python 3.11 target.
+- Ruff config lives in `pyproject.toml`: 100-character line length, a `py310`
+  target (the lowest supported interpreter), and an explicitly pinned rule set
+  so a Ruff upgrade cannot silently change what CI enforces.
 - Add deterministic fixtures for route ranking, feature vectors, and evaluation changes.
 - Isolate live LLM or network behavior behind interfaces that can be tested without external calls.
 - Explain changes to scoring weights, chemistry constraints, or evaluation splits.

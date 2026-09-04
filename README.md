@@ -20,18 +20,31 @@ adaptive layers on top.
 
 ## Setup
 
-```powershell
-py -3.11 -m venv .venv
-.venv\Scripts\activate
-pip install -e .
+The toolchain is pinned in `mise.toml` (Python 3.11, uv), which also creates and
+activates `.venv` on entering the directory. With
+[mise](https://mise.jdx.dev) installed:
 
-# Pretrained single-step model + building-block stock
+```sh
+mise trust
+mise install        # Python 3.11 + uv; creates .venv
+mise run install    # editable install with dev extras
+
+# Pretrained single-step model + building-block stock (~760 MB)
 download_public_data data
 ```
 
+Without mise, any Python 3.10 or 3.11 interpreter works:
+
+```sh
+uv venv --python 3.11
+uv pip install -e ".[dev]"
+```
+
+Other tasks: `mise run test`, `mise run lint`.
+
 ## Usage
 
-```powershell
+```sh
 # Plan routes (no scoring)
 reagent plan "CC(=O)Oc1ccccc1C(=O)O"
 
@@ -69,7 +82,7 @@ reagent plan "CC(=O)Oc1ccccc1C(=O)O" --show-features
   `data/uspto_templates.csv.gz`, cached to `data/rag_index.npz`. Works alone
   (prints precedents, no scoring) or with `--assess` / `--local`.
 
-```powershell
+```sh
 reagent plan "CC(C)Cc1ccc(C(C)C(=O)O)cc1" --permissive-stock 11 --iterations 300
 reagent plan "CC(=O)Oc1ccccc1C(=O)O" --local --hybrid --ghs
 reagent plan "CC(=O)Oc1ccccc1C(=O)O" --local --rag
@@ -86,7 +99,7 @@ Scoring runs also:
 
 ### feedback
 
-```powershell
+```sh
 reagent feedback "CC(=O)Oc1ccccc1C(=O)O" --prefer 2
 ```
 
@@ -96,7 +109,7 @@ past targets.
 
 ## Evaluation
 
-```powershell
+```sh
 reagent evaluate --max-targets 10
 ```
 
@@ -129,7 +142,7 @@ Objective signals:
   substitutes real GHS data.
 - **sustainability**: atom-economy / mass-intensity proxies (no solvent data).
 
-```powershell
+```sh
 reagent check-agents --local --max-targets 5
 ```
 
@@ -202,3 +215,7 @@ and adaptation layer on top.
   model.
 - **`--permissive-stock` is a heuristic**, not a real catalogue.
 - **`reagent/search` is a placeholder.**
+
+## License
+
+Apache-2.0. See `LICENSE`.
