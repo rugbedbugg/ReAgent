@@ -159,7 +159,20 @@ Results on the bundled 10-target set, at the default budget:
 - Safety-tilted weights: pick changes on 6/10, mean safety 0.43 to 0.64 and
   sustainability 0.82 to 0.88, at the same solve-rate.
 
-At `--iterations 500 --time-limit 1800` on the same set and stock:
+With `--algorithm retrostar --iterations 500 --time-limit 1800` on the same set
+and stock, the best configuration measured here:
+
+- Solve-rate 1.00; mean route length 1.20.
+- Feasibility-led: pick changes on 3/10, mean safety 0.52 to 0.59.
+- Safety-tilted: pick changes on 8/10, mean safety 0.52 to 0.75, sustainability
+  0.82 to 0.88, cost 0.67 to 0.74.
+- Retro* improves the candidate pool before any selection happens: baseline
+  safety is 0.52 against MCTS's 0.44 on the same targets. It also leaves more
+  for selection to do -- 8 of 10 targets respond to the weights, against 6 under
+  MCTS -- which is the point of a multi-objective layer. Costs ~4.3 GB peak RSS
+  against MCTS's ~2.9 GB, so MCTS remains the default.
+
+At `--iterations 500 --time-limit 1800` with the default MCTS search:
 
 - Solve-rate 1.00; mean route length 1.30.
 - Feasibility-led: pick changes on 2/10, mean safety 0.44 to 0.54.
