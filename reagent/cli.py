@@ -413,11 +413,17 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
             f"average; {result['advanced_intermediate_routes']} route(s) buy an advanced "
             "intermediate (>= 0.80) rather than build from building blocks"
         )
-        click.echo(f"  {'objective':16s} {'baseline':>10s} {'REAGENT':>10s}")
+        click.echo(
+            f"  weight-free compromise agrees with the weighted pick on "
+            f"{result['compromise_agrees_with_weighted']}/{result['n_targets']}; "
+            f"its largest leaf {result['compromise_largest_leaf_fraction']:.2f}"
+        )
+        click.echo(f"  {'objective':16s} {'baseline':>10s} {'REAGENT':>10s} {'compromise':>11s}")
         for obj in ("safety", "sustainability", "cost"):
             b = result["baseline_quality"][obj]
             r = result["reagent_quality"][obj]
-            click.echo(f"  {obj:16s} {b:>10.3f} {r:>10.3f}")
+            c = result["compromise_quality"][obj]
+            click.echo(f"  {obj:16s} {b:>10.3f} {r:>10.3f} {c:>11.3f}")
 
 
 @main.command("check-agents")

@@ -23,6 +23,7 @@ from reagent.optimize.aggregate import (
     normalized_vectors,
     weighted_from_vector,
 )
+from reagent.optimize.pareto import compromise_route
 
 # The multi-objective effect only shows when objectives beyond feasibility carry
 # weight, so evaluation reports both the feasibility-led default and a profile a
@@ -99,6 +100,9 @@ def evaluate(
     leaf_fractions: list[float] = []
     base_q: dict[str, list[float]] = {"safety": [], "sustainability": [], "cost": []}
     reag_q: dict[str, list[float]] = {"safety": [], "sustainability": [], "cost": []}
+    comp_q: dict[str, list[float]] = {"safety": [], "sustainability": [], "cost": []}
+    comp_leaf: list[float] = []
+    comp_agrees = 0
     per_target = []
 
     for name, smiles in targets:
@@ -117,6 +121,16 @@ def evaluate(
         for obj in base_q:
             base_q[obj].append(b_scores[obj])
             reag_q[obj].append(r_scores[obj])
+
+        # The weight-free reference. It cannot vary with the profile, so it is
+        # the same line under every weighting -- which is the point: it says
+        # what the candidates support before anyone expresses a preference.
+        compromise = compromise_route(solved_routes) or reagent
+        c_scores = deterministic_scores(compromise)
+        for obj in comp_q:
+            comp_q[obj].append(c_scores[obj])
+        comp_leaf.append(largest_leaf_fraction(compromise))
+        comp_agrees += int(compromise is reagent)
         per_target.append(
             {
                 "name": name,
@@ -136,6 +150,9 @@ def evaluate(
         "avg_largest_leaf_fraction": mean(leaf_fractions) if leaf_fractions else 0.0,
         "advanced_intermediate_routes": sum(f >= ADVANCED_LEAF for f in leaf_fractions),
         "baseline_quality": {o: (mean(v) if v else 0.0) for o, v in base_q.items()},
+        "compromise_quality": {o: (mean(v) if v else 0.0) for o, v in comp_q.items()},
+        "compromise_largest_leaf_fraction": mean(comp_leaf) if comp_leaf else 0.0,
+        "compromise_agrees_with_weighted": comp_agrees,
         "reagent_quality": {o: (mean(v) if v else 0.0) for o, v in reag_q.items()},
         "per_target": per_target,
     }

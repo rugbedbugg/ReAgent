@@ -98,3 +98,67 @@ def test_rank_falls_back_to_raw_scores_for_a_lone_route():
     only = _route("only", {"feasibility": 0.5, "safety": 0.5})
     ranked = rank_routes([only])
     assert ranked[0].scores["weighted"] == only.scores["weighted_raw"] > 0.0
+
+
+def _scored(target, vector, solved=True):
+    """A route carrying a fixed assessment vector, bypassing feature extraction."""
+    from reagent.core.models import Assessment
+
+    return Route(
+        target=target,
+        solved=solved,
+        assessments=[
+            Assessment(objective=o, score=s, rationale="fixture", inputs={})
+            for o, s in vector.items()
+        ],
+    )
+
+
+def test_compromise_avoids_the_lopsided_corner_route():
+    """Two specialists and one all-rounder, all non-dominated.
+
+    A weighted sum picks whichever corner the weights happen to favour. The
+    compromise rule takes the balanced route without being told a preference.
+    """
+    from reagent.optimize.pareto import compromise_route
+
+    safe_only = _scored("T", {"safety": 1.0, "cost": 0.0, "feasibility": 0.0})
+    cheap_only = _scored("T", {"safety": 0.0, "cost": 1.0, "feasibility": 0.0})
+    balanced = _scored("T", {"safety": 0.7, "cost": 0.7, "feasibility": 1.0})
+
+    assert compromise_route([safe_only, cheap_only, balanced]) is balanced
+
+
+def test_compromise_ignores_dominated_routes():
+    from reagent.optimize.pareto import compromise_route
+
+    good = _scored("T", {"safety": 0.9, "cost": 0.9})
+    worse = _scored("T", {"safety": 0.4, "cost": 0.4})
+    assert compromise_route([good, worse]) is good
+
+
+def test_compromise_handles_a_single_route():
+    from reagent.optimize.pareto import compromise_route
+
+    only = _scored("T", {"safety": 0.5, "cost": 0.5})
+    assert compromise_route([only]) is only
+
+
+def test_compromise_handles_an_empty_candidate_set():
+    from reagent.optimize.pareto import compromise_route
+
+    assert compromise_route([]) is None
+
+
+def test_compromise_needs_no_weights_to_disagree_with_a_weighted_pick():
+    """The point of the rule: it can differ from the weighted winner."""
+    from reagent.optimize.aggregate import rank_routes
+    from reagent.optimize.pareto import compromise_route
+
+    safe_only = _scored("T", {"safety": 1.0, "cost": 0.0, "feasibility": 0.0})
+    balanced = _scored("T", {"safety": 0.7, "cost": 0.7, "feasibility": 1.0})
+    routes = [safe_only, balanced]
+
+    safety_heavy = {"safety": 0.9, "cost": 0.05, "feasibility": 0.05}
+    assert rank_routes(routes, weights=safety_heavy)[0] is safe_only
+    assert compromise_route(routes) is balanced
