@@ -49,3 +49,50 @@ def test_an_easy_building_block_is_free_but_a_complex_one_is_not():
 def test_costs_are_reported_for_the_search_log():
     assert "hazard" in repr(HazardCost())
     assert "accessibility" in repr(AccessibilityCost())
+
+
+def test_steer_spec_parses_a_bare_objective_name():
+    from reagent.cli import _steer_config
+
+    assert _steer_config("hazard") == {"cost": "reagent.search.cost.HazardCost"}
+
+
+def test_steer_spec_parses_an_explicit_weight():
+    from reagent.cli import _steer_config
+
+    config = _steer_config("accessibility:2.5")
+    assert config["cost"].endswith("AccessibilityCost")
+    assert config["weight"] == 2.5
+
+
+def test_a_zero_weight_is_accepted_as_the_control_arm():
+    from reagent.cli import _steer_config
+
+    assert _steer_config("hazard:0")["weight"] == 0.0
+
+
+def test_no_steering_leaves_the_search_untouched():
+    from reagent.cli import _steer_config
+
+    assert _steer_config(None) is None
+    assert _steer_config("") is None
+
+
+def test_an_unknown_objective_is_rejected():
+    import click
+    import pytest
+
+    from reagent.cli import _steer_config
+
+    with pytest.raises(click.ClickException):
+        _steer_config("greenness")
+
+
+def test_a_non_numeric_weight_is_rejected():
+    import click
+    import pytest
+
+    from reagent.cli import _steer_config
+
+    with pytest.raises(click.ClickException):
+        _steer_config("hazard:lots")

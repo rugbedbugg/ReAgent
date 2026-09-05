@@ -68,6 +68,7 @@ class AiZynthBackend:
         iterations: int | None = None,
         time_limit: int | None = None,
         algorithm: str = "mcts",
+        molecule_cost: dict | None = None,
         cutoff_number: int | None = None,
         cutoff_cumulative: float | None = None,
     ):
@@ -163,6 +164,14 @@ class AiZynthBackend:
 
         self.algorithm = algorithm
         self._finder.config.search.algorithm = resolve_algorithm(algorithm)
+
+        # Retro* builds every MoleculeNode with cost = molecule_cost(mol), and
+        # that cost feeds the value function deciding what to expand next. So a
+        # cost here steers which routes are *found*, unlike the objectives in
+        # the ranking layer, which can only reorder what the search returned.
+        # Ignored by every other algorithm, which has no such hook.
+        if molecule_cost:
+            self._finder.config.search.algorithm_config["molecule_cost"] = dict(molecule_cost)
         if iterations is not None:
             self._finder.config.search.iteration_limit = iterations
         if time_limit is not None:

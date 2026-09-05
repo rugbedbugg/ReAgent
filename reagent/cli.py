@@ -29,6 +29,32 @@ def build_stock_cache() -> None:
     click.echo(f"Wrote {path} ({path.stat().st_size / 1e6:.1f} MB).")
 
 
+def _steer_config(spec: str | None) -> dict | None:
+    """Turn ``hazard`` or ``hazard:2.0`` into a Retro* molecule_cost config.
+
+    Weight 0 is allowed on purpose: it is the control arm of the experiment,
+    reproducing the default zero-cost behaviour through the same code path.
+    """
+    if not spec:
+        return None
+    name, _, weight = spec.partition(":")
+    classes = {
+        "hazard": "reagent.search.cost.HazardCost",
+        "accessibility": "reagent.search.cost.AccessibilityCost",
+    }
+    if name not in classes:
+        raise click.ClickException(
+            f"Unknown --steer objective {name!r}. Choose from: {', '.join(sorted(classes))}."
+        )
+    config: dict = {"cost": classes[name]}
+    if weight:
+        try:
+            config["weight"] = float(weight)
+        except ValueError:
+            raise click.ClickException(f"--steer weight must be a number, got {weight!r}") from None
+    return config
+
+
 @main.command("build-catalogue")
 @click.argument("catalogue", type=click.Path(exists=True, dir_okay=False))
 @click.option("--output", type=click.Path(dir_okay=False), default=None,
@@ -109,6 +135,8 @@ def build_catalogue(catalogue: str, output: str | None, max_heavy_atoms: int | N
               help="Comma-separated expansion policies to run together (e.g. "
                    "'uspto,ringbreaker'). Their suggestions are combined, which is "
                    "not the same as swapping one policy for the other.")
+@click.option("--steer", default=None,
+              help="Let an objective steer the Retro* search instead of only ranking\nits results: 'hazard' or 'accessibility', optionally with a weight ('hazard:2.0').\nRequires --algorithm retrostar.")
 @click.option("--algorithm", default="mcts",
               type=click.Choice(["mcts", "retrostar", "dfpn", "breadth-first"]),
               help="Tree search over the same single-step model (default mcts).")
@@ -123,7 +151,7 @@ def build_catalogue(catalogue: str, output: str | None, max_heavy_atoms: int | N
 def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_model: str | None,
          rag: bool, permissive_stock: int | None, hashed_stock: bool,
          stock_cache: str | None, iterations: int | None,
-         time_limit: int | None, expansion: str, algorithm: str,
+         time_limit: int | None, expansion: str, steer: str | None, algorithm: str,
          cutoff_number: int | None, hybrid: bool,
          ghs: bool) -> None:
     """Plan retrosynthetic routes for a target SMILES."""
@@ -145,6 +173,7 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
         expansion=[k.strip() for k in expansion.split(",") if k.strip()],
         algorithm=algorithm,
         cutoff_number=cutoff_number,
+        molecule_cost=_steer_config(steer),
     )
 
     routes = backend.plan(canon, max_routes=max_routes)
@@ -347,6 +376,8 @@ def feedback(smiles: str, prefer: int) -> None:
               help="Comma-separated expansion policies to run together (e.g. "
                    "'uspto,ringbreaker'). Their suggestions are combined, which is "
                    "not the same as swapping one policy for the other.")
+@click.option("--steer", default=None,
+              help="Let an objective steer the Retro* search instead of only ranking\nits results: 'hazard' or 'accessibility', optionally with a weight ('hazard:2.0').\nRequires --algorithm retrostar.")
 @click.option("--algorithm", default="mcts",
               type=click.Choice(["mcts", "retrostar", "dfpn", "breadth-first"]),
               help="Tree search over the same single-step model (default mcts).")
@@ -360,7 +391,7 @@ def feedback(smiles: str, prefer: int) -> None:
                    "cores: each worker holds its own ~1.6 GB planner.")
 def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
              hashed_stock: bool, stock_cache: str | None, iterations: int | None,
-             time_limit: int | None, expansion: str, algorithm: str,
+             time_limit: int | None, expansion: str, steer: str | None, algorithm: str,
              cutoff_number: int | None, hard: bool, jobs: int) -> None:
     """Measure solve-rate and baseline-vs-REAGENT route quality."""
     from reagent.eval.harness import WEIGHT_PROFILES
@@ -383,6 +414,7 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
         expansion=[k.strip() for k in expansion.split(",") if k.strip()],
         algorithm=algorithm,
         cutoff_number=cutoff_number,
+        molecule_cost=_steer_config(steer),
     )
     targets = (HARD_TARGETS if hard else TARGETS)[:max_targets]
 
