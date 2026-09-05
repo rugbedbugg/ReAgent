@@ -155,6 +155,24 @@ reagent plan "CC(=O)Oc1ccccc1C(=O)O" --show-features
   Catalogues sell the amine hydrochloride; a route asks for the free amine, and
   without the split a shelf of purchasable salts reads as empty stock. Pass
   `--no-split-salts` to index only what the vendor literally lists.
+- `--steer hazard[:weight]` / `--steer accessibility[:weight]`: let an objective
+  influence the search rather than only rank its output. Retro* builds every
+  molecule node with `cost = molecule_cost(mol)`, and that cost feeds the value
+  function choosing what to expand, so a cost here changes which routes are
+  *found*. Everything else in this project scores routes the search already
+  returned -- it can pick the safest candidate on offer, but it cannot cause a
+  safer one to exist.
+
+  Only per-molecule objectives fit the hook, which sees one molecule with no
+  route or target context: structural-alert hazard and synthetic accessibility.
+  Atom economy, step count and buy-versus-build are route-level and stay in the
+  ranking layer. Retro* only; the other algorithms have no such hook.
+
+  Two caveats. A non-zero cost drops Retro*'s admissibility guarantee -- the
+  default `ZeroMoleculeCost` is trivially admissible and these are not -- so the
+  search is guided rather than provably optimal. And `--steer hazard:0` is the
+  control arm: same code path, zero cost, identical to not steering, which is
+  what makes an honest A/B possible.
 - `--ghs`: score safety from real GHS H-codes fetched from PubChem instead of the
   offline Brenk screen. Cached to `data/ghs_cache.json`; missing record or
   offline falls back to Brenk. Score is the worst hazard tier among reagents and
