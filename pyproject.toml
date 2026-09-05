@@ -12,7 +12,6 @@ dependencies = [
     "rdkit>=2023.9",
     "aizynthfinder>=4.4",
     "anthropic>=0.117",
-    "pymoo>=0.6",
     "pydantic>=2.0",
     "click>=8.0",
     "numpy>=1.26",

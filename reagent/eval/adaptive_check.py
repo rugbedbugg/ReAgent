@@ -32,8 +32,17 @@ from reagent.optimize.aggregate import DEFAULT_WEIGHTS, normalized_vectors, weig
 
 
 def _best_index(vectors: list[dict[str, float]], weights: dict[str, float]) -> int:
-    """Index of the highest-scoring candidate under one weight vector."""
-    return max(range(len(vectors)), key=lambda i: weighted_from_vector(vectors[i], weights))
+    """Index of the highest-scoring candidate under one weight vector.
+
+    Ties break on the vector's own contents rather than on its position, for the
+    same reason ranking does: ``max`` keeps the first of several equal scores, so
+    position would otherwise decide, and position is an accident of the order the
+    candidates arrived in.
+    """
+    def key(i: int) -> tuple:
+        return (-weighted_from_vector(vectors[i], weights), sorted(vectors[i].items()))
+
+    return min(range(len(vectors)), key=key)
 
 
 def regret(
@@ -93,8 +102,10 @@ def simulate(
             lr=lr,
         )
 
-    if not trace:
-        return {"rounds": 0, "learned_weights": weights}
+    # Two rounds are the minimum that can show a trend: with one, the second
+    # half is empty and there is nothing to compare the first against.
+    if len(trace) < 2:
+        return {"rounds": len(trace), "learned_weights": weights, "trace": trace}
 
     half = max(1, len(trace) // 2)
     first, second = trace[:half], trace[half:]

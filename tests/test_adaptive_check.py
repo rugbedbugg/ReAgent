@@ -67,3 +67,21 @@ def test_a_single_candidate_teaches_nothing():
 def test_tied_candidates_teach_nothing():
     result = simulate([[{"safety": 0.5}, {"safety": 0.5}]], hidden=SAFETY_LOVER)
     assert result["rounds"] == 0
+
+
+def test_the_simulation_does_not_depend_on_candidate_order():
+    """Same tie-break bug as ranking: max() keeps the first of equal scores."""
+    targets = [_candidates(i) for i in range(12)]
+    shuffled = [list(reversed(c)) for c in targets]
+
+    assert simulate(targets, hidden=SAFETY_LOVER)["learned_weights"] == \
+           simulate(shuffled, hidden=SAFETY_LOVER)["learned_weights"]
+
+
+def test_a_single_learning_round_reports_without_crashing():
+    """Found by the order test: trace[1:] is empty at one round, and mean() raised."""
+    one = [[{"safety": 0.9, "cost": 0.1}, {"safety": 0.1, "cost": 0.9}]]
+    result = simulate(one, hidden=SAFETY_LOVER)
+
+    assert result["rounds"] == 1
+    assert "regret_second_half" not in result
