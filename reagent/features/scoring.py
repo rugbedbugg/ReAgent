@@ -11,9 +11,35 @@ from __future__ import annotations
 from reagent.core.models import Route
 from reagent.features.extract import compute_features
 
+_SEVERITY_CAP = 3
+
 
 def _clamp(x: float) -> float:
     return max(0.0, min(1.0, x))
+
+
+def _brenk_safety(safety: dict) -> float:
+    """Score the structural-alert screen from intensive facts only.
+
+    The earlier form subtracted 0.1 per *distinct* hazard found anywhere in the
+    route. That set grows with the number of molecules, so a longer route scored
+    worse for being longer even when every compound it handled was equally
+    benign -- measured on sertraline, the real three-step route scored 0.300
+    against 0.400 for the one-step route that buys the penultimate intermediate,
+    despite both handling methyl iodide and having identical hazard density.
+    Safety became a proxy for shortness, which ``efficiency`` already scores, and
+    it rewarded outsourcing the chemistry rather than doing it.
+
+    So the score now depends only on how bad the worst single compound is and
+    what fraction of the route is hazardous. Neither term moves when steps are
+    added at constant hazard. The endpoints of the old rubric are kept: a clean
+    route is categorically 1.0, any hazard caps the score at 0.6, and the floor
+    is 0.1.
+    """
+    if not safety["max_molecule_hazards"]:
+        return 1.0
+    severity = min(safety["max_molecule_hazards"], _SEVERITY_CAP) / _SEVERITY_CAP
+    return _clamp(0.6 - 0.35 * severity - 0.15 * safety["hazard_density"])
 
 
 def deterministic_scores(route: Route) -> dict[str, float]:
@@ -33,8 +59,7 @@ def deterministic_scores(route: Route) -> dict[str, float]:
     if "ghs_safety" in f["safety"]:  # real GHS data present, prefer it
         safety = _clamp(f["safety"]["ghs_safety"])
     else:
-        n_hazards = len(f["safety"]["distinct_hazards"])
-        safety = 1.0 if n_hazards == 0 else _clamp(0.5 - 0.1 * (n_hazards - 1))
+        safety = _brenk_safety(f["safety"])
 
     penalty = 0.2 if f["sustainability"]["pmi_proxy"] > 3 else 0.0
     sustainability = _clamp(f["sustainability"]["mean_step_atom_economy"] - penalty)

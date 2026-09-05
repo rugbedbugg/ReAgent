@@ -80,3 +80,61 @@ def test_largest_leaf_fraction_handles_a_route_with_no_leaves():
     from reagent.eval.harness import largest_leaf_fraction
 
     assert largest_leaf_fraction(Route(target="CCO")) == 0.0
+
+
+def test_safety_does_not_fall_just_because_the_route_is_longer():
+    """The defect this formula exists to fix.
+
+    Both routes make sertraline and both handle methyl iodide, the one genuinely
+    nasty reagent; their hazard densities are identical (1/3 vs 2/6). The earlier
+    formula subtracted 0.1 per distinct hazard found anywhere in the route, so
+    the real three-step synthesis scored 0.300 against 0.400 for the one-step
+    route that just buys the penultimate intermediate. Safety measured length.
+    """
+    from reagent.features.scoring import deterministic_scores
+
+    sert = "CNC1CCC(c2ccc(Cl)c(Cl)c2)c2ccccc21"
+    penultimate = "NC1CCC(c2ccc(Cl)c(Cl)c2)c2ccccc21"
+    alkene = "NC1CC=C(c2ccc(Cl)c(Cl)c2)c2ccccc21"
+
+    def route(steps, leaves):
+        return Route(
+            target=sert,
+            reactions=[
+                Reaction(product=p, precursors=pr,
+                         metadata={"policy_probability": 0.5, "library_occurence": 50})
+                for p, pr in steps
+            ],
+            leaves=[Molecule(smiles=s, in_stock=True) for s in leaves],
+            solved=True,
+        )
+
+    bought = route([(sert, ["CI", penultimate])], ["CI", penultimate])
+    built = route(
+        [
+            (sert, ["CI", penultimate]),
+            (penultimate, [alkene]),
+            (alkene, ["NC1CCC(=O)c2ccccc21", "Clc1ccc(Br)cc1Cl"]),
+        ],
+        ["CI", "NC1CCC(=O)c2ccccc21", "Clc1ccc(Br)cc1Cl"],
+    )
+
+    assert deterministic_scores(built)["safety"] == deterministic_scores(bought)["safety"]
+
+
+def test_safety_still_falls_when_a_worse_reagent_is_handled():
+    """Intensive does not mean insensitive: severity must still bite."""
+    from reagent.features.scoring import deterministic_scores
+
+    mild = _route("CCN", ["CCO", "N"], hazardous=False, prob=0.8)
+    nasty = _route("CCN", ["CC(=O)Cl", "N"], hazardous=True, prob=0.8)
+    assert deterministic_scores(nasty)["safety"] < deterministic_scores(mild)["safety"]
+
+
+def test_a_denser_route_scores_worse_than_a_sparser_one():
+    """At equal worst-molecule severity, more hazardous molecules is worse."""
+    from reagent.features.scoring import deterministic_scores
+
+    sparse = _route("CCN", ["CC(=O)Cl", "CCO", "N"], hazardous=True, prob=0.8)
+    dense = _route("CCN", ["CC(=O)Cl", "CCC(=O)Cl"], hazardous=True, prob=0.8)
+    assert deterministic_scores(dense)["safety"] < deterministic_scores(sparse)["safety"]

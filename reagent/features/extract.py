@@ -98,9 +98,15 @@ def safety(route: Route) -> dict:
     distinct = sorted({g for groups in hits.values() for g in groups})
     return {
         "hazard_hits": hits,
+        "molecules_examined": len(molecules),
         "molecules_with_hazards": len(hits),
         "distinct_hazards": distinct,
         "hazard_count": sum(len(g) for g in hits.values()),
+        # Intensive facts: what fraction of the molecules handled carry an alert,
+        # and how bad the worst single one is. Both are independent of how many
+        # steps the route has, unlike the raw counts above, which grow with it.
+        "hazard_density": len(hits) / len(molecules) if molecules else 0.0,
+        "max_molecule_hazards": max((len(g) for g in hits.values()), default=0),
         "is_screen": True,
     }
 

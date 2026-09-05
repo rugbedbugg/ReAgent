@@ -296,6 +296,36 @@ solve-rate, route length and pick counts exactly, and safety to three decimals,
 but sustainability moved 0.914 -> 0.895 and cost 0.593 -> 0.602 at the baseline.
 Treat the third decimal on sustainability and cost as noise.
 
+### Safety is scored per hazard handled, not per step taken
+
+The structural-alert score used to subtract 0.1 for every *distinct* hazard
+found anywhere in the route. That set grows with the number of molecules, so a
+longer route scored worse for being longer. Measured on sertraline, where both
+candidates handle methyl iodide and have identical hazard density (1 of 3
+molecules against 2 of 6):
+
+| | old | new |
+|---|---|---|
+| buy the penultimate intermediate, 1 step | 0.400 | 0.317 |
+| build it from building blocks, 3 steps | 0.300 | 0.317 |
+
+Two consequences, both bad. Safety duplicated `efficiency`, which already scores
+step count. And weighting safety up actively selected routes that buy the
+molecule rather than make it -- on an uncapped catalogue the safety-tilted
+profile chose *more* such routes than the feasibility-led one (6 vs 4 of 10) and
+posted the project's best safety figure, 0.900, doing it.
+
+The score now depends only on intensive facts: how bad the worst single compound
+handled is (`max_molecule_hazards`, saturating at three alerts) and what
+fraction of the route's molecules carry an alert (`hazard_density`). Neither
+moves when steps are added at constant hazard. The old rubric's endpoints are
+kept -- a clean route is categorically 1.0, any hazard caps the score at 0.6,
+and the floor is 0.1 -- so scores remain comparable in magnitude to those above.
+
+Cumulative exposure is deliberately not modelled: a ten-step route really does
+involve more handling than a one-step route, but that is what `efficiency`
+measures, and folding it into safety is what caused the defect.
+
 ### Aggregation
 
 Objectives are min-max normalized across the candidate routes before the
@@ -402,14 +432,11 @@ and adaptation layer on top.
   targets: ZINC unioned with eMolecules capped at 14 heavy atoms takes the hard
   set from 0.70 to 1.00 solved, with routes that get *longer* (1.71 to 2.00
   steps) rather than shorter. See the harder-target-set results.
-- **Safety rewards not doing chemistry.** The score is driven by the reagents a
-  route uses, so a route that buys an advanced intermediate and runs one final
-  step scores near-perfectly on safety by having almost nothing left to be
-  hazardous. Measured: on an uncapped catalogue the safety-tilted profile chose
-  *more* such routes than the feasibility-led one (6 vs 4 of 10) and posted the
-  project's best safety figure doing it. Capping the catalogue at building-block
-  size avoids the trap but does not fix the objective; weighting hazard by step
-  count, or scoring the target's own construction, would.
+- **Safety is a structural-alert screen, so severity is coarse.** One Brenk
+  alert on a molecule counts the same whether the group is mildly reactive or
+  acutely toxic; `--ghs` is the real severity data. The screen no longer
+  penalizes length -- see the scoring note below -- but it still cannot tell a
+  nuisance alert from a serious one offline.
 - **Greenness is atom economy only.** No solvent-driven PMI or E-factor without
   reaction-condition data.
 - **Cost is a proxy** from synthetic accessibility, not supplier prices.
