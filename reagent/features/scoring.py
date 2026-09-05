@@ -18,6 +18,21 @@ def _clamp(x: float) -> float:
     return max(0.0, min(1.0, x))
 
 
+# A route's largest purchased fragment, as a fraction of the target. Below the
+# floor the route is buying genuine building blocks and scores full marks; above
+# the ceiling it is buying the answer. A two-component coupling of similar
+# halves sits at ~0.5, which is why the floor is there rather than at zero.
+_BUILD_FLOOR = 0.5
+_BUILD_CEILING = 0.9
+
+
+def _construction(features: dict) -> float:
+    fraction = features["construction"]["largest_leaf_fraction"]
+    if fraction <= 0.0:
+        return 0.0  # no leaves: nothing was built and nothing was bought
+    return _clamp((_BUILD_CEILING - fraction) / (_BUILD_CEILING - _BUILD_FLOOR))
+
+
 def _brenk_safety(safety: dict) -> float:
     """Score the structural-alert screen from intensive facts only.
 
@@ -64,6 +79,8 @@ def deterministic_scores(route: Route) -> dict[str, float]:
     penalty = 0.2 if f["sustainability"]["pmi_proxy"] > 3 else 0.0
     sustainability = _clamp(f["sustainability"]["mean_step_atom_economy"] - penalty)
 
+    construction = _construction(f)
+
     steps = f["efficiency"]["num_steps"]
     convergent_bonus = 0.1 if f["efficiency"]["convergence"] > 1.0 else 0.0
     efficiency = _clamp(0.95 - 0.15 * max(0, steps - 1) + convergent_bonus)
@@ -75,4 +92,5 @@ def deterministic_scores(route: Route) -> dict[str, float]:
         "safety": safety,
         "sustainability": sustainability,
         "efficiency": efficiency,
+        "construction": construction,
     }

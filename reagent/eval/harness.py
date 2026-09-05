@@ -31,11 +31,25 @@ WEIGHT_PROFILES: dict[str, dict[str, float]] = {
     "feasibility-led": dict(DEFAULT_WEIGHTS),
     "safety-tilted": {
         "feasibility": 0.20,
-        "availability": 0.15,
+        "availability": 0.05,
         "cost": 0.15,
         "safety": 0.28,
+        "construction": 0.10,
         "sustainability": 0.14,
         "efficiency": 0.08,
+    },
+    # Genuine building-block routes to one target differ little in hazard, so
+    # tilting safety moves the pick less than it looks like it should. How much
+    # of the molecule a route builds *does* vary across candidates, so this is
+    # the profile that shows the selection layer expressing a preference.
+    "build-it-yourself": {
+        "feasibility": 0.20,
+        "availability": 0.05,
+        "cost": 0.10,
+        "safety": 0.10,
+        "construction": 0.30,
+        "sustainability": 0.15,
+        "efficiency": 0.10,
     },
 }
 
@@ -59,26 +73,18 @@ ADVANCED_LEAF = 0.8
 def largest_leaf_fraction(route: Route) -> float:
     """Heavy atoms in the route's biggest leaf, over heavy atoms in the target.
 
-    Guards the one way a bigger catalogue can fake a better result. Solve-rate
-    counts a target as solved when every leaf is purchasable, and says nothing
-    about how much of the molecule was bought rather than made -- so adding
-    advanced intermediates to the stock drives solve-rate up while the routes
-    collapse to "order the penultimate compound and do the last step". A
-    fraction near 1.0 is that degenerate case; a real building-block route sits
-    well below it.
+    Reported alongside solve-rate because solve-rate cannot see the difference:
+    it counts a target as solved when every leaf is purchasable, and says
+    nothing about how much of the molecule was bought rather than made. This is
+    the same number the ``construction`` objective scores; it is surfaced here
+    so the degenerate case is visible in the evaluation output whether or not
+    anyone weights that objective.
     """
-    from reagent.core.chem import mol_from_smiles
+    from reagent.features.extract import compute_features
 
-    target = mol_from_smiles(route.target)
-    if target is None or not target.GetNumHeavyAtoms() or not route.leaves:
-        return 0.0
-
-    sizes = [
-        leaf.GetNumHeavyAtoms()
-        for leaf in (mol_from_smiles(m.smiles) for m in route.leaves)
-        if leaf is not None
-    ]
-    return max(sizes) / target.GetNumHeavyAtoms() if sizes else 0.0
+    if not route.features:
+        compute_features(route)
+    return route.features["construction"]["largest_leaf_fraction"]
 
 
 def evaluate(

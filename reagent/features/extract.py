@@ -171,6 +171,33 @@ def feasibility(route: Route) -> dict:
     }
 
 
+def construction(route: Route) -> dict:
+    """How much of the target the route builds, versus how much it buys.
+
+    Every other objective rewards the degenerate route. Ordering the penultimate
+    intermediate and running one final step is short, cheap, high-probability,
+    and handles almost no reagents, so it wins on efficiency, cost, feasibility
+    and safety at once -- measured on sertraline, where the catalogue sells the
+    ketimine. Nothing else in the objective set can see that the "synthesis" is
+    one step of someone else's work, which is why this is scored explicitly
+    rather than left to solve-rate, which cannot tell the two apart.
+
+    The signal is the largest leaf: the most advanced thing the route purchases,
+    as a fraction of the target. A convergent coupling of two similar halves
+    sits near 0.5; buying the penultimate compound sits near 1.0.
+    """
+    target_size = d.heavy_atoms(route.target)
+    leaf_sizes = [d.heavy_atoms(m.smiles) for m in route.leaves]
+    leaf_sizes = [n for n in leaf_sizes if n > 0]
+    largest = max(leaf_sizes, default=0)
+    return {
+        "target_heavy_atoms": target_size,
+        "largest_leaf_heavy_atoms": largest,
+        "largest_leaf_fraction": (largest / target_size) if target_size else 0.0,
+        "leaf_heavy_atoms": sorted(leaf_sizes, reverse=True),
+    }
+
+
 OBJECTIVES = {
     "efficiency": efficiency,
     "availability": availability,
@@ -178,6 +205,7 @@ OBJECTIVES = {
     "safety": safety,
     "sustainability": sustainability,
     "feasibility": feasibility,
+    "construction": construction,
 }
 
 

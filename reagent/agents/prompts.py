@@ -90,6 +90,19 @@ OBJECTIVE_BRIEFS: dict[str, str] = {
         "Rubric: 1-2 steps -> ~0.9; each extra step lowers the score by ~0.15; "
         "convergence > 1.0 adds up to 0.1. Cite num_steps and convergence."
     ),
+    "construction": (
+        "Objective: how much of the target the route builds rather than buys. A "
+        "route that orders the penultimate compound and runs one final step is not "
+        "much of a synthesis, however well it scores elsewhere.\n"
+        "Decisive fact: largest_leaf_fraction, the biggest purchased fragment as a "
+        "fraction of the target. A convergent coupling of two similar halves sits "
+        "near 0.5; buying the answer sits near 1.0.\n"
+        "Rubric (use these EXACT values): score = (0.9 - largest_leaf_fraction) / 0.4, "
+        "clamped to 0..1. Examples: {largest_leaf_fraction:0.50} -> 1.0; "
+        "{largest_leaf_fraction:0.60} -> 0.75; {largest_leaf_fraction:0.70} -> 0.5; "
+        "{largest_leaf_fraction:0.95} -> 0.0. Cite largest_leaf_fraction and "
+        "largest_leaf_heavy_atoms against target_heavy_atoms."
+    ),
 }
 
 

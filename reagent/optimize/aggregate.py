@@ -25,11 +25,20 @@ from reagent.core.models import Route
 
 # Sums to 1.0. Feasibility and availability lead: a route that will not work or
 # cannot be sourced is worthless regardless of how green or cheap it looks.
+# ``construction`` carries real weight despite being last-added: every other
+# objective rewards buying an advanced intermediate, so without it the optimizer
+# has no reason to prefer a synthesis over a purchase.
+# ``construction`` is funded entirely out of ``availability``, which nominally
+# held 0.25 but decides nothing: every *solved* route has all leaves in stock by
+# definition, so availability is constant across the candidate set and the
+# normalizer drops it. Taking weight from any other objective changes rankings
+# that were measured and are correct -- taking it from here does not.
 DEFAULT_WEIGHTS: dict[str, float] = {
     "feasibility": 0.30,
-    "availability": 0.25,
+    "availability": 0.10,
     "cost": 0.15,
     "safety": 0.15,
+    "construction": 0.15,
     "sustainability": 0.08,
     "efficiency": 0.07,
 }

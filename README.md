@@ -353,6 +353,36 @@ Cumulative exposure is deliberately not modelled: a ten-step route really does
 involve more handling than a one-step route, but that is what `efficiency`
 measures, and folding it into safety is what caused the defect.
 
+### Buy-vs-build is scored, not assumed
+
+Every other objective rewards the degenerate route. Ordering the penultimate
+intermediate and running one final step is short, cheap, high-probability, and
+handles almost no reagents -- so it wins efficiency, cost, feasibility and
+safety at once. Nothing in the objective set could see that the "synthesis" was
+one step of someone else's work, and solve-rate cannot tell the two apart.
+
+`construction` scores the largest leaf as a fraction of the target: the most
+advanced thing the route buys. A convergent coupling of two similar halves sits
+near 0.5, which is the best two components can do; buying the penultimate
+compound sits near 1.0. The score ramps linearly from 1.0 at a fraction of 0.5
+to 0.0 at 0.9. Sertraline's two candidate routes: buying the ketimine (19 of 20
+heavy atoms) scores 0.0, building it from 1-aminotetralone and
+1-bromo-3,4-dichlorobenzene scores 0.75.
+
+Its 0.15 weight comes entirely out of `availability`, which nominally held 0.25
+and decides nothing: every *solved* route has all its leaves in stock by
+definition, so availability is constant across the candidate set and the
+normalizer drops it. Taking weight from any other objective would have changed
+rankings that were measured and are correct -- an earlier attempt funded it from
+`safety` and `feasibility`, and the existing test that the safer route wins a
+near-tie caught the regression.
+
+A third weight profile, `build-it-yourself`, tilts to 0.30 on it. Genuine
+building-block routes to one target differ little in hazard, so tilting safety
+moves the pick less than it appears to; how much of the molecule a route builds
+does vary across candidates, so this is where the selection layer has something
+real to express a preference over.
+
 ### Aggregation
 
 Objectives are min-max normalized across the candidate routes before the
@@ -407,7 +437,7 @@ routes). `--hybrid` removes that drift.
 | `reagent/singlestep` | Single-step retrosynthesis backend adapter (AiZynthFinder) | implemented |
 | `reagent/features` | Deterministic chemistry facts (incl. Brenk alerts, SA score) feeding the agents | implemented |
 | `reagent/agents` | Orchestrator, specialist evaluators, rationale, LLM adapters (Anthropic, Ollama) | implemented |
-| `reagent/optimize` | Weighted-sum and Pareto route aggregation | implemented |
+| `reagent/optimize` | Weighted-sum and Pareto route aggregation over seven objectives | implemented |
 | `reagent/rag` | Reaction-precedent fingerprints, index, retrieval | implemented |
 | `reagent/adaptive` | Episodic memory and feedback-driven weight tuning | implemented |
 | `reagent/eval` | Solve-rate, deterministic scoring, baseline-vs-ReAgent harness | implemented |

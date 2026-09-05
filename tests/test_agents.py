@@ -47,7 +47,7 @@ def test_single_evaluator_with_mock():
 def test_orchestrator_full_team():
     orch = Orchestrator(client=MockClient(score=0.6))
     route = orch.assess(_route())
-    assert len(route.assessments) == 6
+    assert len(route.assessments) == 7
     assert {a.objective for a in route.assessments} == set(build_team(MockClient()).keys())
     assert all(a.score == 0.6 for a in route.assessments)
     # features were auto-computed by the orchestrator

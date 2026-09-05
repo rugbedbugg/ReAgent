@@ -37,7 +37,7 @@ def test_check_agents_reports_metrics():
         orchestrator=orch,
         routes_per=1,
     )
-    assert result["assessments"] == 6  # one per objective
+    assert result["assessments"] == 7  # one per objective
     assert result["parse_failure_rate"] == 0.0
     assert "safety" in result["objective_mae"]
     # safety agent returned 1.0 and the clean route's deterministic safety is 1.0

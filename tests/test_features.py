@@ -58,6 +58,7 @@ def test_compute_features_blocks():
         "safety",
         "sustainability",
         "feasibility",
+        "construction",
     }
 
 
