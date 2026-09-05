@@ -569,6 +569,31 @@ cost-loving. That matters: a loop that drifts toward one objective whatever it
 is told would look like learning under a single preference, and only fails
 visibly when the opposite preference has to move the weights the other way.
 
+Measured over 20 targets and 209 real candidate routes:
+
+| hidden preference | regret | agreement | learned safety | learned cost |
+|---|---|---|---|---|
+| safety-loving | 0.077 -> 0.006 | 70% -> 80% | 0.672 | 0.155 |
+| cost-loving | 0.174 -> 0.023 | 60% -> 70% | 0.335 | 0.417 |
+
+Both start from safety 0.150 and cost 0.150. The loop learns: regret falls about
+90%, each user's own objective ends on top, and the learned weights pick that
+user's preferred route on 17 of 20 targets for safety and 13 of 20 for cost.
+
+It is not a clean recovery, though. The cost-loving user still lifts safety from
+0.150 to 0.335, because safety has the widest spread in real candidate sets and
+routes preferred on cost usually differ in safety too, so the update credits it.
+Cost is recovered less well than safety for the same reason -- less spread to
+learn from. Read the learned vector as a direction, not as the user's true
+preference.
+
+The striking part is what happens to the objectives nobody weighted: feasibility
+falls from 0.300 to 0.029 and 0.112, and availability to ~0.00, under *both*
+users. The feedback loop rediscovers on its own what the spread measurement
+found separately -- those two objectives barely discriminate between candidates.
+Two unrelated methods agreeing that feasibility's nominal 0.30 buys little is
+stronger evidence than either on its own.
+
 ## Package layout
 
 | Module | Responsibility | Status |
