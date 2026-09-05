@@ -8,7 +8,7 @@ other route beats on every objective at once. All objectives are maximized
 from __future__ import annotations
 
 from reagent.core.models import Route
-from reagent.optimize.aggregate import normalized_vectors, score_vector
+from reagent.optimize.aggregate import normalized_vectors, route_signature, score_vector
 
 
 def _dominates(a: dict[str, float], b: dict[str, float], objectives: list[str]) -> bool:
@@ -75,4 +75,4 @@ def compromise_route(routes: list[Route]) -> Route | None:
         # them; order decides, as it does for a lone route.
         return sum((1.0 - value) ** 2 for value in vector.values()) if vector else 0.0
 
-    return min(front, key=distance_to_ideal)
+    return min(front, key=lambda r: (distance_to_ideal(r), route_signature(r)))

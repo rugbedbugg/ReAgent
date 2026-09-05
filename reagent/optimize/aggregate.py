@@ -44,6 +44,28 @@ DEFAULT_WEIGHTS: dict[str, float] = {
 }
 
 
+def route_signature(route: Route) -> tuple:
+    """A stable identity for a route, used to break scoring ties.
+
+    The search returns the same routes in a different order from run to run --
+    measured on warfarin: identical route sets, three different orderings across
+    three runs. Both ``max`` and Python's stable ``sorted`` keep the first of
+    several equal scores, so ties were being broken by position, and position
+    was not reproducible. That is what made pick counts move by one between
+    otherwise identical runs.
+
+    Ordering on this after the score makes the choice depend on the routes
+    themselves rather than on the order they arrived in. Leaves first (what you
+    buy), then step count, then the reaction SMILES, so two genuinely distinct
+    routes never compare equal.
+    """
+    return (
+        tuple(sorted(m.smiles for m in route.leaves)),
+        route.num_steps,
+        tuple(sorted(r.rsmi or r.product for r in route.reactions)),
+    )
+
+
 def score_vector(route: Route) -> dict[str, float]:
     return {a.objective: a.score for a in route.assessments}
 
@@ -142,4 +164,6 @@ def rank_routes(routes: list[Route], weights: dict[str, float] | None = None) ->
             "vector": raw,
             "normalized": norm,
         }
-    return sorted(routes, key=lambda r: r.scores["weighted"], reverse=True)
+    # Descending score, then ascending signature: a stable order that does not
+    # depend on the order the search happened to return the routes in.
+    return sorted(routes, key=lambda r: (-r.scores["weighted"], route_signature(r)))

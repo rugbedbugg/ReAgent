@@ -21,6 +21,7 @@ from reagent.features.scoring import deterministic_scores
 from reagent.optimize.aggregate import (
     DEFAULT_WEIGHTS,
     normalized_vectors,
+    route_signature,
     weighted_from_vector,
 )
 from reagent.optimize.pareto import compromise_route
@@ -63,8 +64,15 @@ def _select(routes: list[Route], weights: dict[str, float]) -> tuple[Route, Rout
     """
     vectors = [deterministic_scores(r) for r in routes]
     normalized = normalized_vectors(vectors)
-    baseline = max(range(len(routes)), key=lambda i: vectors[i]["feasibility"])
-    reagent = max(range(len(routes)), key=lambda i: weighted_from_vector(normalized[i], weights))
+
+    # Ties are common here and the search does not return routes in a stable
+    # order, so ``max`` alone would pick by arrival position. The signature
+    # makes the choice a property of the routes instead.
+    def best(score) -> int:
+        return min(range(len(routes)), key=lambda i: (-score(i), route_signature(routes[i])))
+
+    baseline = best(lambda i: vectors[i]["feasibility"])
+    reagent = best(lambda i: weighted_from_vector(normalized[i], weights))
     return routes[baseline], routes[reagent]
 
 

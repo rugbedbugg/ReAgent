@@ -188,3 +188,57 @@ def test_a_wide_spread_still_uses_its_own_range():
     low, high = normalized_vectors([{"safety": 0.20}, {"safety": 0.80}])
     assert low["safety"] == 0.0
     assert high["safety"] == 1.0
+
+
+def _tied(target, leaves, scores):
+    """A route whose score ties with another but whose identity differs."""
+    from reagent.core.models import Assessment, Molecule
+
+    return Route(
+        target=target,
+        solved=True,
+        leaves=[Molecule(smiles=s, in_stock=True) for s in leaves],
+        assessments=[Assessment(objective=o, score=v, rationale="") for o, v in scores.items()],
+    )
+
+
+def test_ranking_does_not_depend_on_the_order_routes_arrive_in():
+    """The measured bug: same routes, different order, different pick.
+
+    Warfarin planned three times returned identical route sets in three
+    different orders. ``sorted`` is stable and ``max`` keeps the first of equal
+    scores, so ties were broken by arrival position, which is not reproducible.
+    """
+    tie = {"safety": 0.5, "cost": 0.5, "feasibility": 0.5}
+    a = _tied("T", ["CCO"], tie)
+    b = _tied("T", ["CCN"], tie)
+    c = _tied("T", ["CCC"], tie)
+
+    assert [r.leaves[0].smiles for r in rank_routes([a, b, c])] == \
+           [r.leaves[0].smiles for r in rank_routes([c, a, b])] == \
+           [r.leaves[0].smiles for r in rank_routes([b, c, a])]
+
+
+def test_a_real_score_difference_still_wins_over_the_tiebreak():
+    """The tiebreak must only decide genuine ties, never override a score."""
+    worse = _tied("T", ["AAA"], {"safety": 0.9, "cost": 0.9})   # sorts first by signature
+    better = _tied("T", ["ZZZ"], {"safety": 1.0, "cost": 1.0})  # sorts last by signature
+
+    assert rank_routes([worse, better])[0] is better
+
+
+def test_the_compromise_rule_is_order_independent_too():
+    from reagent.optimize.pareto import compromise_route
+
+    tie = {"safety": 0.5, "cost": 0.5}
+    a, b, c = _tied("T", ["CCO"], tie), _tied("T", ["CCN"], tie), _tied("T", ["CCC"], tie)
+
+    picks = {compromise_route(order).leaves[0].smiles
+             for order in ([a, b, c], [c, b, a], [b, a, c])}
+    assert len(picks) == 1
+
+
+def test_the_signature_distinguishes_routes_that_score_alike():
+    from reagent.optimize.aggregate import route_signature
+
+    assert route_signature(_tied("T", ["CCO"], {})) != route_signature(_tied("T", ["CCN"], {}))

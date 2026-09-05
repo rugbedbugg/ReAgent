@@ -320,11 +320,27 @@ profiles. It does *not* give an identical pick count for build-it-yourself: that
 came out 7, 6, 7. Read it as "6-7 of 10", and treat a one-target difference in
 any pick count as within noise.
 
-The cause is the search, not the parallelism -- two serial runs differ as much
-as serial differs from parallel. Most likely multi-threaded ONNX inference
-producing tiny floating-point differences that reorder near-tied templates and
-shift the candidate set. Pinning inference to one thread would make runs
-reproducible at a cost in speed; it has not been done.
+The cause is not the parallelism -- two serial runs differ as much as serial
+differs from parallel.
+
+Nor is it multi-threaded inference, which was the first guess and is wrong.
+Planning warfarin four times in separate processes -- twice at AiZynthFinder's
+default `intra_op_num_threads`, twice pinned to one -- returned byte-identical
+solved-route sets every time. The search is reproducible; ONNX threading does
+not perturb it, and pinning threads would fix nothing.
+
+The variance was candidate *ordering*, and it is now fixed. Planning warfarin
+three more times returned the same six routes in three different orders. Both
+`max` and Python's stable `sorted` keep the first of several equal scores, so
+ties were broken by arrival position -- which is not reproducible, while the
+route set is.
+
+Every selection path now breaks ties on `route_signature` (sorted leaves, step
+count, reaction SMILES) rather than on position, so the pick is a property of
+the routes rather than of the order the search happened to return them in. The
+figures in the tables above were measured before this change; they are not
+invalidated by it, but a pick count that moved by one between runs should now
+hold still.
 
 Three things worth taking from this.
 
@@ -616,6 +632,20 @@ users. The feedback loop rediscovers on its own what the spread measurement
 found separately -- those two objectives barely discriminate between candidates.
 Two unrelated methods agreeing that feasibility's nominal 0.30 buys little is
 stronger evidence than either on its own.
+
+## Releases
+
+`.github/workflows/ci.yml` runs Ruff and pytest on 3.10 and 3.11 for every push
+to `main` and every pull request. `.github/workflows/release.yml` runs on a
+`v*` tag: it repeats the full lint-and-test matrix, checks the tag against the
+version in `pyproject.toml` (a release whose artifact reports a different
+version than its tag is worse than no release), builds the sdist and wheel,
+runs `twine check`, and publishes the release with them attached.
+
+A tag therefore publishes. The guard against publishing something wrong is the
+`verify` job, which gates the build: lint and tests must pass on both supported
+interpreters, and the tag must match the packaged version, before any artifact
+is produced.
 
 ## Package layout
 
