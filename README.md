@@ -173,6 +173,29 @@ reagent plan "CC(=O)Oc1ccccc1C(=O)O" --show-features
   search is guided rather than provably optimal. And `--steer hazard:0` is the
   control arm: same code path, zero cost, identical to not steering, which is
   what makes an honest A/B possible.
+
+  **Measured, it does not pay.** Three arms on the hard set at <=14, everything
+  but the steering weight held fixed:
+
+  | arm | solve-rate | length | baseline safety | REAGENT safety | leaf | degenerate |
+  |---|---|---|---|---|---|---|
+  | `hazard:0` (control) | 1.00 | 2.00 | 0.529 | 0.628 | 0.64 | 1 |
+  | `hazard:1.0` | 1.00 | 2.00 | 0.545 | 0.682 | 0.64 | 1 |
+  | `hazard:2.0` | 1.00 | 2.00 | 0.545 | 0.609 | 0.64 | 1 |
+
+  The hook works: unsteered, REAGENT safety is 0.628 in four independent runs
+  and baseline safety 0.529-0.532, so the steered figures are genuinely
+  different rather than noise. But the effect saturates at once -- baseline
+  safety is *identical* at both weights -- and its size, +0.013, sits below the
+  0.02 threshold set before running. Worse, the effect on the selected route is
+  not directionally controlled: steering harder moved it from 0.682 to 0.609.
+
+  So hazard cost perturbs the search into a slightly different region without
+  steering it toward safety. It costs nothing either -- solve-rate, route
+  length, leaf fraction and degenerate-route count are identical across all
+  three arms -- so this is a dead end rather than a trade-off. Whether a
+  route-level objective would fare better is untested; the hook only sees one
+  molecule at a time.
 - `--ghs`: score safety from real GHS H-codes fetched from PubChem instead of the
   offline Brenk screen. Cached to `data/ghs_cache.json`; missing record or
   offline falls back to Brenk. Score is the worst hazard tier among reagents and
