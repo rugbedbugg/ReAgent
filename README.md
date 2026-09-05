@@ -133,12 +133,25 @@ reagent plan "CC(=O)Oc1ccccc1C(=O)O" --show-features
 - `--stock-cache PATH`: plan against a different hashed catalogue than ZINC
   (implies `--hashed-stock`). Build one with `reagent build-catalogue`:
 
+  eMolecules publishes a free monthly dump needing no account, which is what
+  every catalogue figure here was measured against:
+
   ```sh
-  reagent build-catalogue data/catalogues/vendor.smi.gz \
-    --max-heavy-atoms 17 --merge-with data/zinc_stock.hashes.npy \
-    --output data/catalogues/zinc_plus_vendor.hashes.npy
-  reagent evaluate --hard --stock-cache data/catalogues/zinc_plus_vendor.hashes.npy
+  mkdir -p data/catalogues
+  curl -L -o data/catalogues/emolecules.smi.gz \
+    https://downloads.emolecules.com/free/2026-09-01/version.smi.gz   # 350 MB, 33.6M entries
+
+  # ~25 min on 8 cores; InChI keys are the whole cost. 14, not 20 -- see below.
+  reagent build-catalogue data/catalogues/emolecules.smi.gz \
+    --max-heavy-atoms 14 --merge-with data/zinc_stock.hashes.npy \
+    --output data/catalogues/zinc_plus_emol14.hashes.npy
+
+  reagent evaluate --hard --algorithm retrostar --iterations 500 --time-limit 3600 \
+    --stock-cache data/catalogues/zinc_plus_emol14.hashes.npy
   ```
+
+  Substitute a later dated directory for a fresher dump; Enamine's SDF downloads
+  work the same way but need an account.
 
   Reads `.smi`/`.sdf`, plain or gzipped, so an Enamine or eMolecules download
   goes straight in. Two decisions are worth understanding before trusting the
