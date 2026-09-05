@@ -254,20 +254,30 @@ at two different building-block sizes:
 | new keys over ZINC | -- | +4,970,253 (+28.5%) | +1,151,516 (+6.6%) |
 | solve-rate | 0.70 | 1.00 | 1.00 |
 | mean route length | 1.71 | 1.10 | 2.00 |
-| mean largest-leaf fraction | 0.60 | 0.76 / 0.80 | 0.64 |
-| routes buying an advanced intermediate | 0 of 7 | 4 and 6 of 10 | 1 of 10 |
-| picks changed (feasibility-led / safety-tilted) | 3 / 3 | 1 / 4 | 5 / 6 |
-| REAGENT safety | 0.600 / 0.600 | 0.730 / 0.900 | 0.590 / 0.660 |
+| mean largest-leaf fraction | 0.60 | 0.78 / 0.80 | 0.64 |
+| routes buying an advanced intermediate | 0 of 7 | 5 and 6 of 10 | 1 of 10 |
+| picks changed (feasibility-led / safety-tilted) | 3 / 3 | 2 / 4 | 6 / 6 |
+| REAGENT safety | 0.600 / 0.600 | 0.754 / 0.879 | 0.628 / 0.628 |
+
+The <=20 and <=14 columns were re-measured after the safety fix below; the ZINC
+column predates it and its safety figures are on the old scale.
 
 Three things worth taking from this.
 
-**Stock coverage was the cap, and a real catalogue lifts it.** On ZINC alone the
-two weight profiles produce byte-identical output: three targets go unsolved,
-and on four of the seven that solve the baseline's pick is already the weighted
-pick, so tilting the weights has nothing to move. Add a real building-block
-catalogue and solve-rate reaches 1.00 while five and six targets respond to the
-weights. The multi-objective layer needs candidate diversity to express a
-preference, and that diversity came from the stock.
+**Stock coverage was the cap, and a real catalogue lifts it.** On ZINC alone
+three targets go unsolved and only seven routes exist to choose between. Add a
+real building-block catalogue and solve-rate reaches 1.00 with routes that get
+*longer*, 1.71 to 2.00 steps. Selection also moves more: six targets take a
+different route from the feasibility-only baseline, against three on ZINC.
+
+**But the two weight profiles agree with each other at <=14.** Both pick the
+same six routes. That is not candidate scarcity, as it was on ZINC -- it is that
+genuine building-block routes to the same target differ very little in real
+hazard, because they draw on similar reagent classes. Measured across the actual
+candidate sets, safety spans 0.060 on warfarin and 0.147 on diazepam, so tilting
+the safety weight cannot outvote feasibility. At <=20 the profiles *do* diverge
+(2 vs 4), but only because degenerate bought-intermediate routes are available
+to choose, which is not a capability worth having.
 
 **Uncapped, the same catalogue reaches 1.00 by cheating.** At <=20 heavy atoms
 mean route length *falls* to 1.10 and four to six routes buy an advanced
@@ -321,6 +331,23 @@ fraction of the route's molecules carry an alert (`hazard_density`). Neither
 moves when steps are added at constant hazard. The old rubric's endpoints are
 kept -- a clean route is categorically 1.0, any hazard caps the score at 0.6,
 and the floor is 0.1 -- so scores remain comparable in magnitude to those above.
+
+**This narrowed the spread of safety across a candidate set, on purpose.** Real
+candidates for one target: warfarin 0.100 -> 0.060, diazepam 0.300 -> 0.147, at
+finer resolution (2 -> 4 and 4 -> 5 distinct values). The lost range was the bias
+-- the old score varied across candidates largely because they had different
+numbers of molecules. Removing a length signal removes the variance that signal
+was producing. What remains is the genuine hazard difference between routes,
+which for these targets is small, and that is why the two weight profiles now
+agree at <=14.
+
+Fixing this did **not** stop safety-weighting from selecting bought
+intermediates at <=20 (5 and 6 routes, against 4 and 6 before). That preference
+turns out to be legitimate rather than a defect: building sertraline means
+handling methyl iodide (`alkyl_halide`, `iodine`), buying the ketimine means
+handling one mild `imine_1` alert, so the bought route really is safer to *run*.
+"Safest to run" and "best synthesis" are different questions. The remedy is the
+catalogue cap, not the safety objective.
 
 Cumulative exposure is deliberately not modelled: a ten-step route really does
 involve more handling than a one-step route, but that is what `efficiency`
