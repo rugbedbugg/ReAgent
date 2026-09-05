@@ -53,6 +53,34 @@ def _select(routes: list[Route], weights: dict[str, float]) -> tuple[Route, Rout
     return routes[baseline], routes[reagent]
 
 
+ADVANCED_LEAF = 0.8
+
+
+def largest_leaf_fraction(route: Route) -> float:
+    """Heavy atoms in the route's biggest leaf, over heavy atoms in the target.
+
+    Guards the one way a bigger catalogue can fake a better result. Solve-rate
+    counts a target as solved when every leaf is purchasable, and says nothing
+    about how much of the molecule was bought rather than made -- so adding
+    advanced intermediates to the stock drives solve-rate up while the routes
+    collapse to "order the penultimate compound and do the last step". A
+    fraction near 1.0 is that degenerate case; a real building-block route sits
+    well below it.
+    """
+    from reagent.core.chem import mol_from_smiles
+
+    target = mol_from_smiles(route.target)
+    if target is None or not target.GetNumHeavyAtoms() or not route.leaves:
+        return 0.0
+
+    sizes = [
+        leaf.GetNumHeavyAtoms()
+        for leaf in (mol_from_smiles(m.smiles) for m in route.leaves)
+        if leaf is not None
+    ]
+    return max(sizes) / target.GetNumHeavyAtoms() if sizes else 0.0
+
+
 def evaluate(
     targets: list[tuple[str, str]],
     planner: Callable[[str], list[Route]],
@@ -62,6 +90,7 @@ def evaluate(
     weights = weights or DEFAULT_WEIGHTS
     solved = 0
     lengths: list[int] = []
+    leaf_fractions: list[float] = []
     base_q: dict[str, list[float]] = {"safety": [], "sustainability": [], "cost": []}
     reag_q: dict[str, list[float]] = {"safety": [], "sustainability": [], "cost": []}
     per_target = []
@@ -77,6 +106,7 @@ def evaluate(
 
         baseline, reagent = _select(solved_routes, weights)
         lengths.append(reagent.num_steps)
+        leaf_fractions.append(largest_leaf_fraction(reagent))
         b_scores, r_scores = deterministic_scores(baseline), deterministic_scores(reagent)
         for obj in base_q:
             base_q[obj].append(b_scores[obj])
@@ -89,6 +119,7 @@ def evaluate(
                 "baseline_safety": b_scores["safety"],
                 "reagent_safety": r_scores["safety"],
                 "changed_pick": baseline is not reagent,
+                "largest_leaf_fraction": leaf_fractions[-1],
             }
         )
 
@@ -96,6 +127,8 @@ def evaluate(
         "n_targets": len(targets),
         "solve_rate": solved / len(targets) if targets else 0.0,
         "avg_route_length": mean(lengths) if lengths else 0.0,
+        "avg_largest_leaf_fraction": mean(leaf_fractions) if leaf_fractions else 0.0,
+        "advanced_intermediate_routes": sum(f >= ADVANCED_LEAF for f in leaf_fractions),
         "baseline_quality": {o: (mean(v) if v else 0.0) for o, v in base_q.items()},
         "reagent_quality": {o: (mean(v) if v else 0.0) for o, v in reag_q.items()},
         "per_target": per_target,

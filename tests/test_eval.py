@@ -47,3 +47,36 @@ def test_harness_counts_unsolved():
     result = evaluate([("u", "U")], planner=lambda s: [unsolved])
     assert result["solve_rate"] == 0.0
     assert result["per_target"][0]["solved"] is False
+
+
+def test_largest_leaf_fraction_spots_a_bought_intermediate():
+    """Sertraline from its ketimine: one step, and the leaf is the whole molecule."""
+    from reagent.eval.harness import largest_leaf_fraction
+
+    route = Route(
+        target="CNC1CCC(c2ccc(Cl)c(Cl)c2)c2ccccc21",
+        leaves=[Molecule(smiles="CN=C1CCC(c2ccc(Cl)c(Cl)c2)c2ccccc21", in_stock=True)],
+        solved=True,
+    )
+    assert largest_leaf_fraction(route) > 0.9
+
+
+def test_largest_leaf_fraction_is_low_for_a_building_block_route():
+    """Fluoxetine from an aminoalcohol and an aryl iodide: both genuine reagents."""
+    from reagent.eval.harness import largest_leaf_fraction
+
+    route = Route(
+        target="CNCCC(Oc1ccc(C(F)(F)F)cc1)c1ccccc1",
+        leaves=[
+            Molecule(smiles="CNCCC(O)c1ccccc1", in_stock=True),
+            Molecule(smiles="FC(F)(F)c1ccc(I)cc1", in_stock=True),
+        ],
+        solved=True,
+    )
+    assert largest_leaf_fraction(route) < 0.7
+
+
+def test_largest_leaf_fraction_handles_a_route_with_no_leaves():
+    from reagent.eval.harness import largest_leaf_fraction
+
+    assert largest_leaf_fraction(Route(target="CCO")) == 0.0

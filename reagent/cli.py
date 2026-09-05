@@ -406,6 +406,11 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
             f"avg route length {result['avg_route_length']:.2f}   "
             f"REAGENT changed the pick on {changed} target(s)"
         )
+        click.echo(
+            f"  largest leaf {result['avg_largest_leaf_fraction']:.2f} of the target on "
+            f"average; {result['advanced_intermediate_routes']} route(s) buy an advanced "
+            "intermediate (>= 0.80) rather than build from building blocks"
+        )
         click.echo(f"  {'objective':16s} {'baseline':>10s} {'REAGENT':>10s}")
         for obj in ("safety", "sustainability", "cost"):
             b = result["baseline_quality"][obj]
