@@ -355,19 +355,26 @@ def feedback(smiles: str, prefer: int) -> None:
                    "binds today). Higher widens the disconnection space, at a cost in "
                    "branching factor, run time, and memory.")
 @click.option("--hard", is_flag=True, help="Use the harder multi-step target set.")
+@click.option("--jobs", type=int, default=1,
+              help="Plan this many targets at once. Capped by free memory, not by "
+                   "cores: each worker holds its own ~1.6 GB planner.")
 def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
              hashed_stock: bool, stock_cache: str | None, iterations: int | None,
              time_limit: int | None, expansion: str, algorithm: str,
-             cutoff_number: int | None, hard: bool) -> None:
+             cutoff_number: int | None, hard: bool, jobs: int) -> None:
     """Measure solve-rate and baseline-vs-REAGENT route quality."""
     from reagent.eval.harness import WEIGHT_PROFILES
     from reagent.eval.harness import evaluate as run_eval
+    from reagent.eval.parallel import (
+        WORKER_RSS_GB,
+        available_memory_gb,
+        plan_targets,
+        safe_job_count,
+    )
     from reagent.eval.targets import HARD_TARGETS, TARGETS
     from reagent.singlestep.aizynth import AiZynthBackend
 
-    click.echo("Loading search backend...")
-    backend = AiZynthBackend(
-        aizynth_config(),
+    backend_kwargs = dict(
         permissive_stock=permissive_stock,
         hashed_stock=hashed_stock or stock_cache is not None,
         stock_cache=stock_cache,
@@ -382,12 +389,35 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
     # Plan each target once, then score under every weight profile.
     cache: dict[str, list] = {}
     time_capped = 0
-    for name, smiles in targets:
-        canon = canonical(smiles) or smiles
-        click.echo(f"  planning {name} ...")
-        cache[canon] = backend.plan(canon, max_routes=max_routes)
-        if backend.search_hit_time_limit:
-            time_capped += 1
+    canonical_targets = [(name, canonical(smiles) or smiles) for name, smiles in targets]
+
+    workers = safe_job_count(jobs)
+    if workers < jobs:
+        click.echo(
+            f"NOTE: running {workers} planner(s), not {jobs}: only "
+            f"{available_memory_gb():.1f} GB is available and each needs ~{WORKER_RSS_GB} GB."
+        )
+
+    if workers > 1:
+        # The parent must not hold a planner of its own while workers hold
+        # theirs -- that is 1.6 GB spent to do nothing, and the difference
+        # between fitting in memory and being OOM-killed.
+        click.echo(f"Planning {len(targets)} targets across {workers} workers...")
+        cache, time_capped = plan_targets(
+            canonical_targets,
+            max_routes=max_routes,
+            backend_kwargs=backend_kwargs,
+            jobs=workers,
+            on_done=lambda name: click.echo(f"  planned {name}"),
+        )
+    else:
+        click.echo("Loading search backend...")
+        backend = AiZynthBackend(aizynth_config(), **backend_kwargs)
+        for name, canon in canonical_targets:
+            click.echo(f"  planning {name} ...")
+            cache[canon] = backend.plan(canon, max_routes=max_routes)
+            if backend.search_hit_time_limit:
+                time_capped += 1
 
     def planner(smiles: str):
         return cache[canonical(smiles) or smiles]
@@ -395,7 +425,7 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
     if time_capped:
         click.echo(
             f"\nNOTE: {time_capped} of {len(targets)} searches stopped on the "
-            f"{backend.search_time_limit}s clock rather than the iteration budget. "
+            f"{time_limit or 120}s clock rather than the iteration budget. "
             "Raise --time-limit before reading anything into --iterations."
         )
 
