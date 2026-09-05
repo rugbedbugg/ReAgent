@@ -465,6 +465,77 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
             click.echo(f"  {obj:16s} {b:>10.3f} {r:>10.3f} {c:>11.3f}")
 
 
+@main.command("check-adaptive")
+@click.option("--vectors", type=click.Path(exists=True, dir_okay=False), default=None,
+              help="Cached objective vectors (JSON: name -> list of score dicts). "
+                   "Without it the eval targets are planned first, which is slow.")
+@click.option("--max-targets", default=20, help="How many targets to learn from.")
+@click.option("--lr", default=0.5, help="Learning rate of the preference update.")
+@click.option("--hard", is_flag=True, help="Use the harder multi-step target set.")
+@click.option("--jobs", type=int, default=1, help="Plan this many targets at once.")
+def check_adaptive(vectors: str | None, max_targets: int, lr: float,
+                   hard: bool, jobs: int) -> None:
+    """Measure whether the feedback loop actually learns a preference.
+
+    Simulates a user with a fixed hidden preference, feeds back the route that
+    preference would choose, and reports whether regret falls as the loop sees
+    more targets. Unit tests cover a single update step; only a sequence can
+    show whether the weights converge, oscillate, or drift.
+    """
+    import json
+
+    from reagent.eval.adaptive_check import simulate
+
+    if vectors:
+        per_target = list(json.loads(Path(vectors).read_text(encoding="utf-8")).values())
+    else:
+        from reagent.eval.parallel import plan_targets, safe_job_count
+        from reagent.eval.targets import HARD_TARGETS, TARGETS
+        from reagent.features.scoring import deterministic_scores
+
+        targets = (HARD_TARGETS if hard else TARGETS + HARD_TARGETS)[:max_targets]
+        workers = safe_job_count(jobs)
+        click.echo(f"Planning {len(targets)} targets across {workers} worker(s)...")
+        cache, _ = plan_targets(
+            targets, max_routes=15, backend_kwargs={"hashed_stock": True},
+            jobs=workers, on_done=lambda n: click.echo(f"  planned {n}"),
+        )
+        per_target = [
+            [deterministic_scores(r) for r in cache.get(smiles, []) if r.solved]
+            for _, smiles in targets
+        ]
+
+    per_target = per_target[:max_targets]
+
+    # Two opposed preferences, so a loop that merely drifts toward one objective
+    # regardless of feedback fails visibly rather than looking like learning.
+    profiles = {
+        "safety-loving": {"safety": 0.55, "sustainability": 0.15, "cost": 0.10,
+                          "feasibility": 0.10, "construction": 0.10},
+        "cost-loving": {"cost": 0.55, "efficiency": 0.15, "feasibility": 0.10,
+                        "safety": 0.10, "construction": 0.10},
+    }
+
+    for name, hidden in profiles.items():
+        result = simulate(per_target, hidden=hidden, lr=lr)
+        click.echo(f"\n=== hidden preference: {name} ===")
+        if not result["rounds"]:
+            click.echo("  no target had two distinguishable candidates; nothing to learn from")
+            continue
+        click.echo(
+            f"  rounds {result['rounds']}   "
+            f"regret {result['regret_first_half']:.3f} -> {result['regret_second_half']:.3f}   "
+            f"agreement {result['agreement_first_half']:.0%} -> "
+            f"{result['agreement_second_half']:.0%}"
+        )
+        moved = sorted(
+            ((o, result["learned_weights"][o] - result["start_weights"].get(o, 0.0))
+             for o in result["learned_weights"]),
+            key=lambda kv: -abs(kv[1]),
+        )[:3]
+        click.echo("  biggest weight shifts: " + ", ".join(f"{o} {d:+.3f}" for o, d in moved))
+
+
 @main.command("check-agents")
 @click.option("--max-targets", default=5, help="Targets from the eval set to run.")
 @click.option("--routes-per", default=2, help="Solved routes to score per target.")
