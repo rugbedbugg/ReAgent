@@ -35,21 +35,29 @@ def pareto_front(routes: list[Route]) -> list[Route]:
 
 
 def compromise_route(routes: list[Route]) -> Route | None:
-    """Pick the best-balanced route on the Pareto front, using no weights at all.
+    """The non-dominated route closest to the ideal point. A diagnostic, not a
+    recommendation.
 
-    Every selection rule in this project so far needs a weight vector, and the
-    hard-set measurements show weights often fail to discriminate: two quite
-    different profiles picked identical routes on all ten targets, because
-    genuine building-block routes to one target differ little on most
-    objectives. A rule that needs no weights sidesteps that entirely, and gives
-    the evaluation something to compare the weighted rule against.
-
-    The rule is the n-dimensional reading of a knee point: normalize the
-    objectives across the candidate set, then take the non-dominated route whose
-    vector sits closest to the ideal point -- 1.0 on everything, which is
-    normally unattainable. Trading a lot of one objective for a little of
+    The n-dimensional reading of a knee point: normalize the objectives across
+    the candidate set, then take the Pareto-front route whose vector sits
+    closest to 1.0 on everything. Trading a lot of one objective for a little of
     another moves a route away from that corner, so the winner is the one making
     no such lopsided trade.
+
+    **Measured, it is worse than the feasibility-only baseline** -- on the hard
+    set at <=14 it scores safety 0.344, sustainability 0.824 and cost 0.514,
+    against the baseline's 0.532 / 0.900 / 0.532 and the weighted pick's 0.628 /
+    0.914 / 0.578, and it agrees with the weighted pick on 1 of 10 targets. So
+    it is reported alongside the weighted rule rather than used as one.
+
+    The reason is that an equal-distance rule is not weight-free, whatever it
+    looks like: treating every axis alike *is* a uniform weight vector, which
+    silently cuts feasibility from 0.30 to 1/7 and promotes the noisier proxies
+    to equal standing. Balancing seven objectives beats optimizing none of them,
+    and loses to optimizing the right ones. Its value here is as the control
+    that shows the tuned weights are doing real work -- a question the profile
+    comparisons could not answer, since those profiles largely agree with each
+    other.
     """
     if not routes:
         return None

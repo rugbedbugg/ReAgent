@@ -407,6 +407,32 @@ moves the pick less than it appears to; how much of the molecule a route builds
 does vary across candidates, so this is where the selection layer has something
 real to express a preference over.
 
+### Are the weights doing anything? A control says yes
+
+Two weight profiles picking identical routes looks like evidence that the
+weights are decoration. It is not, and the test that settles it is a selection
+rule that uses no tuned weights: take the Pareto front, normalize the objectives
+across the candidate set, and pick the route closest to the ideal point of 1.0
+on everything.
+
+On the hard set at <=14, against the same candidates:
+
+| rule | safety | sustainability | cost | agrees with weighted |
+|---|---|---|---|---|
+| feasibility-only baseline | 0.532 | 0.900 | 0.532 | -- |
+| tuned weights (REAGENT) | 0.628 | 0.914 | 0.578 | -- |
+| closest to the ideal point | 0.344 | 0.824 | 0.514 | 1 of 10 |
+
+The ideal-point rule loses to the plain baseline on every objective. Equal
+distance on every axis is not the absence of a weighting -- it *is* a uniform
+one, which cuts feasibility from 0.30 to 1/7 and lifts the noisier proxies to
+equal standing. Balancing seven objectives beats optimizing none of them and
+loses to optimizing the right ones.
+
+It stays in the evaluation output as a control rather than a recommendation. The
+profiles agreeing with each other says the objectives are correlated across the
+candidates on offer; this says the weight vector nonetheless earns its place.
+
 ### Aggregation
 
 Objectives are min-max normalized across the candidate routes before the
