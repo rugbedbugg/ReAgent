@@ -249,18 +249,27 @@ friends). Under the same best-measured configuration as above, against three
 stocks -- ZINC alone, and ZINC unioned with the free eMolecules catalogue capped
 at two different building-block sizes:
 
+All three stocks below were measured on the same code: seven objectives, the
+corrected safety score, three weight profiles.
+
 | | ZINC | + eMolecules <=20 | + eMolecules <=14 |
 |---|---|---|---|
 | new keys over ZINC | -- | +4,970,253 (+28.5%) | +1,151,516 (+6.6%) |
 | solve-rate | 0.70 | 1.00 | 1.00 |
 | mean route length | 1.71 | 1.10 | 2.00 |
-| mean largest-leaf fraction | 0.60 | 0.78 / 0.80 | 0.64 |
-| routes buying an advanced intermediate | 0 of 7 | 5 and 6 of 10 | 1 of 10 |
-| picks changed (feasibility-led / safety-tilted) | 3 / 3 | 2 / 4 | 6 / 6 |
-| REAGENT safety | 0.600 / 0.600 | 0.754 / 0.879 | 0.628 / 0.628 |
+| mean largest-leaf fraction | 0.59 | 0.78 / 0.78 / 0.74 | 0.64 / 0.64 / 0.62 |
+| routes buying an advanced intermediate | 0 of 7 | 5 / 5 / 3 of 10 | 1 / 1 / 1 of 10 |
+| picks changed, feasibility-led | 1 | 2 | 6 |
+| picks changed, safety-tilted | 3 | 4 | 6 |
+| picks changed, build-it-yourself | 1 | 3 | 7 |
+| REAGENT safety, feasibility-led | 0.513 | 0.681 | 0.628 |
+| REAGENT safety, safety-tilted | 0.640 | 0.823 | 0.628 |
+| REAGENT safety, build-it-yourself | 0.513 | 0.606 | 0.556 |
 
-The <=20 and <=14 columns were re-measured after the safety fix below; the ZINC
-column predates it and its safety figures are on the old scale.
+Where three figures are given they are feasibility-led / safety-tilted /
+build-it-yourself. One of the ten ZINC searches stopped on the 1800s clock
+rather than its iteration budget, so that column is marginally pessimistic on
+one target.
 
 Three things worth taking from this.
 
@@ -270,14 +279,29 @@ real building-block catalogue and solve-rate reaches 1.00 with routes that get
 *longer*, 1.71 to 2.00 steps. Selection also moves more: six targets take a
 different route from the feasibility-only baseline, against three on ZINC.
 
-**But the two weight profiles agree with each other at <=14.** Both pick the
-same six routes. That is not candidate scarcity, as it was on ZINC -- it is that
-genuine building-block routes to the same target differ very little in real
+**Feasibility-led and safety-tilted agree with each other at <=14.** Both pick
+the same six routes. That is not candidate scarcity, as it was on ZINC -- it is
+that genuine building-block routes to the same target differ very little in real
 hazard, because they draw on similar reagent classes. Measured across the actual
 candidate sets, safety spans 0.060 on warfarin and 0.147 on diazepam, so tilting
-the safety weight cannot outvote feasibility. At <=20 the profiles *do* diverge
-(2 vs 4), but only because degenerate bought-intermediate routes are available
-to choose, which is not a capability worth having.
+the safety weight cannot outvote feasibility. At <=20 those two profiles *do*
+diverge (2 vs 4), but only because degenerate bought-intermediate routes are
+available to choose, which is not a capability worth having.
+
+**`build-it-yourself` is the profile that separates for a defensible reason.**
+It takes a seventh pick at <=14 and pulls the largest-leaf fraction to 0.62,
+paying for it in safety (0.556 against 0.628) -- buy less of the molecule, handle
+more reagents. At <=20 it cuts degenerate routes from 5 to 3. On ZINC it is
+identical to feasibility-led, which is correct rather than disappointing: with
+zero degenerate routes and a leaf fraction already at 0.59, `construction` has
+nothing to fix. The objective acts only where there is something to act on.
+
+**Weighting is not the whole answer, though.** Three routes still buy an
+advanced intermediate at <=20 even when `construction` carries the dominant 0.30
+weight, because selection can only choose among candidates that exist: where the
+search finds no genuine route for a target, no weighting invents one. Capping
+the catalogue remains the primary control, and weighting the objective is the
+secondary one.
 
 **Uncapped, the same catalogue reaches 1.00 by cheating.** At <=20 heavy atoms
 mean route length *falls* to 1.10 and four to six routes buy an advanced
