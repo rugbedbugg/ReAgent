@@ -36,7 +36,9 @@ def build_stock_cache() -> None:
 @click.option("--max-heavy-atoms", type=int, default=None,
               help="Drop entries larger than this. Vendor files mix building blocks "
                    "with screening compounds; without a cap, near-complete molecules "
-                   "become purchasable and multi-step targets collapse to one step.")
+                   "become purchasable and multi-step targets collapse to one step. "
+                   "14 is the measured sweet spot on the hard set; 20 already lets "
+                   "advanced intermediates through.")
 @click.option("--no-split-salts", is_flag=True,
               help="Index only the entry as listed, not its largest fragment. "
                    "Catalogues sell salts; routes ask for the free base.")

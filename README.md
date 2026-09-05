@@ -144,11 +144,12 @@ reagent plan "CC(=O)Oc1ccccc1C(=O)O" --show-features
   goes straight in. Two decisions are worth understanding before trusting the
   result:
 
-  `--max-heavy-atoms` is not a performance knob. Vendor files mix genuine
-  building blocks with screening compounds, and an uncapped catalogue makes
-  near-complete molecules purchasable -- which collapses multi-step targets to
-  one step and inflates solve-rate without describing a route anyone would run.
-  Cap it at building-block size unless you specifically want the screening set.
+  `--max-heavy-atoms` is not a performance knob -- it decides whether the
+  catalogue is a shelf of building blocks or a shelf of nearly-finished drugs.
+  Measured on the hard set: at 14 the routes are genuine and average 2.00 steps;
+  at 20 the same catalogue reaches the same solve-rate with 1.10 steps because
+  four to six of ten routes just buy an advanced intermediate. Use 14. Building
+  it takes ~25 min for a 33M-entry file on 8 cores, nearly all of it InChI keys.
 
   Salts are indexed twice by default, as listed and as their largest fragment.
   Catalogues sell the amine hydrochloride; a route asks for the free amine, and
@@ -244,21 +245,56 @@ reagent evaluate --hard --max-targets 10 --max-routes 15 \
 ```
 
 `--hard` swaps in ten multi-step drugs (fluoxetine, sertraline, celecoxib and
-friends). Under the same best-measured configuration as above:
+friends). Under the same best-measured configuration as above, against three
+stocks -- ZINC alone, and ZINC unioned with the free eMolecules catalogue capped
+at two different building-block sizes:
 
-- Solve-rate 0.70; mean route length 1.71.
-- Both weight profiles produce **identical** output: pick changes on 3/10, mean
-  safety 0.471 to 0.600, sustainability 0.914 to 0.922, cost 0.593 to 0.613.
+| | ZINC | + eMolecules <=20 | + eMolecules <=14 |
+|---|---|---|---|
+| new keys over ZINC | -- | +4,970,253 (+28.5%) | +1,151,516 (+6.6%) |
+| solve-rate | 0.70 | 1.00 | 1.00 |
+| mean route length | 1.71 | 1.10 | 2.00 |
+| mean largest-leaf fraction | 0.60 | 0.76 / 0.80 | 0.64 |
+| routes buying an advanced intermediate | 0 of 7 | 4 and 6 of 10 | 1 of 10 |
+| picks changed (feasibility-led / safety-tilted) | 3 / 3 | 1 / 4 | 5 / 6 |
+| REAGENT safety | 0.600 / 0.600 | 0.730 / 0.900 | 0.590 / 0.660 |
 
-The two profiles agreeing exactly is the finding, not a bug. Selection can only
-express a preference when the candidate pool holds routes that trade one
-objective against another. Three of the ten targets go unsolved, and on four of
-the seven that do solve the baseline's pick is already the weighted pick under
-either profile -- so tilting the weights has nothing left to move. The
-multi-objective layer needs candidate diversity to be worth anything, and that
-diversity comes from the single-step model and the stock, not from the selection
-layer. A richer building-block catalogue would do more for these targets than
-any change to the scoring.
+Three things worth taking from this.
+
+**Stock coverage was the cap, and a real catalogue lifts it.** On ZINC alone the
+two weight profiles produce byte-identical output: three targets go unsolved,
+and on four of the seven that solve the baseline's pick is already the weighted
+pick, so tilting the weights has nothing to move. Add a real building-block
+catalogue and solve-rate reaches 1.00 while five and six targets respond to the
+weights. The multi-objective layer needs candidate diversity to express a
+preference, and that diversity came from the stock.
+
+**Uncapped, the same catalogue reaches 1.00 by cheating.** At <=20 heavy atoms
+mean route length *falls* to 1.10 and four to six routes buy an advanced
+intermediate. Sertraline is the clearest case: the catalogue sells the ketimine,
+so the "route" becomes order it and reduce it, one step. At <=14 the same target
+takes three steps from 1-aminotetralone, 1-bromo-3,4-dichlorobenzene, and methyl
+iodide -- a real synthesis. Solve-rate cannot tell those apart, which is why it
+rose either way; `largest_leaf_fraction` is in the harness precisely so the
+difference is visible in the numbers.
+
+The cap is not a tuning knob. It decides whether the catalogue is a shelf of
+building blocks or a shelf of nearly-finished drugs, and enforcing it discards
+77% of what the vendor added over ZINC -- almost everything in the 15-20
+heavy-atom band, which is exactly where advanced intermediates live.
+
+**Safety, as scored today, rewards not doing chemistry.** The safety-tilted
+profile picks *more* degenerate routes than the feasibility-led one (6 vs 4 at
+<=20) and posts the project's best safety number, 0.900, doing it. A route that
+buys the molecule has almost no reagents left to be hazardous. Forcing genuine
+multi-step routes at <=14 drops safety to 0.660, which is the honest figure. Any
+catalogue containing advanced intermediates will trip this; see the known
+limitations.
+
+Numbers move slightly between runs. Repeating the ZINC row reproduced
+solve-rate, route length and pick counts exactly, and safety to three decimals,
+but sustainability moved 0.914 -> 0.895 and cost 0.593 -> 0.602 at the baseline.
+Treat the third decimal on sustainability and cost as noise.
 
 ### Aggregation
 
@@ -341,8 +377,9 @@ the system and every number here:
 - **Benchmark numbers reflect these choices.** Measured with this model, stock,
   and budget on a small drug-like target set with short-to-moderate routes. They
   characterize this configuration, not an upper bound with a better model, a real
-  catalogue, or a GPU. On the harder multi-step set the same configuration drops
-  to solve-rate 0.70 and the selection layer stops responding to weights at all.
+  catalogue, or a GPU. On the harder multi-step set this configuration drops to
+  solve-rate 0.70 and the selection layer stops responding to weights entirely --
+  a gap that a real building-block catalogue closes.
 
 Ceiling on route quality is the pretrained single-step model and stock, neither
 improvable in this environment. ReAgent is the evaluation, selection, grounding,
@@ -361,8 +398,18 @@ and adaptation layer on top.
   flag notes). `--algorithm retrostar` pays a second time, improving the
   candidate pool before selection runs (baseline safety 0.52 against MCTS's
   0.44). Raising `cutoff_number` from 50 to 200 is target-dependent and roughly
-  a wash. The untried lever that remains is a real building-block catalogue in
-  place of ZINC plus a size heuristic.
+  a wash. A real building-block catalogue is the lever that pays on hard
+  targets: ZINC unioned with eMolecules capped at 14 heavy atoms takes the hard
+  set from 0.70 to 1.00 solved, with routes that get *longer* (1.71 to 2.00
+  steps) rather than shorter. See the harder-target-set results.
+- **Safety rewards not doing chemistry.** The score is driven by the reagents a
+  route uses, so a route that buys an advanced intermediate and runs one final
+  step scores near-perfectly on safety by having almost nothing left to be
+  hazardous. Measured: on an uncapped catalogue the safety-tilted profile chose
+  *more* such routes than the feasibility-led one (6 vs 4 of 10) and posted the
+  project's best safety figure doing it. Capping the catalogue at building-block
+  size avoids the trap but does not fix the objective; weighting hazard by step
+  count, or scoring the target's own construction, would.
 - **Greenness is atom economy only.** No solvent-driven PMI or E-factor without
   reaction-condition data.
 - **Cost is a proxy** from synthetic accessibility, not supplier prices.
