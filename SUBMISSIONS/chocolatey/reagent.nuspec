@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>reagent</id>
+    <version>0.2.0</version>
+    <title>ReAgent</title>
+    <authors>Partha Pratim Gogoi</authors>
+    <owners>rugbedbugg</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://github.com/rugbedbugg/ReAgent/blob/main/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/rugbedbugg/ReAgent</projectUrl>
+    <!-- TODO(icon): add once assets/icon.png is committed. Must be a jsDelivr URL
+         pinned to an immutable ref that actually contains the file, e.g.
+         <iconUrl>https://cdn.jsdelivr.net/gh/rugbedbugg/ReAgent@COMMIT_SHA/assets/icon.png</iconUrl>
+         Do not pin @v0.2.0: that tag has no icon. -->
+    <description>ReAgent plans retrosynthetic routes for a target molecule and scores
+each candidate on seven independent objectives: feasibility, precursor
+availability, cost, safety, sustainability, efficiency, and how much of the
+molecule a route builds rather than buys.
+
+Chemistry facts are computed deterministically with RDKit. The single-step
+model and tree search come from AiZynthFinder; ReAgent adds the agentic
+evaluation, multi-objective aggregation and adaptive weight-learning layers.
+
+This package installs ReAgent into its own Python 3.11 virtualenv, because
+RDKit, ONNX Runtime and AiZynthFinder do not support newer interpreters.
+
+Two one-time steps are needed after install, and they are not automatic
+because the first downloads roughly 760 MB:
+
+    reagent-download-data %LOCALAPPDATA%\reagent
+    reagent build-stock-cache
+
+Then: reagent plan "CC(=O)Oc1ccccc1C(=O)O"
+
+The agent layer is optional and needs either a local Ollama server (--local)
+or ANTHROPIC_API_KEY (--assess). Planning, features and evaluation run without
+either.</description>
+    <summary>Agentic retrosynthesis planner that scores routes on seven objectives with RDKit-grounded chemistry.</summary>
+    <releaseNotes>https://github.com/rugbedbugg/ReAgent/releases/tag/v0.2.0</releaseNotes>
+    <tags>chemistry cheminformatics retrosynthesis rdkit molecules science cli python</tags>
+    <projectSourceUrl>https://github.com/rugbedbugg/ReAgent</projectSourceUrl>
+    <packageSourceUrl>https://github.com/rugbedbugg/ReAgent/tree/main/SUBMISSIONS/chocolatey</packageSourceUrl>
+    <docsUrl>https://github.com/rugbedbugg/ReAgent/blob/main/README.md</docsUrl>
+    <bugTrackerUrl>https://github.com/rugbedbugg/ReAgent/issues</bugTrackerUrl>
+    <dependencies>
+      <dependency id="python311" version="3.11.0" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
