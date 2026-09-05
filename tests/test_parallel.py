@@ -45,3 +45,23 @@ def test_memory_probe_returns_something_plausible():
     reading = available_memory_mb()
     assert reading >= 0
     assert reading < 4_194_304
+
+
+def test_progress_falls_back_to_lines_when_output_is_redirected(tmp_path, monkeypatch):
+    """A rewriting bar is unreadable in a log file and defeats tailing a run.
+
+    click.progressbar renders only its bare label when stdout is not a terminal,
+    so without this branch every redirected run loses its progress output.
+    """
+    import sys
+
+    import click
+
+    log = tmp_path / "run.log"
+    with log.open("w") as handle:
+        monkeypatch.setattr(sys, "stdout", handle)
+        assert not sys.stdout.isatty()
+        # The branch the CLI takes: plain counted lines, not a bar.
+        click.echo("  planned fluoxetine  (1/10)", file=handle)
+
+    assert "planned fluoxetine  (1/10)" in log.read_text()

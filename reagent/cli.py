@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import click
@@ -437,25 +438,43 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
         click.echo(f"Planning {len(targets)} targets across {workers} workers...")
         done = 0
 
+        # A live bar on a terminal, plain counted lines when redirected. The
+        # bar rewrites one line with control codes, which is unreadable in a log
+        # file and defeats tailing a long run; the counted lines are useless
+        # interactively but are exactly what a log wants.
+        interactive = sys.stdout.isatty()
+        bar = (
+            click.progressbar(length=len(canonical_targets), label="  planning", show_eta=True)
+            if interactive
+            else None
+        )
+
         def report(name: str) -> None:
             # Results arrive as they finish, not in target order, so the count
             # is the only thing that says how far along the run is.
             nonlocal done
             done += 1
-            click.echo(f"  planned {name}  ({done}/{len(canonical_targets)})")
+            if bar is not None:
+                bar.update(1)
+            else:
+                click.echo(f"  planned {name}  ({done}/{len(canonical_targets)})")
 
-        cache, time_capped = plan_targets(
-            canonical_targets,
-            max_routes=max_routes,
-            backend_kwargs=backend_kwargs,
-            jobs=workers,
-            on_done=report,
-        )
+        try:
+            cache, time_capped = plan_targets(
+                canonical_targets,
+                max_routes=max_routes,
+                backend_kwargs=backend_kwargs,
+                jobs=workers,
+                on_done=report,
+            )
+        finally:
+            if bar is not None:
+                bar.render_finish()
     else:
         click.echo("Loading search backend...")
         backend = AiZynthBackend(aizynth_config(), **backend_kwargs)
-        for name, canon in canonical_targets:
-            click.echo(f"  planning {name} ...")
+        for i, (name, canon) in enumerate(canonical_targets, start=1):
+            click.echo(f"  planning {name} ... ({i}/{len(canonical_targets)})")
             cache[canon] = backend.plan(canon, max_routes=max_routes)
             if backend.search_hit_time_limit:
                 time_capped += 1
