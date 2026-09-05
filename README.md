@@ -529,6 +529,28 @@ On a 3B model the agents track the reference closely on short routes; residual
 error concentrates on arithmetic-heavy objectives (cost; safety on multi-step
 routes). `--hybrid` removes that drift.
 
+```sh
+reagent check-adaptive --vectors data/vectors.json
+```
+
+Measures whether the feedback loop learns anything. `update_from_preference` has
+unit tests, but they cover a single update step, and a step can move the weights
+the right way every time while never converging, oscillating, or drifting
+somewhere that ranks worse than the defaults did. Only a sequence shows which.
+
+So this simulates a user with a fixed hidden preference, shows them one target's
+candidates at a time, takes the route that preference would actually choose as
+the feedback, and reports **regret** -- the hidden-utility gap between the route
+the learned weights recommend and the best one available, normalized by the
+spread across candidates so a target whose routes are near-identical cannot
+dominate the average. Falling regret from the first half of the sequence to the
+second is the loop working.
+
+Two opposed hidden preferences are run over the same targets, safety-loving and
+cost-loving. That matters: a loop that drifts toward one objective whatever it
+is told would look like learning under a single preference, and only fails
+visibly when the opposite preference has to move the weights the other way.
+
 ## Package layout
 
 | Module | Responsibility | Status |
@@ -540,6 +562,7 @@ routes). `--hybrid` removes that drift.
 | `reagent/optimize` | Weighted-sum and Pareto route aggregation over seven objectives | implemented |
 | `reagent/rag` | Reaction-precedent fingerprints, index, retrieval | implemented |
 | `reagent/adaptive` | Episodic memory and feedback-driven weight tuning | implemented |
+| `reagent/eval/adaptive_check` | Regret-over-a-sequence measurement of that loop | implemented |
 | `reagent/eval` | Solve-rate, deterministic scoring, baseline-vs-ReAgent harness | implemented |
 | `reagent/search` | Search-algorithm registry (`mcts`, `retrostar`, `dfpn`, `breadth-first`) | implemented |
 
