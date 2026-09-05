@@ -403,12 +403,21 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
         # theirs -- that is 1.6 GB spent to do nothing, and the difference
         # between fitting in memory and being OOM-killed.
         click.echo(f"Planning {len(targets)} targets across {workers} workers...")
+        done = 0
+
+        def report(name: str) -> None:
+            # Results arrive as they finish, not in target order, so the count
+            # is the only thing that says how far along the run is.
+            nonlocal done
+            done += 1
+            click.echo(f"  planned {name}  ({done}/{len(canonical_targets)})")
+
         cache, time_capped = plan_targets(
             canonical_targets,
             max_routes=max_routes,
             backend_kwargs=backend_kwargs,
             jobs=workers,
-            on_done=lambda name: click.echo(f"  planned {name}"),
+            on_done=report,
         )
     else:
         click.echo("Loading search backend...")
