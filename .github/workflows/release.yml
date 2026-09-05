@@ -60,15 +60,18 @@ jobs:
           fi
           echo "tag and version agree: $version"
 
+      # `python -m pip`, not `uv pip`: this job does not run `mise run install`,
+      # so no project venv is active and `uv pip` resolved to a different
+      # environment than the `python` that then ran the build -- which failed
+      # with "No module named build". Going through `python -m` guarantees the
+      # installer and the runner are the same interpreter.
       - name: Build sdist and wheel
         run: |
-          uv pip install --system build
+          python -m pip install --upgrade build twine
           python -m build
 
       - name: Check the artifacts are well formed
-        run: |
-          uv pip install --system twine
-          twine check dist/*
+        run: python -m twine check dist/*
 
       - name: Publish the release with its artifacts
         uses: softprops/action-gh-release@v2
