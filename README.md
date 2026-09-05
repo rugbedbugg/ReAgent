@@ -290,117 +290,49 @@ friends). Under the same best-measured configuration as above, against three
 stocks -- ZINC alone, and ZINC unioned with the free eMolecules catalogue capped
 at two different building-block sizes:
 
-All three stocks below were measured on the same code: seven objectives, the
-corrected safety score, three weight profiles.
+All nine measurements below come from one code version, after ties were made
+deterministic. Figures are feasibility-led / safety-tilted / build-it-yourself.
 
 | | ZINC | + eMolecules <=20 | + eMolecules <=14 |
 |---|---|---|---|
 | new keys over ZINC | -- | +4,970,253 (+28.5%) | +1,151,516 (+6.6%) |
 | solve-rate | 0.70 | 1.00 | 1.00 |
-| mean route length | 1.71 | 1.10 | 2.00 |
-| mean largest-leaf fraction | 0.59 | 0.78 / 0.78 / 0.74 | 0.64 / 0.64 / 0.62 |
-| routes buying an advanced intermediate | 0 of 7 | 5 / 5 / 3 of 10 | 1 / 1 / 1 of 10 |
-| picks changed, feasibility-led | 1 | 2 | 6 |
-| picks changed, safety-tilted | 3 | 4 | 6 |
-| picks changed, build-it-yourself | 1 | 3 | 7 |
-| REAGENT safety, feasibility-led | 0.513 | 0.681 | 0.628 |
-| REAGENT safety, safety-tilted | 0.640 | 0.823 | 0.628 |
-| REAGENT safety, build-it-yourself | 0.513 | 0.606 | 0.556 |
+| mean route length | 1.71 / 1.86 / 1.71 | 1.10 | 2.00 |
+| mean largest-leaf fraction | 0.59 | 0.74 / 0.76 / 0.74 | 0.64 |
+| routes buying an advanced intermediate | 0 of 7 | 3 / 4 / 3 of 10 | 1 of 10 |
+| picks changed | 3 / 4 / 3 | 1 / 3 / 1 | 5 / 6 / 5 |
+| baseline safety | 0.496 | 0.566 | 0.529 |
+| REAGENT safety | 0.618 / 0.640 / 0.618 | 0.622 / 0.766 / 0.622 | 0.555 / 0.628 / 0.550 |
 
-Where three figures are given they are feasibility-led / safety-tilted /
-build-it-yourself. One of the ten ZINC searches stopped on the 1800s clock
-rather than its iteration budget, so that column is marginally pessimistic on
-one target.
+**Stock coverage was the cap, and a capped real catalogue lifts it.** ZINC leaves
+three targets unsolved. Adding eMolecules at <=14 heavy atoms reaches 1.00 with
+routes that get *longer*, 1.71 to 2.00 steps, and only one route buying an
+advanced intermediate. Uncapped at <=20 it also reaches 1.00, but by cheating:
+route length falls to 1.10 and three to four routes buy the penultimate
+compound. The cap is what makes the solve-rate mean something, and enforcing it
+discards 77% of what the vendor added.
 
-**Not every figure here is reproducible.** The same configuration run three
-times (twice serially, once across parallel workers) gives identical solve-rate,
-route length, largest-leaf fraction, degenerate-route count, REAGENT safety and
-cost, and identical pick counts for the feasibility-led and safety-tilted
-profiles. It does *not* give an identical pick count for build-it-yourself: that
-came out 7, 6, 7. Read it as "6-7 of 10", and treat a one-target difference in
-any pick count as within noise.
+**Weighting safety works; weighting buy-versus-build does not.** The
+safety-tilted profile separates on every stock -- one more pick changed than the
+default, and clearly higher safety (0.766 against 0.622 at <=20). The
+`build-it-yourself` profile, at 0.30 on `construction`, produces output identical
+to the default on ZINC and <=20 and near-identical at <=14.
 
-The cause is not the parallelism -- two serial runs differ as much as serial
-differs from parallel.
+That is a correction. Before ties were made deterministic, this profile appeared
+to cut degenerate routes at <=20 from 5 to 3 and pull the leaf fraction to 0.62,
+and that was recorded here as the objective doing its job. It was not: with
+stable tie-breaking the *default* profile reaches 3 degenerate routes by itself,
+and the apparent gain was arrival order deciding ties. `construction` earns its
+place as a reported metric -- it is what makes degenerate routes countable at all
+-- but weighting it changes nothing measurable on these targets.
 
-Nor is it multi-threaded inference, which was the first guess and is wrong.
-Planning warfarin four times in separate processes -- twice at AiZynthFinder's
-default `intra_op_num_threads`, twice pinned to one -- returned byte-identical
-solved-route sets every time. The search is reproducible; ONNX threading does
-not perturb it, and pinning threads would fix nothing.
-
-The variance was candidate *ordering*, and it is now fixed. Planning warfarin
-three more times returned the same six routes in three different orders. Both
-`max` and Python's stable `sorted` keep the first of several equal scores, so
-ties were broken by arrival position -- which is not reproducible, while the
-route set is.
-
-Every selection path now breaks ties on `route_signature` (sorted leaves, step
-count, reaction SMILES) rather than on position, so the pick is a property of
-the routes rather than of the order the search happened to return them in. The
-figures in the tables above were measured before this change; they are not
-invalidated by it, but a pick count that moved by one between runs should now
-hold still.
-
-Three things worth taking from this.
-
-**Stock coverage was the cap, and a real catalogue lifts it.** On ZINC alone
-three targets go unsolved and only seven routes exist to choose between. Add a
-real building-block catalogue and solve-rate reaches 1.00 with routes that get
-*longer*, 1.71 to 2.00 steps. Selection also moves more: six targets take a
-different route from the feasibility-only baseline, against three on ZINC.
-
-**Feasibility-led and safety-tilted agree with each other at <=14.** Both pick
-the same six routes. That is not candidate scarcity, as it was on ZINC -- it is
-that genuine building-block routes to the same target differ very little in real
-hazard, because they draw on similar reagent classes. Measured across the actual
-candidate sets, safety spans 0.060 on warfarin and 0.147 on diazepam, so tilting
-the safety weight cannot outvote feasibility. At <=20 those two profiles *do*
-diverge (2 vs 4), but only because degenerate bought-intermediate routes are
-available to choose, which is not a capability worth having.
-
-**`build-it-yourself` is the profile that separates for a defensible reason,
-though weakly at <=14.** It takes a sixth or seventh pick there -- the count is
-not stable across runs -- and pulls the largest-leaf fraction to 0.62,
-paying for it in safety (0.556 against 0.628) -- buy less of the molecule, handle
-more reagents. At <=20 it cuts degenerate routes from 5 to 3. On ZINC it is
-identical to feasibility-led, which is correct rather than disappointing: with
-zero degenerate routes and a leaf fraction already at 0.59, `construction` has
-nothing to fix. The objective acts only where there is something to act on.
-
-**Weighting is not the whole answer, though.** Three routes still buy an
-advanced intermediate at <=20 even when `construction` carries the dominant 0.30
-weight, because selection can only choose among candidates that exist: where the
-search finds no genuine route for a target, no weighting invents one. Capping
-the catalogue remains the primary control, and weighting the objective is the
-secondary one.
-
-**Uncapped, the same catalogue reaches 1.00 by cheating.** At <=20 heavy atoms
-mean route length *falls* to 1.10 and four to six routes buy an advanced
-intermediate. Sertraline is the clearest case: the catalogue sells the ketimine,
-so the "route" becomes order it and reduce it, one step. At <=14 the same target
-takes three steps from 1-aminotetralone, 1-bromo-3,4-dichlorobenzene, and methyl
-iodide -- a real synthesis. Solve-rate cannot tell those apart, which is why it
-rose either way; `largest_leaf_fraction` is in the harness precisely so the
-difference is visible in the numbers.
-
-The cap is not a tuning knob. It decides whether the catalogue is a shelf of
-building blocks or a shelf of nearly-finished drugs, and enforcing it discards
-77% of what the vendor added over ZINC -- almost everything in the 15-20
-heavy-atom band, which is exactly where advanced intermediates live.
-
-**Safety, as scored today, rewards not doing chemistry.** The safety-tilted
-profile picks *more* degenerate routes than the feasibility-led one (6 vs 4 at
-<=20) and posts the project's best safety number, 0.900, doing it. A route that
-buys the molecule has almost no reagents left to be hazardous. Forcing genuine
-multi-step routes at <=14 drops safety to 0.660, which is the honest figure. Any
-catalogue containing advanced intermediates will trip this; see the known
-limitations.
-
-Numbers move slightly between runs. Repeating the ZINC row reproduced
-solve-rate, route length and pick counts exactly, and safety to three decimals,
-but sustainability moved 0.914 -> 0.895 and cost 0.593 -> 0.602 at the baseline.
-Treat the third decimal on sustainability and cost as noise.
+**Stable tie-breaking moved more than expected.** Route sets were always
+deterministic; their order was not, and `max` keeps the first of equal scores. On
+ZINC the default profile went from 1 changed pick to 3, and REAGENT safety from
+0.513 to 0.618. The tiebreak is arbitrary but reproducible -- ordered by route
+signature -- so it is not designed to pick better routes; landing on safer ones
+here is a side effect. What it guarantees is that the same inputs give the same
+answer.
 
 ### Safety is scored per hazard handled, not per step taken
 
@@ -491,15 +423,16 @@ On the hard set at <=14, against the same candidates:
 
 | rule | safety | sustainability | cost | agrees with weighted |
 |---|---|---|---|---|
-| feasibility-only baseline | 0.532 | 0.90 | 0.53 | -- |
-| tuned weights (REAGENT) | 0.628 | 0.91 | 0.58 | -- |
-| closest to the ideal point | 0.34-0.42 | 0.82-0.86 | 0.51-0.56 | 1-2 of 10 |
+| feasibility-only baseline | 0.529 | 0.898 | 0.535 | -- |
+| tuned weights (REAGENT, safety-tilted) | 0.628 | 0.914 | 0.578 | -- |
+| closest to the ideal point | 0.370 | 0.837 | 0.498 | 1 of 10 |
 
-The ideal-point row is given as a range because it is the least stable figure in
-the project: it selects off the Pareto front, so one target's candidate set
-shifting between runs flips its pick and moves the mean by ~0.07. Three runs of
-the same configuration gave safety 0.344, 0.414 and 0.418. The conclusion is
-unaffected -- every one of those is well below the baseline's 0.532.
+These figures were the least stable in the project before ties were made
+deterministic -- the rule selects off the Pareto front, so a candidate set
+arriving in a different order flipped its pick and moved the mean by ~0.07.
+Three runs then gave safety 0.344, 0.414 and 0.418; the row now reproduces. The
+conclusion never depended on that: every one of those values, and this one, sits
+well below the baseline.
 
 The ideal-point rule loses to the plain baseline on every objective. Equal
 distance on every axis is not the absence of a weighting -- it *is* a uniform
