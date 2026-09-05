@@ -271,6 +271,20 @@ build-it-yourself. One of the ten ZINC searches stopped on the 1800s clock
 rather than its iteration budget, so that column is marginally pessimistic on
 one target.
 
+**Not every figure here is reproducible.** The same configuration run three
+times (twice serially, once across parallel workers) gives identical solve-rate,
+route length, largest-leaf fraction, degenerate-route count, REAGENT safety and
+cost, and identical pick counts for the feasibility-led and safety-tilted
+profiles. It does *not* give an identical pick count for build-it-yourself: that
+came out 7, 6, 7. Read it as "6-7 of 10", and treat a one-target difference in
+any pick count as within noise.
+
+The cause is the search, not the parallelism -- two serial runs differ as much
+as serial differs from parallel. Most likely multi-threaded ONNX inference
+producing tiny floating-point differences that reorder near-tied templates and
+shift the candidate set. Pinning inference to one thread would make runs
+reproducible at a cost in speed; it has not been done.
+
 Three things worth taking from this.
 
 **Stock coverage was the cap, and a real catalogue lifts it.** On ZINC alone
@@ -288,8 +302,9 @@ the safety weight cannot outvote feasibility. At <=20 those two profiles *do*
 diverge (2 vs 4), but only because degenerate bought-intermediate routes are
 available to choose, which is not a capability worth having.
 
-**`build-it-yourself` is the profile that separates for a defensible reason.**
-It takes a seventh pick at <=14 and pulls the largest-leaf fraction to 0.62,
+**`build-it-yourself` is the profile that separates for a defensible reason,
+though weakly at <=14.** It takes a sixth or seventh pick there -- the count is
+not stable across runs -- and pulls the largest-leaf fraction to 0.62,
 paying for it in safety (0.556 against 0.628) -- buy less of the molecule, handle
 more reagents. At <=20 it cuts degenerate routes from 5 to 3. On ZINC it is
 identical to feasibility-led, which is correct rather than disappointing: with
@@ -419,9 +434,15 @@ On the hard set at <=14, against the same candidates:
 
 | rule | safety | sustainability | cost | agrees with weighted |
 |---|---|---|---|---|
-| feasibility-only baseline | 0.532 | 0.900 | 0.532 | -- |
-| tuned weights (REAGENT) | 0.628 | 0.914 | 0.578 | -- |
-| closest to the ideal point | 0.344 | 0.824 | 0.514 | 1 of 10 |
+| feasibility-only baseline | 0.532 | 0.90 | 0.53 | -- |
+| tuned weights (REAGENT) | 0.628 | 0.91 | 0.58 | -- |
+| closest to the ideal point | 0.34-0.42 | 0.82-0.86 | 0.51-0.56 | 1-2 of 10 |
+
+The ideal-point row is given as a range because it is the least stable figure in
+the project: it selects off the Pareto front, so one target's candidate set
+shifting between runs flips its pick and moves the mean by ~0.07. Three runs of
+the same configuration gave safety 0.344, 0.414 and 0.418. The conclusion is
+unaffected -- every one of those is well below the baseline's 0.532.
 
 The ideal-point rule loses to the plain baseline on every objective. Equal
 distance on every axis is not the absence of a weighting -- it *is* a uniform
@@ -432,6 +453,35 @@ loses to optimizing the right ones.
 It stays in the evaluation output as a control rather than a recommendation. The
 profiles agreeing with each other says the objectives are correlated across the
 candidates on offer; this says the weight vector nonetheless earns its place.
+
+### What the objective spreads say, and what they do not
+
+Median spread across the candidate sets of eight hard targets, per objective:
+
+| objective | median | min | max | under the 0.10 floor |
+|---|---|---|---|---|
+| cost | 0.179 | 0.075 | 0.242 | 2 of 8 |
+| safety | 0.169 | 0.060 | 0.733 | 1 of 8 |
+| sustainability | 0.154 | 0.076 | 0.291 | 2 of 8 |
+| construction | 0.116 | 0.000 | 0.375 | 2 of 8 |
+| efficiency | 0.075 | 0.000 | 0.300 | 4 of 8 |
+| feasibility | 0.025 | 0.003 | 0.894 | 7 of 8 |
+| availability | 0.000 | 0.000 | 0.000 | 8 of 8 |
+
+Two things follow, one of which is not what it first looks like.
+
+`availability` is constant on every target, confirming it can never separate
+solved routes -- which is why `construction`'s weight was taken from it.
+
+`feasibility` carries the largest weight (0.30) yet sits under the near-tie
+floor on seven of eight targets, so it is damped on most of them. That reads
+like a miscalibration, and giving it a lower floor of its own was tried. It is
+not one: a 0.02 gap between two candidates the *same policy model* produced is
+not evidence that one route is better, and stretching it to a full swing lets it
+outvote a 0.6 difference in safety. Whether small likelihood differences carry
+information is answerable only against reference routes, which this project does
+not have. The floor stays, and feasibility's nominal 0.30 buys less than it
+appears to -- an honest limitation rather than a bug to fix blind.
 
 ### Aggregation
 

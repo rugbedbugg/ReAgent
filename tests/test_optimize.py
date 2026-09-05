@@ -162,3 +162,29 @@ def test_compromise_needs_no_weights_to_disagree_with_a_weighted_pick():
     safety_heavy = {"safety": 0.9, "cost": 0.05, "feasibility": 0.05}
     assert rank_routes(routes, weights=safety_heavy)[0] is safe_only
     assert compromise_route(routes) is balanced
+
+
+def test_feasibility_is_deliberately_floored_despite_its_weight():
+    """Feasibility's measured median spread is 0.025, under the 0.10 floor.
+
+    It carries the largest weight (0.30) yet is damped on most targets. That is
+    intended: a 0.02 gap between two candidates from the same policy model is
+    not evidence one route is better, and stretching it to a full swing would
+    let it outvote real differences elsewhere. Pinned so the floor is not
+    "fixed" without evidence that small likelihood gaps mean something.
+    """
+    from reagent.optimize.aggregate import MIN_SPAN, normalized_vectors
+
+    assert MIN_SPAN > 0.025, "must stay above feasibility's measured median spread"
+
+    low, high = normalized_vectors([{"feasibility": 0.100}, {"feasibility": 0.125}])
+    assert high["feasibility"] < 0.30, "a typical feasibility gap stays a near-tie"
+
+
+def test_a_wide_spread_still_uses_its_own_range():
+    """The floor must not damp an objective that genuinely separates candidates."""
+    from reagent.optimize.aggregate import normalized_vectors
+
+    low, high = normalized_vectors([{"safety": 0.20}, {"safety": 0.80}])
+    assert low["safety"] == 0.0
+    assert high["safety"] == 1.0

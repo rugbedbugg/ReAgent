@@ -49,12 +49,25 @@ def score_vector(route: Route) -> dict[str, float]:
 
 
 # Objectives whose candidates differ by less than this are treated as nearly
-# tied rather than rescaled to a full swing. It has to sit *below* the spread a
-# real objective shows, or that objective stays permanently handicapped against
-# a wider-ranging one and the normalization achieves nothing: measured spreads
-# run 0.11-0.15 for cost, 0.20-0.30 for safety and sustainability, and 0.47-0.73
-# for feasibility. At 0.10 every one of those is normalized on its own range,
-# while a difference too small to mean anything on a 0..1 rubric stays small.
+# tied rather than rescaled to a full swing. The floor has to sit below the
+# spread a real objective shows, or that objective is handicapped against a
+# wider-ranging one and the normalization achieves nothing.
+#
+# Measured across the candidate sets of eight hard targets, median spread per
+# objective: cost 0.179, safety 0.169, sustainability 0.154, construction 0.116,
+# efficiency 0.075, feasibility 0.025, availability 0.000. So feasibility --
+# which carries the largest weight -- sits *under* this floor on seven of the
+# eight, and contributes a damped difference rather than its own full range.
+#
+# That looks like a miscalibration and was nearly "fixed" by giving feasibility
+# its own lower floor. It is not one. Feasibility is a product of model
+# probabilities, and a 0.02 gap between two candidates the same model produced
+# is not evidence that one route is better; min-max would stretch it to a full
+# swing, and at weight 0.30 it would then outvote a 0.6 difference in safety --
+# see ``test_small_spread_is_not_stretched_into_a_decision``. Whether small
+# likelihood differences mean anything is answerable only against reference
+# routes, which this project does not have. Until then the floor stays, and
+# feasibility's nominal 0.30 buys less than it appears to.
 MIN_SPAN = 0.10
 
 
