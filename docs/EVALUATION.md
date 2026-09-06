@@ -495,6 +495,55 @@ the run took the expected time, and the output looked plausible. Counting routes
 against the single-algorithm arms is what caught it: a union cannot be smaller
 than one of its members.
 
+## Pooling needs a higher `--max-routes`
+
+Pooling only helps if the candidates survive to the ranking layer. Distinct
+routes returned by `mcts,retrostar` on four hard targets, asked for up to 40:
+
+| target | pooled routes |
+|---|---|
+| propranolol | 33 |
+| fluoxetine | 21 |
+| lamotrigine | 12 |
+| warfarin | 6 |
+
+A cap of 15, which is what the evaluations here have used, binds on half of them
+and costs propranolol 18 of its 33 candidates. A single search never hit it:
+Retro* alone returned 9 on naproxen. So the cap was harmless until pooling made
+it the binding constraint, and the first pooled evaluation was measuring a
+clipped version of the lever.
+
+Use `--max-routes 40` with a pooled search. The number is not a swept optimum,
+it is simply above the largest count observed.
+
+## Where a leaf-fraction threshold bites
+
+Computed from the 306 route vectors in
+`adaptive-vectors-49-targets.json` rather than by re-running anything, since
+`construction` encodes the fraction directly.
+
+| `--max-leaf-fraction` | routes it would reject |
+|---|---|
+| 0.4 | 100% |
+| 0.5 | 82% |
+| 0.6 (build default) | 58% |
+| 0.7 | 47% |
+| 0.8 | 35% |
+| 0.9 | 31% |
+
+Two values can be ruled out without running them. **0.4 rejects every route in
+the set**, so it cannot be a usable setting. And 0.8 or 0.9 reject barely more
+than the 31% of routes sitting at 0.9 or above, which are the outright
+degenerate ones, so they constrain almost nothing beyond what is indefensible
+anyway.
+
+That leaves 0.5, 0.6 and 0.7 as the only settings worth measuring.
+
+These shares come from unconstrained runs, so they overstate the real cost: under
+a constraint the search finds different routes rather than simply losing the
+rejected ones. Measured, 0.6 rejects 58% of these routes but costs the hard set
+only 0.08 of solve-rate and the moderate set 0.16.
+
 ## Measured dead ends
 
 Four ideas were built, measured against a control, and did not pay. They are

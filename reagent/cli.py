@@ -143,7 +143,9 @@ def build_catalogue(catalogue: str, output: str | None, max_heavy_atoms: int | N
                    "mcts, retrostar, dfpn or breadth-first. Comma-separate to pool "
                    "several ('mcts,retrostar'): each runs in turn and the union of "
                    "their routes is ranked, deduplicated on route identity. Run time "
-                   "is the sum, so this buys candidate diversity with wall clock.")
+                   "is the sum, so this buys candidate diversity with wall clock. "
+                   "Raise --max-routes with it: pooling returned up to 33 routes on "
+                   "one hard target, so the usual cap of 15 discards most of them.")
 @click.option("--cutoff-number", type=int, default=None,
               help="Templates each expansion may offer (default 50, which is what "
                    "binds today). Higher widens the disconnection space, at a cost in "
@@ -432,7 +434,9 @@ def feedback(smiles: str, prefer: int) -> None:
                    "mcts, retrostar, dfpn or breadth-first. Comma-separate to pool "
                    "several ('mcts,retrostar'): each runs in turn and the union of "
                    "their routes is ranked, deduplicated on route identity. Run time "
-                   "is the sum, so this buys candidate diversity with wall clock.")
+                   "is the sum, so this buys candidate diversity with wall clock. "
+                   "Raise --max-routes with it: pooling returned up to 33 routes on "
+                   "one hard target, so the usual cap of 15 discards most of them.")
 @click.option("--cutoff-number", type=int, default=None,
               help="Templates each expansion may offer (default 50, which is what "
                    "binds today). Higher widens the disconnection space, at a cost in "
