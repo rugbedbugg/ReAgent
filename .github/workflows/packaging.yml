@@ -30,9 +30,11 @@ jobs:
         working-directory: SUBMISSIONS/chocolatey
         run: choco pack
 
+      # Both sources: the local folder holds reagent.nupkg, the community feed
+      # holds the python311 dependency. "-s ." alone cannot resolve the latter.
       - name: Install from the local package
         working-directory: SUBMISSIONS/chocolatey
-        run: choco install reagent -s . -y --no-progress
+        run: choco install reagent -s ".;https://community.chocolatey.org/api/v2/" -y --no-progress
 
       - name: The shims work
         run: |

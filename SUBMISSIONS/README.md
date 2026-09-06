@@ -70,10 +70,19 @@ Dependency versions are pinned in `tools/requirements.txt` from the same
 export resolves per platform, and requiring hashes would reject the Windows
 wheels pip correctly selects.
 
-**This has not been run on Windows.** The nuspec is well-formed and the scripts
-are structurally checked, but nothing here has executed. Test with
-`choco install reagent -s .` on a real machine, or in a container, before
-pushing to the community feed.
+Build and install it locally with:
+
+```powershell
+cd SUBMISSIONS\chocolatey
+choco pack
+choco install reagent -s ".;https://community.chocolatey.org/api/v2/" -y
+```
+
+Both sources are needed. The local folder holds `reagent.nupkg`; the community
+feed holds the `python311` dependency, which `-s .` alone cannot resolve.
+
+The `Packaging` workflow runs exactly this on a Windows runner whenever
+`SUBMISSIONS/` changes, so the package is no longer untested.
 
 ## winget
 
