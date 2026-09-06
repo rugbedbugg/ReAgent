@@ -237,6 +237,12 @@ class AiZynthBackend:
 
         for name in self.algorithms:
             self._finder.config.search.algorithm = resolve_algorithm(name)
+            # tree_search() only builds a tree when there is not one already, and
+            # the tree is what binds the algorithm. Without clearing it, every
+            # pass after the first silently re-runs the first algorithm: pooling
+            # mcts,retrostar returned MCTS's 5 routes rather than the union with
+            # Retro*'s 9, which is how this was caught.
+            self._finder.tree = None
             self._finder.tree_search()
             stats = dict(self._finder.search_stats)
             self.last_search_stats = stats
