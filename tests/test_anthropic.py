@@ -10,6 +10,7 @@ What they deliberately do not prove is that the real API accepts this request.
 Only a live call does that, and a test needing a paid key is a test nobody runs.
 """
 
+import inspect
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -109,8 +110,6 @@ def test_it_satisfies_the_interface_the_orchestrator_calls(monkeypatch):
     notice, because every other test runs against the local model."""
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     from reagent.agents.llm.ollama_client import OllamaClient
-
-    import inspect
 
     anthropic_sig = inspect.signature(AnthropicClient.complete)
     ollama_sig = inspect.signature(OllamaClient.complete)

@@ -67,15 +67,20 @@ def test_progress_falls_back_to_lines_when_output_is_redirected(tmp_path, monkey
     assert "planned fluoxetine  (1/10)" in log.read_text()
 
 
-def test_an_unreadable_probe_is_not_the_same_as_a_full_machine():
+def test_memory_is_probeable_on_whatever_platform_this_is():
     """The bug this guards: /proc/meminfo does not exist on Windows or macOS,
     the old reader returned 0 there, and 0 floors the job count. So --jobs was
-    silently 1 on every non-Linux platform, with nothing said about it."""
+    silently 1 on every non-Linux platform, with nothing said about it.
+
+    Deliberately not asserting *which* probe answers. On the Windows runner
+    this is the only thing that exercises the ctypes path, and asserting Linux
+    here is what made the first version of this test fail on Windows.
+    """
     from reagent.eval import parallel
 
-    assert parallel._probe_linux_mb() is not None  # this is Linux
-    # None means "the platform did not answer", which is not "no memory free".
-    assert parallel._probe_memory_mb() != 0 or parallel._probe_memory_mb() is None
+    reading = parallel._probe_memory_mb()
+    assert reading is not None, "no memory probe answered on this platform"
+    assert reading > 0
 
 
 def test_serial_fallback_on_an_unreadable_probe_says_so(monkeypatch):
