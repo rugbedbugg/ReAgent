@@ -84,6 +84,19 @@ feed holds the `python311` dependency, which `-s .` alone cannot resolve.
 The `Packaging` workflow runs exactly this on a Windows runner whenever
 `SUBMISSIONS/` changes, so the package is no longer untested.
 
+### Publishing it
+
+Not yet on the community feed. Publishing needs a Windows machine, since `choco`
+runs nowhere else, and an API key from a chocolatey.org account. The workflow
+does both:
+
+1. Add the key as a repository secret named `CHOCOLATEY_API_KEY`
+2. Run the `Packaging` workflow manually, ticking the `publish` input
+
+The install test must pass before the push job runs, and the push is opt-in on
+every run rather than riding on a tag, because a push to the community feed is
+public and cannot be withdrawn. Moderation review follows and can take days.
+
 ## winget
 
 Not submitted, deliberately.

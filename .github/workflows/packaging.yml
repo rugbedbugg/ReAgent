@@ -6,6 +6,11 @@ name: Packaging
 # on every push. It runs when the packaging actually changes, and on demand.
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Also push to the Chocolatey community feed (public, irreversible)"
+        type: boolean
+        default: false
   pull_request:
     paths:
       - "SUBMISSIONS/**"
@@ -77,3 +82,35 @@ jobs:
       - name: Source checksums resolve
         working-directory: SUBMISSIONS/aur
         run: su builder -c "makepkg --verifysource --skippgpcheck"
+
+  # Publishing needs a Windows runner (choco is Windows-only) and an API key
+  # that only the maintainer holds. Manual by design: a push to the community
+  # feed is public and cannot be undone, so it does not ride on a tag.
+  publish-chocolatey:
+    name: publish to the chocolatey community feed
+    runs-on: windows-latest
+    if: github.event_name == 'workflow_dispatch' && inputs.publish
+    needs: chocolatey
+    environment: chocolatey
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refuse to publish without a key
+        shell: pwsh
+        run: |
+          if (-not "${{ secrets.CHOCOLATEY_API_KEY }}") {
+            throw "CHOCOLATEY_API_KEY is not set. Add it as a repository secret."
+          }
+
+      - name: Pack
+        working-directory: SUBMISSIONS/chocolatey
+        run: choco pack
+
+      - name: Push
+        working-directory: SUBMISSIONS/chocolatey
+        shell: pwsh
+        run: |
+          choco apikey --key "${{ secrets.CHOCOLATEY_API_KEY }}" --source https://push.chocolatey.org/
+          $pkg = Get-ChildItem -Filter "reagent.*.nupkg" | Select-Object -First 1
+          Write-Host "Pushing $($pkg.Name)"
+          choco push $pkg.FullName --source https://push.chocolatey.org/
