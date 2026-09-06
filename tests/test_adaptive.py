@@ -47,3 +47,38 @@ def test_update_from_preference_shifts_and_normalizes():
     assert new["safety"] > weights["safety"]  # safety gained weight
     assert new["cost"] < weights["cost"]
     assert math.isclose(sum(new.values()), 1.0)
+
+
+def test_update_from_preference_is_a_no_op_when_nothing_distinguishes():
+    """A route that ties its rivals on every objective carries no signal, so
+    the weights must come back untouched rather than drifting on noise."""
+    weights = {"safety": 0.5, "cost": 0.5}
+    tied = {"safety": 0.9, "cost": 0.5}
+
+    new = update_from_preference(weights, tied, [dict(tied)])
+
+    assert new == weights
+
+
+def test_update_from_preference_is_a_no_op_without_competitors():
+    """With nothing to compare against there is no gap to learn from. The
+    preferred route is treated as its own rival, which keeps the step at zero
+    instead of dividing by an empty list."""
+    weights = {"safety": 0.5, "cost": 0.5}
+
+    new = update_from_preference(weights, {"safety": 0.9}, [])
+
+    assert new == weights
+
+
+def test_objectives_absent_from_the_preferred_route_are_scored_as_zero():
+    """`preferred` need not mention every objective. A missing one reads as 0.0
+    and therefore as a shortfall against rivals that do score on it, so it
+    loses weight rather than being skipped."""
+    weights = {"safety": 0.5, "cost": 0.5}
+
+    new = update_from_preference(weights, {"safety": 0.9}, [{"safety": 0.9, "cost": 0.5}])
+
+    assert new["cost"] < weights["cost"]
+    assert new["safety"] > weights["safety"]
+    assert math.isclose(sum(new.values()), 1.0)
