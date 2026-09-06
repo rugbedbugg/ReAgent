@@ -1,0 +1,113 @@
+### HARD SET, 24 targets, retrostar 500it/1800s, zinc+emol<=14
+2026-09-06T07:47:57+05:30
+Loading search backend...
+  planning fluoxetine ... (1/24)
+  planning sertraline ... (2/24)
+  planning diazepam ... (3/24)
+  planning warfarin ... (4/24)
+  planning celecoxib ... (5/24)
+  planning sumatriptan ... (6/24)
+  planning chlorpromazine ... (7/24)
+  planning venlafaxine ... (8/24)
+  planning propranolol ... (9/24)
+  planning ketamine ... (10/24)
+  planning bupropion ... (11/24)
+  planning lamotrigine ... (12/24)
+  planning tramadol ... (13/24)
+  planning clopidogrel ... (14/24)
+  planning omeprazole ... (15/24)
+  planning fluconazole ... (16/24)
+  planning citalopram ... (17/24)
+  planning ondansetron ... (18/24)
+  planning ciprofloxacin ... (19/24)
+  planning donepezil ... (20/24)
+  planning ezetimibe ... (21/24)
+  planning losartan ... (22/24)
+  planning sildenafil ... (23/24)
+  planning amlodipine ... (24/24)
+
+=== feasibility-led ===
+targets 24   solve-rate 1.00   avg route length 2.00   REAGENT changed the pick on 11 target(s)
+  largest leaf 0.58 of the target on average; 1 route(s) buy an advanced intermediate (>= 0.80) rather than build from building blocks
+  weight-free compromise agrees with the weighted pick on 2/24; its largest leaf 0.62
+  objective          baseline    REAGENT  compromise
+  safety                0.502      0.567       0.416
+  sustainability        0.867      0.889       0.838
+  cost                  0.505      0.540       0.441
+
+=== safety-tilted ===
+targets 24   solve-rate 1.00   avg route length 2.00   REAGENT changed the pick on 12 target(s)
+  largest leaf 0.58 of the target on average; 1 route(s) buy an advanced intermediate (>= 0.80) rather than build from building blocks
+  weight-free compromise agrees with the weighted pick on 2/24; its largest leaf 0.62
+  objective          baseline    REAGENT  compromise
+  safety                0.502      0.599       0.416
+  sustainability        0.867      0.890       0.838
+  cost                  0.505      0.540       0.441
+
+=== build-it-yourself ===
+targets 24   solve-rate 1.00   avg route length 2.04   REAGENT changed the pick on 13 target(s)
+  largest leaf 0.57 of the target on average; 1 route(s) buy an advanced intermediate (>= 0.80) rather than build from building blocks
+  weight-free compromise agrees with the weighted pick on 2/24; its largest leaf 0.62
+  objective          baseline    REAGENT  compromise
+  safety                0.502      0.557       0.416
+  sustainability        0.867      0.895       0.838
+  cost                  0.505      0.528       0.441
+### MODERATE SET, 25 targets, same config
+2026-09-06T08:58:56+05:30
+Loading search backend...
+  planning aspirin ... (1/25)
+  planning paracetamol ... (2/25)
+  planning ibuprofen ... (3/25)
+  planning benzocaine ... (4/25)
+  planning phenacetin ... (5/25)
+  planning salicylamide ... (6/25)
+  planning procaine ... (7/25)
+  planning lidocaine ... (8/25)
+  planning naproxen ... (9/25)
+  planning ketoprofen ... (10/25)
+  planning acetanilide ... (11/25)
+  planning methyl salicylate ... (12/25)
+  planning caffeine ... (13/25)
+  planning theophylline ... (14/25)
+  planning vanillin ... (15/25)
+  planning diphenhydramine ... (16/25)
+  planning diclofenac ... (17/25)
+  planning flurbiprofen ... (18/25)
+  planning mefenamic acid ... (19/25)
+  planning phenylbutazone ... (20/25)
+  planning gabapentin ... (21/25)
+  planning pregabalin ... (22/25)
+  planning metformin ... (23/25)
+  planning atenolol ... (24/25)
+  planning indomethacin ... (25/25)
+
+NOTE: 2 of 25 searches stopped on the 1800s clock rather than the iteration budget. Raise --time-limit before reading anything into --iterations.
+
+=== feasibility-led ===
+targets 25   solve-rate 1.00   avg route length 1.08   REAGENT changed the pick on 7 target(s)
+  largest leaf 0.78 of the target on average; 10 route(s) buy an advanced intermediate (>= 0.80) rather than build from building blocks
+  weight-free compromise agrees with the weighted pick on 1/25; its largest leaf 0.87
+  objective          baseline    REAGENT  compromise
+  safety                0.439      0.556       0.468
+  sustainability        0.789      0.848       0.776
+  cost                  0.703      0.707       0.670
+
+=== safety-tilted ===
+targets 25   solve-rate 1.00   avg route length 1.04   REAGENT changed the pick on 16 target(s)
+  largest leaf 0.83 of the target on average; 13 route(s) buy an advanced intermediate (>= 0.80) rather than build from building blocks
+  weight-free compromise agrees with the weighted pick on 0/25; its largest leaf 0.87
+  objective          baseline    REAGENT  compromise
+  safety                0.439      0.754       0.468
+  sustainability        0.789      0.900       0.776
+  cost                  0.703      0.726       0.670
+
+=== build-it-yourself ===
+targets 25   solve-rate 1.00   avg route length 1.08   REAGENT changed the pick on 12 target(s)
+  largest leaf 0.76 of the target on average; 9 route(s) buy an advanced intermediate (>= 0.80) rather than build from building blocks
+  weight-free compromise agrees with the weighted pick on 1/25; its largest leaf 0.87
+  objective          baseline    REAGENT  compromise
+  safety                0.439      0.552       0.468
+  sustainability        0.789      0.886       0.776
+  cost                  0.703      0.709       0.670
+### DONE
+2026-09-06T10:02:56+05:30

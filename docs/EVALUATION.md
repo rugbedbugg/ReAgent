@@ -90,11 +90,20 @@ route length falls to 1.10 and three to four routes buy the penultimate
 compound. The cap is what makes the solve-rate mean something, and enforcing it
 discards 77% of what the vendor added.
 
-**Weighting safety works; weighting buy-versus-build does not.** The
+**Weighting safety works; weighting buy-versus-build barely does.** The
 safety-tilted profile separates on every stock, with one more pick changed than the
 default, and clearly higher safety (0.766 against 0.622 at <=20). The
 `build-it-yourself` profile, at 0.30 on `construction`, produces output identical
 to the default on ZINC and <=20 and near-identical at <=14.
+
+That last claim was corrected once the target set was widened. On ten targets
+the profile was indistinguishable from the default. On twenty-four it is
+distinguishable, just barely: 13 picks changed against the default's 11, mean
+route length 2.04 against 2.00, sustainability 0.895 against 0.889, and safety
+0.557 against 0.567. It buys slightly more building at a small cost in safety,
+which is a coherent trade rather than noise. The original conclusion was not
+wrong about the size of the effect, only about it being zero, and ten targets
+could not resolve the difference.
 
 That is a correction. Before ties were made deterministic, this profile appeared
 to cut degenerate routes at <=20 from 5 to 3 and pull the leaf fraction to 0.62,
@@ -111,6 +120,73 @@ ZINC the default profile went from 1 changed pick to 3, and REAGENT safety from
 signature, so it is not designed to pick better routes; landing on safer ones
 here is a side effect. What it guarantees is that the same inputs give the same
 answer.
+
+## The widened sets: 20 targets to 49
+
+Everything above was measured on ten targets, several conclusions on eight. The
+sets were widened to 25 moderate and 24 hard, spanning 9 to 33 heavy atoms, and
+re-measured under the same configuration (`retrostar`, 500 iterations, 1800 s,
+ZINC unioned with eMolecules capped at 14).
+
+### The hard set held up
+
+| | 10 targets | 24 targets |
+|---|---|---|
+| solve-rate | 1.00 | 1.00 |
+| mean route length | 2.00 | 2.00 |
+| buys an advanced intermediate | 1 of 10 | 1 of 24 |
+| picks changed | 5 / 6 / 5 | 11 / 12 / 13 |
+| baseline safety | 0.529 | 0.502 |
+| REAGENT safety | 0.555 / 0.628 / 0.550 | 0.567 / 0.599 / 0.557 |
+
+The selection layer looks better on the wider set, not worse. Its safety lift
+over the baseline grew from +0.026 to +0.065 on the default profile, because the
+baseline fell on the more varied targets while REAGENT's pick held. The
+safety-tilted lift is +0.097, unchanged from +0.099. Picks changed stayed
+proportional, 50% against 46%, so the layer engages at the same rate.
+
+Solve-rate holding at 1.00 across 24 targets from 16 to 33 heavy atoms is the
+result most likely to have been a small-sample artifact. It was not.
+
+### The moderate set exposed that the catalogue cap is relative, not absolute
+
+The moderate set had only ever been run against ZINC. Run against the same
+capped catalogue as the hard set, it degenerates badly:
+
+| | hard, 24 | moderate, 25 |
+|---|---|---|
+| solve-rate | 1.00 | 1.00 |
+| mean route length | 2.00 | 1.08 |
+| mean largest-leaf fraction | 0.58 | 0.78 |
+| buys an advanced intermediate | 1 of 24 | 10 of 25 |
+| baseline safety | 0.502 | 0.439 |
+| REAGENT safety | 0.567 / 0.599 / 0.557 | 0.556 / 0.754 / 0.552 |
+
+Ten of twenty-five routes, and thirteen under safety-tilted weights, just buy a
+nearly finished molecule. Route length collapses to 1.08, meaning most targets
+are reached in a single step.
+
+The cause is arithmetic, not chemistry. The moderate targets average 15.0 heavy
+atoms against the hard set's 22.7, so a 14-heavy-atom building block is **93% of
+the mean moderate target and 62% of the mean hard one**. The same cap that
+yields genuine building blocks for a 30-atom drug is close to the whole molecule
+for an 18-atom one.
+
+So `--max-heavy-atoms 14` is not the universal rule the earlier note implied. It
+was calibrated on the hard set and does not transfer downward. A cap that is a
+fraction of target size, rather than a constant, is what the measurement
+actually argues for. That is not implemented, and until it is, the honest advice
+is to pick the cap against the targets in hand.
+
+**A caution about the safety-tilted numbers on this set.** Safety rises from
+0.439 to 0.754, the largest lift measured anywhere here, and it is partly earned
+the wrong way: the same profile takes degenerate routes from 10 to 13. Buying a
+finished molecule really is safer to handle, which is the "safest to run is not
+best synthesis" tension already noted, and it is far more visible on small
+targets than on the hard set where it was first described.
+
+Two of the twenty-five searches stopped on the 1800 s clock rather than the
+iteration budget, so those two measure the timeout.
 
 ## Safety is scored per hazard handled, not per step taken
 
@@ -438,8 +514,14 @@ is a shelf of building blocks or a shelf of nearly-finished drugs.
 
 Measured on the hard set: at 14 the routes are genuine and average 2.00 steps;
 at 20 the same catalogue reaches the same solve-rate with 1.10 steps, because
-four to six of ten routes just buy an advanced intermediate. Use 14. Enforcing
-the cap discards 77% of what the vendor added.
+four to six of ten routes just buy an advanced intermediate. Enforcing the cap
+discards 77% of what the vendor added.
+
+Use 14 **for targets the size of the hard set**, which average 22.7 heavy atoms.
+The cap is relative to target size, not absolute: on the moderate set, averaging
+15.0 heavy atoms, 14 is 93% of the mean target and 10 of 25 routes degenerate to
+buying a nearly finished molecule. See [the widened
+sets](#the-widened-sets-20-targets-to-49).
 
 Salts are indexed twice by default, as listed and as their largest fragment.
 Catalogues sell the amine hydrochloride; a route asks for the free amine, and

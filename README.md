@@ -288,6 +288,26 @@ atoms reaches 1.00 with routes that get *longer* rather than shorter. Uncapped
 at 20 it also reaches 1.00, but by buying the penultimate compound on 3 of 10,
 which is not the same achievement.
 
+**It holds on a wider set.** The evaluation sets were widened from 20 targets to
+49, and the hard set re-measured at 24:
+
+| | 10 targets | 24 targets |
+|---|---|---|
+| Solve-rate | 1.00 | 1.00 |
+| Mean route length | 2.00 | 2.00 |
+| Routes buying an advanced intermediate | 1 of 10 | 1 of 24 |
+| Safety lift over the baseline | +0.026 | **+0.065** |
+
+The lift grew because the baseline fell on the more varied targets while
+REAGENT's pick held.
+
+**The catalogue cap is relative to target size, not absolute.** Run against the
+same capped catalogue, the moderate set (mean 15.0 heavy atoms, against the hard
+set's 22.7) collapses: route length 1.08 and 10 of 25 routes buy a nearly
+finished molecule. A 14-atom building block is 93% of the mean moderate target
+and 62% of the mean hard one. Pick the cap against the targets in hand rather
+than taking 14 as a rule.
+
 **The feedback loop learns.** Twenty targets, a hidden user preference the loop
 cannot see, regret measured as the utility gap against that hidden preference:
 
@@ -299,7 +319,7 @@ cannot see, regret measured as the utility gap against that hidden preference:
 **It runs on 8 GB.** `--hashed-stock` takes a planning run from 4.91 GB to
 0.63 GB peak RSS with identical results.
 
-Full methodology, all three weight profiles, the objective spreads, and five
+Full methodology, all three weight profiles, the objective spreads, and the
 measured dead ends: **[docs/EVALUATION.md](docs/EVALUATION.md)**.
 
 ## Project Structure
