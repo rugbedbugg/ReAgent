@@ -462,6 +462,39 @@ Two unrelated methods agreeing that feasibility's nominal 0.30 buys little is
 stronger evidence than either on its own.
 
 
+## Pooling several searches
+
+Combining expansion *policies* was measured and did nothing. Combining search
+*algorithms* is a different experiment, and it is the one that works. Naproxen,
+500 iterations, 600 s, hashed ZINC:
+
+| `--algorithm` | distinct routes |
+|---|---|
+| `mcts` | 5 |
+| `dfpn` | 5 |
+| `retrostar` | 9 |
+| `mcts,retrostar` | **13** |
+| `mcts,retrostar,dfpn` | **17** |
+
+The searches barely overlap. MCTS finds 5 and Retro* finds 9, and pooling gives
+13 rather than the 14 they would sum to, so exactly one route is shared. Adding
+DFPN's 5 brings 4 more. Three searches over the same single-step model and the
+same stock return almost entirely different routes, which is the case for
+pooling: the selection layer can only choose among what it is handed, and this
+nearly doubles that against the best single search.
+
+Run time is the sum of the arms, so this buys candidate diversity with wall
+clock rather than with memory. Whether more candidates produce a *better
+selected* route is a separate question, measured on the full hard set below.
+
+**The first implementation of this was wrong, and silently.** Pooling
+`mcts,retrostar` returned 5 routes, MCTS's count, because `tree_search()` builds
+a tree only when there is not one already and the tree is what binds the
+algorithm. Every pass after the first re-ran the first search. Nothing raised,
+the run took the expected time, and the output looked plausible. Counting routes
+against the single-algorithm arms is what caught it: a union cannot be smaller
+than one of its members.
+
 ## Measured dead ends
 
 Four ideas were built, measured against a control, and did not pay. They are

@@ -26,7 +26,8 @@ on top.
 
 - Two modes over one engine: `build` refuses to buy the answer, `source` buys freely
 - Seven scored objectives: feasibility, precursor availability, cost, safety, sustainability, efficiency, and buy-versus-build
-- Four tree searches over the same single-step model: MCTS, Retro\*, DFPN, breadth-first
+- Four tree searches over the same single-step model, poolable: `--algorithm mcts,retrostar`
+  returns 13 distinct routes on naproxen where the best single search returns 9
 - Real vendor catalogues: turn an eMolecules or Enamine dump into usable stock
 - Runs on 8 GB of RAM: hashed stock lookup cuts a planning run from 4.91 GB to 0.63 GB
 - Offline scoring with a local Ollama model, or the Anthropic API, or neither
@@ -196,7 +197,7 @@ reagent check-agents [options]     # do LLM scores match the deterministic ones?
 | Flag | Default | Description |
 |---|---|---|
 | `--max-routes` | `5` plan, `25` evaluate | Candidate routes to consider. |
-| `--algorithm` | `mcts` | Tree search: `mcts`, `retrostar`, `dfpn`, `breadth-first`. |
+| `--algorithm` | `mcts` | Tree search: `mcts`, `retrostar`, `dfpn`, `breadth-first`. Comma-separate to pool several. |
 | `--iterations` | `100` | Search budget. Run time is roughly linear in it. |
 | `--time-limit` | `120` | Wall-clock seconds for the search. |
 | `--hashed-stock` | off | Look stock up via hashed keys (~140 MB instead of ~2.3 GB). |
