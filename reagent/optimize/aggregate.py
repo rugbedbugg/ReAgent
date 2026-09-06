@@ -167,3 +167,87 @@ def rank_routes(routes: list[Route], weights: dict[str, float] | None = None) ->
     # Descending score, then ascending signature: a stable order that does not
     # depend on the order the search happened to return the routes in.
     return sorted(routes, key=lambda r: (-r.scores["weighted"], route_signature(r)))
+
+
+# The multi-objective effect only shows when objectives beyond feasibility carry
+# weight, so evaluation reports both the feasibility-led default and a profile a
+# safety/green-minded chemist might set.
+WEIGHT_PROFILES: dict[str, dict[str, float]] = {
+    "feasibility-led": dict(DEFAULT_WEIGHTS),
+    "safety-tilted": {
+        "feasibility": 0.20,
+        "availability": 0.05,
+        "cost": 0.15,
+        "safety": 0.28,
+        "construction": 0.10,
+        "sustainability": 0.14,
+        "efficiency": 0.08,
+    },
+    # Genuine building-block routes to one target differ little in hazard, so
+    # tilting safety moves the pick less than it looks like it should. How much
+    # of the molecule a route builds *does* vary across candidates, so this is
+    # the profile that shows the selection layer expressing a preference.
+    "build-it-yourself": {
+        "feasibility": 0.20,
+        "availability": 0.05,
+        "cost": 0.10,
+        "safety": 0.10,
+        "construction": 0.30,
+        "sustainability": 0.15,
+        "efficiency": 0.10,
+    },
+    # Getting the compound in hand, not making it. Cost and step count lead;
+    # `construction` is deliberately near zero, since buying an advanced
+    # intermediate is the point of this profile rather than a failure of it.
+    "source-led": {
+        "feasibility": 0.25,
+        "availability": 0.10,
+        "cost": 0.30,
+        "safety": 0.10,
+        "construction": 0.02,
+        "sustainability": 0.05,
+        "efficiency": 0.18,
+    },
+}
+
+# A mode is a weight profile plus, for "build", a hard constraint. The weights
+# alone were measured to be too weak to express the intent: at 0.30 on
+# `construction` the build profile changes 13 picks against the default's 11,
+# because a soft preference cannot outvote a route that is simply shorter.
+# The constraint lives in the stock layer, so a leaf that is most of the target
+# is not purchasable at all and the route is never proposed.
+MODES: dict[str, dict] = {
+    # What ships today: rank on the default weights, buy whatever is for sale.
+    "balanced": {
+        "weights": "feasibility-led",
+        "max_leaf_fraction": None,
+        "help": "Rank on the default weights. No constraint on what may be bought.",
+    },
+    # For someone asking how to *make* the molecule.
+    "build": {
+        "weights": "build-it-yourself",
+        "max_leaf_fraction": 0.6,
+        "help": "Build rather than buy: reject leaves larger than 60% of the target.",
+    },
+    # For someone asking how to *obtain* it. Buying an advanced intermediate is
+    # the goal here, not a defect, so nothing is constrained.
+    "source": {
+        "weights": "source-led",
+        "max_leaf_fraction": None,
+        "help": "Obtain it cheaply: favour cost and few steps, buying freely.",
+    },
+}
+
+
+def mode_weights(mode: str) -> dict[str, float]:
+    """The starting weight vector for a mode."""
+    if mode not in MODES:
+        raise ValueError(f"Unknown mode {mode!r}. Choose from: {', '.join(sorted(MODES))}")
+    return dict(WEIGHT_PROFILES[MODES[mode]["weights"]])
+
+
+def mode_leaf_fraction(mode: str) -> float | None:
+    if mode not in MODES:
+        raise ValueError(f"Unknown mode {mode!r}. Choose from: {', '.join(sorted(MODES))}")
+    return MODES[mode]["max_leaf_fraction"]
+

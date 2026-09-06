@@ -20,40 +20,16 @@ from reagent.core.models import Route
 from reagent.features.scoring import deterministic_scores
 from reagent.optimize.aggregate import (
     DEFAULT_WEIGHTS,
+    WEIGHT_PROFILES,
     normalized_vectors,
     route_signature,
     weighted_from_vector,
 )
 from reagent.optimize.pareto import compromise_route
 
-# The multi-objective effect only shows when objectives beyond feasibility carry
-# weight, so evaluation reports both the feasibility-led default and a profile a
-# safety/green-minded chemist might set.
-WEIGHT_PROFILES: dict[str, dict[str, float]] = {
-    "feasibility-led": dict(DEFAULT_WEIGHTS),
-    "safety-tilted": {
-        "feasibility": 0.20,
-        "availability": 0.05,
-        "cost": 0.15,
-        "safety": 0.28,
-        "construction": 0.10,
-        "sustainability": 0.14,
-        "efficiency": 0.08,
-    },
-    # Genuine building-block routes to one target differ little in hazard, so
-    # tilting safety moves the pick less than it looks like it should. How much
-    # of the molecule a route builds *does* vary across candidates, so this is
-    # the profile that shows the selection layer expressing a preference.
-    "build-it-yourself": {
-        "feasibility": 0.20,
-        "availability": 0.05,
-        "cost": 0.10,
-        "safety": 0.10,
-        "construction": 0.30,
-        "sustainability": 0.15,
-        "efficiency": 0.10,
-    },
-}
+# Re-exported: evaluate() and check-adaptive read the profiles from here, and
+# they now live beside DEFAULT_WEIGHTS so `plan` can reach them too.
+__all__ = ["WEIGHT_PROFILES", "evaluate", "largest_leaf_fraction", "ADVANCED_LEAF"]
 
 
 def _select(routes: list[Route], weights: dict[str, float]) -> tuple[Route, Route]:
@@ -154,6 +130,17 @@ def evaluate(
     return {
         "n_targets": len(targets),
         "solve_rate": solved / len(targets) if targets else 0.0,
+        # Solve-rate counts a target as solved when every leaf is purchasable,
+        # which counts buying a nearly finished molecule as success. On the
+        # moderate set against a capped catalogue that is 10 of 25 targets, so
+        # the honest figure is 0.60 where solve_rate reports 1.00. Reported
+        # alongside rather than instead: both questions are legitimate, and
+        # which one matters depends on whether you meant to build or to buy.
+        "build_solve_rate": (
+            sum(f < ADVANCED_LEAF for f in leaf_fractions) / len(targets)
+            if targets
+            else 0.0
+        ),
         "avg_route_length": mean(lengths) if lengths else 0.0,
         "avg_largest_leaf_fraction": mean(leaf_fractions) if leaf_fractions else 0.0,
         "advanced_intermediate_routes": sum(f >= ADVANCED_LEAF for f in leaf_fractions),

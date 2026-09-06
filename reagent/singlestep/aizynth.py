@@ -71,6 +71,7 @@ class AiZynthBackend:
         molecule_cost: dict | None = None,
         cutoff_number: int | None = None,
         cutoff_cumulative: float | None = None,
+        max_leaf_fraction: float | None = None,
     ):
         # Imported lazily so importing reagent.core doesn't pull in the heavy
         # AiZynthFinder stack (and its slow numba/onnx imports).
@@ -112,6 +113,24 @@ class AiZynthBackend:
 
             self._finder.stock.load(SizeStock(max_heavy_atoms=permissive_stock), "permissive")
             selected.append("permissive")
+
+        # A leaf may only count as purchasable if it is also small enough
+        # relative to the target. Each selected stock is wrapped rather than the
+        # collection, which is exact rather than convenient: selection is a
+        # union, and (A | B) & Size == (A & Size) | (B & Size).
+        self._relative_stocks: list = []
+        if max_leaf_fraction is not None:
+            from reagent.singlestep.stock import TargetRelativeStock
+
+            wrapped_names = []
+            for key in selected:
+                wrapped = TargetRelativeStock(self._finder.stock[key], max_leaf_fraction)
+                name = f"{key}_relative"
+                self._finder.stock.load(wrapped, name)
+                self._relative_stocks.append(wrapped)
+                wrapped_names.append(name)
+            selected = wrapped_names
+
         self._finder.stock.select(selected)
 
         # Several expansion policies can run together: the policy collection
@@ -180,6 +199,18 @@ class AiZynthBackend:
 
     def plan(self, target_smiles: str, max_routes: int = 10) -> list[Route]:
         self._finder.target_smiles = target_smiles
+
+        # The size cap is a fraction of *this* target, so it can only be fixed
+        # now. One backend plans many targets, sequentially within a worker, so
+        # this is set per call rather than at construction.
+        if self._relative_stocks:
+            from rdkit import Chem
+
+            molecule = Chem.MolFromSmiles(target_smiles)
+            size = molecule.GetNumHeavyAtoms() if molecule else 0
+            for stock in self._relative_stocks:
+                stock.set_target_size(size)
+
         self._finder.tree_search()
         self.last_search_stats = dict(self._finder.search_stats)
         self._finder.build_routes()

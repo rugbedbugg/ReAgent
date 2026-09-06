@@ -149,19 +149,35 @@ def build_catalogue(catalogue: str, output: str | None, max_heavy_atoms: int | N
               help="Score objectives deterministically; the LLM only writes the rationale.")
 @click.option("--ghs", is_flag=True,
               help="Use real GHS reagent-hazard data from PubChem for safety (online, cached).")
+@click.option("--mode", type=click.Choice(["balanced", "build", "source"]), default="balanced",
+              help="What you are asking for. 'build' rejects leaves larger than 60% of "
+                   "the target, so it never proposes buying the answer; 'source' favours "
+                   "cost and few steps and buys freely; 'balanced' is the default weights "
+                   "with no constraint.")
 def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_model: str | None,
          rag: bool, permissive_stock: int | None, hashed_stock: bool,
          stock_cache: str | None, iterations: int | None,
          time_limit: int | None, expansion: str, steer: str | None, algorithm: str,
          cutoff_number: int | None, hybrid: bool,
-         ghs: bool) -> None:
+         ghs: bool, mode: str) -> None:
     """Plan retrosynthetic routes for a target SMILES."""
     canon = canonical(smiles)
     if canon is None:
         raise click.ClickException(f"Invalid SMILES: {smiles!r}")
     click.echo(f"Target: {canon}")
 
+    from reagent.eval.harness import ADVANCED_LEAF, largest_leaf_fraction
+    from reagent.optimize.aggregate import mode_leaf_fraction
     from reagent.singlestep.aizynth import AiZynthBackend
+
+    cap = mode_leaf_fraction(mode)
+    if cap is not None:
+        click.echo(
+            f"Mode: {mode}. A leaf larger than {cap:.0%} of the target is not treated "
+            "as purchasable, so a route that just buys the answer is never proposed."
+        )
+    else:
+        click.echo(f"Mode: {mode}. No constraint on what may be bought.")
 
     click.echo("Loading search backend...")
     backend = AiZynthBackend(
@@ -175,6 +191,7 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
         algorithm=algorithm,
         cutoff_number=cutoff_number,
         molecule_cost=_steer_config(steer),
+        max_leaf_fraction=mode_leaf_fraction(mode),
     )
 
     routes = backend.plan(canon, max_routes=max_routes)
@@ -237,7 +254,16 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
 
             enrich_ghs(route, ghs_client)
         flag = "solved" if route.solved else "unsolved"
-        click.echo(f"\n=== Route {i} ({flag}, {route.num_steps} steps) ===")
+        # How much of the target this route buys rather than makes. The
+        # `construction` objective has always scored it; nothing showed it to
+        # the person running `plan`, so a route that purchases a molecule
+        # larger than the target looked like any other one-step answer.
+        leaf = largest_leaf_fraction(route)
+        note = "  <- buys most of the target" if leaf >= ADVANCED_LEAF else ""
+        click.echo(
+            f"\n=== Route {i} ({flag}, {route.num_steps} steps, "
+            f"largest leaf {leaf:.0%} of target){note} ==="
+        )
         for j, rxn in enumerate(route.reactions, 1):
             click.echo(f"  [{j}] {' + '.join(rxn.precursors)}  ->  {rxn.product}")
         leaves = ", ".join(f"{m.smiles}{'*' if m.in_stock else ''}" for m in route.leaves)
@@ -261,19 +287,23 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
                     click.echo(f"      evidence: {ev}")
 
     if orchestrator is not None:
-        _rank_report(canon, routes)
+        _rank_report(canon, routes, mode)
 
 
-def _rank_report(target: str, routes: list) -> None:
+def _rank_report(target: str, routes: list, mode: str = "balanced") -> None:
     from reagent.adaptive.memory import Episode, EpisodicMemory
     from reagent.adaptive.weights import load_weights
     from reagent.agents.rationale import build_rationale
-    from reagent.optimize.aggregate import rank_routes
+    from reagent.eval.harness import ADVANCED_LEAF, largest_leaf_fraction
+    from reagent.optimize.aggregate import mode_weights, rank_routes
     from reagent.optimize.confidence import route_confidence
     from reagent.optimize.pareto import pareto_front
 
     numbers = {id(route): i for i, route in enumerate(routes, 1)}
-    weights = load_weights()
+    # The mode sets the starting weights. A vector learned from `reagent
+    # feedback` still applies in the default mode, so the adaptive loop keeps
+    # working rather than being reset by this.
+    weights = load_weights() if mode == "balanced" else mode_weights(mode)
     ranked = rank_routes(routes, weights)
     front_ids = {id(r) for r in pareto_front(routes)}
 
@@ -289,13 +319,23 @@ def _rank_report(target: str, routes: list) -> None:
     for rank, route in enumerate(ranked, 1):
         tag = " [Pareto]" if id(route) in front_ids else ""
         conf, prob = route_confidence(route)
+        leaf = largest_leaf_fraction(route)
         click.echo(
             f"  {rank}. Route {numbers[id(route)]}  "
             f"score={route.scores['weighted']:.3f} (abs {route.scores['weighted_raw']:.3f})  "
             f"({route.num_steps} steps)  "
+            f"buys {leaf:.0%} of the target  "
             f"confidence={conf} ({prob:.2f}){tag}"
         )
     click.echo(f"Pareto front: {len(front_ids)} non-dominated route(s) of {len(routes)}.")
+
+    top_leaf = largest_leaf_fraction(ranked[0])
+    if top_leaf >= ADVANCED_LEAF:
+        click.echo(
+            f"\nWARNING: the recommended route buys a fragment that is {top_leaf:.0%} of "
+            "your target, so it is closer to purchasing the compound than making it. "
+            "Use --mode build if you meant to synthesise it."
+        )
 
     best_conf, best_prob = route_confidence(ranked[0])
     if best_prob < 0.2:
@@ -390,10 +430,14 @@ def feedback(smiles: str, prefer: int) -> None:
 @click.option("--jobs", type=int, default=1,
               help="Plan this many targets at once. Capped by free memory, not by "
                    "cores: each worker holds its own ~1.6 GB planner.")
+@click.option("--mode", type=click.Choice(["balanced", "build", "source"]), default="balanced",
+              help="'build' rejects leaves larger than 60% of the target, which is what "
+                   "makes solve-rate mean 'solved by building' rather than 'solved, "
+                   "possibly by buying the answer'.")
 def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
              hashed_stock: bool, stock_cache: str | None, iterations: int | None,
              time_limit: int | None, expansion: str, steer: str | None, algorithm: str,
-             cutoff_number: int | None, hard: bool, jobs: int) -> None:
+             cutoff_number: int | None, hard: bool, jobs: int, mode: str) -> None:
     """Measure solve-rate and baseline-vs-REAGENT route quality."""
     from reagent.eval.harness import WEIGHT_PROFILES
     from reagent.eval.harness import evaluate as run_eval
@@ -404,6 +448,7 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
         safe_job_count,
     )
     from reagent.eval.targets import HARD_TARGETS, TARGETS
+    from reagent.optimize.aggregate import mode_leaf_fraction
     from reagent.singlestep.aizynth import AiZynthBackend
 
     backend_kwargs = dict(
@@ -416,6 +461,7 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
         algorithm=algorithm,
         cutoff_number=cutoff_number,
         molecule_cost=_steer_config(steer),
+        max_leaf_fraction=mode_leaf_fraction(mode),
     )
     targets = (HARD_TARGETS if hard else TARGETS)[:max_targets]
 
@@ -499,6 +545,8 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
             f"REAGENT changed the pick on {changed} target(s)"
         )
         click.echo(
+            f"  solved by building {result['build_solve_rate']:.2f} "
+            f"(solve-rate {result['solve_rate']:.2f} counts routes that buy the answer)\n"
             f"  largest leaf {result['avg_largest_leaf_fraction']:.2f} of the target on "
             f"average; {result['advanced_intermediate_routes']} route(s) buy an advanced "
             "intermediate (>= 0.80) rather than build from building blocks"

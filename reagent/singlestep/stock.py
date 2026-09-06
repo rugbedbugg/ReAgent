@@ -50,6 +50,65 @@ class SizeStock(StockQueryMixin):
             return False
 
 
+class TargetRelativeStock(StockQueryMixin):
+    """Purchasable, and small enough relative to the target to be a precursor.
+
+    A catalogue cap in absolute heavy atoms cannot serve targets of different
+    sizes. Measured on the widened evaluation sets: a 14-heavy-atom building
+    block is 62% of the mean hard target (22.7 atoms) and 93% of the mean
+    moderate one (15.0). At 14 the hard set produces genuine routes averaging
+    2.00 steps, while the moderate set collapses to 1.08 steps with 10 of 25
+    routes buying a nearly finished molecule.
+
+    The cap has to be a fraction of the target, and the target is only known
+    once planning starts, so it cannot live in the catalogue. It lives here
+    instead, wrapping whatever stock is underneath.
+
+    This deliberately sits in the stock layer rather than in ranking. Filtering
+    degenerate routes after the search wastes the search budget on routes that
+    get discarded, can leave no candidates at all when every route is
+    degenerate, and leaves solve-rate counting "bought the answer" as a solve.
+    A route is solved iff every leaf is in stock, so constraining stock makes
+    solve-rate honest in the same stroke.
+    """
+
+    def __init__(self, inner: StockQueryMixin, max_leaf_fraction: float = 0.6):
+        if not 0.0 < max_leaf_fraction <= 1.0:
+            raise ValueError(
+                f"max_leaf_fraction must be in (0, 1], got {max_leaf_fraction}"
+            )
+        self.inner = inner
+        self.max_leaf_fraction = max_leaf_fraction
+        self._target_heavy_atoms: int | None = None
+
+    def set_target_size(self, heavy_atoms: int) -> None:
+        """Called once per target, before the search starts."""
+        self._target_heavy_atoms = heavy_atoms if heavy_atoms > 0 else None
+
+    @property
+    def max_heavy_atoms(self) -> int | None:
+        """The absolute cap this fraction implies for the current target."""
+        if self._target_heavy_atoms is None:
+            return None
+        return int(self._target_heavy_atoms * self.max_leaf_fraction)
+
+    def __contains__(self, mol) -> bool:
+        if mol not in self.inner:
+            return False
+        cap = self.max_heavy_atoms
+        if cap is None:
+            # No target set yet, so there is nothing to be relative to. Defer
+            # to the inner stock rather than silently rejecting everything.
+            return True
+        try:
+            return mol.rd_mol.GetNumHeavyAtoms() <= cap
+        except Exception:
+            return False
+
+    def __len__(self) -> int:
+        return len(self.inner)
+
+
 def _hash_key(key: str) -> int:
     """Stable 64-bit digest of one InChI key.
 

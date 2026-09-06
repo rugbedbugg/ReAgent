@@ -190,3 +190,42 @@ def test_construction_survives_an_unparseable_target():
     route = Route(target="not-a-smiles",
                   leaves=[Molecule(smiles="CCO", in_stock=True)], solved=True)
     assert deterministic_scores(route)["construction"] == 0.0
+
+
+def _bought_whole(target: str) -> Route:
+    """A one-step route that buys a molecule which is nearly the target."""
+    return Route(
+        target=target,
+        leaves=[Molecule(smiles="CN=C1CCC(c2ccc(Cl)c(Cl)c2)c2ccccc21", in_stock=True)],
+        reactions=[Reaction(product=target, precursors=["CN=C1CCC(c2ccc(Cl)c(Cl)c2)c2ccccc21"])],
+        solved=True,
+    )
+
+
+def test_build_solve_rate_does_not_count_buying_the_answer():
+    """solve_rate counts a target as solved when every leaf is purchasable,
+    which counts buying a nearly finished molecule as success. On the moderate
+    set that was 10 of 25 targets, so 1.00 was reported where the honest figure
+    was 0.60. Both are now returned."""
+    sertraline = "CNC1CCC(c2ccc(Cl)c(Cl)c2)c2ccccc21"
+    result = evaluate([("sertraline", sertraline)], lambda _s: [_bought_whole(sertraline)])
+
+    assert result["solve_rate"] == 1.0
+    assert result["build_solve_rate"] == 0.0
+
+
+def test_build_solve_rate_matches_solve_rate_for_a_genuine_route():
+    fluoxetine = "CNCCC(Oc1ccc(C(F)(F)F)cc1)c1ccccc1"
+    genuine = Route(
+        target=fluoxetine,
+        leaves=[
+            Molecule(smiles="CNCCC(O)c1ccccc1", in_stock=True),
+            Molecule(smiles="FC(F)(F)c1ccc(I)cc1", in_stock=True),
+        ],
+        reactions=[Reaction(product=fluoxetine, precursors=["CNCCC(O)c1ccccc1"])],
+        solved=True,
+    )
+    result = evaluate([("fluoxetine", fluoxetine)], lambda _s: [genuine])
+
+    assert result["solve_rate"] == 1.0
+    assert result["build_solve_rate"] == 1.0
