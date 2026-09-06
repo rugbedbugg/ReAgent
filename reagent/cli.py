@@ -149,6 +149,11 @@ def build_catalogue(catalogue: str, output: str | None, max_heavy_atoms: int | N
               help="Score objectives deterministically; the LLM only writes the rationale.")
 @click.option("--ghs", is_flag=True,
               help="Use real GHS reagent-hazard data from PubChem for safety (online, cached).")
+@click.option("--max-leaf-fraction", type=float, default=None,
+              help="Override the mode's cap on how much of the target one purchased "
+                   "leaf may be. Measured: 0.6 costs the moderate set 0.16 solve-rate "
+                   "and buys it 0.24 in honest solve-rate; on the hard set it costs "
+                   "0.04 and buys little, so large targets can take a looser cap.")
 @click.option("--mode", type=click.Choice(["balanced", "build", "source"]), default="balanced",
               help="What you are asking for. 'build' rejects leaves larger than 60% of "
                    "the target, so it never proposes buying the answer; 'source' favours "
@@ -159,7 +164,7 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
          stock_cache: str | None, iterations: int | None,
          time_limit: int | None, expansion: str, steer: str | None, algorithm: str,
          cutoff_number: int | None, hybrid: bool,
-         ghs: bool, mode: str) -> None:
+         ghs: bool, mode: str, max_leaf_fraction: float | None) -> None:
     """Plan retrosynthetic routes for a target SMILES."""
     canon = canonical(smiles)
     if canon is None:
@@ -170,7 +175,7 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
     from reagent.optimize.aggregate import mode_leaf_fraction
     from reagent.singlestep.aizynth import AiZynthBackend
 
-    cap = mode_leaf_fraction(mode)
+    cap = max_leaf_fraction if max_leaf_fraction is not None else mode_leaf_fraction(mode)
     if cap is not None:
         click.echo(
             f"Mode: {mode}. A leaf larger than {cap:.0%} of the target is not treated "
@@ -191,7 +196,7 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
         algorithm=algorithm,
         cutoff_number=cutoff_number,
         molecule_cost=_steer_config(steer),
-        max_leaf_fraction=mode_leaf_fraction(mode),
+        max_leaf_fraction=cap,
     )
 
     routes = backend.plan(canon, max_routes=max_routes)
@@ -430,6 +435,11 @@ def feedback(smiles: str, prefer: int) -> None:
 @click.option("--jobs", type=int, default=1,
               help="Plan this many targets at once. Capped by free memory, not by "
                    "cores: each worker holds its own ~1.6 GB planner.")
+@click.option("--max-leaf-fraction", type=float, default=None,
+              help="Override the mode's cap on how much of the target one purchased "
+                   "leaf may be. Measured: 0.6 costs the moderate set 0.16 solve-rate "
+                   "and buys it 0.24 in honest solve-rate; on the hard set it costs "
+                   "0.04 and buys little, so large targets can take a looser cap.")
 @click.option("--mode", type=click.Choice(["balanced", "build", "source"]), default="balanced",
               help="'build' rejects leaves larger than 60% of the target, which is what "
                    "makes solve-rate mean 'solved by building' rather than 'solved, "
@@ -437,7 +447,8 @@ def feedback(smiles: str, prefer: int) -> None:
 def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
              hashed_stock: bool, stock_cache: str | None, iterations: int | None,
              time_limit: int | None, expansion: str, steer: str | None, algorithm: str,
-             cutoff_number: int | None, hard: bool, jobs: int, mode: str) -> None:
+             cutoff_number: int | None, hard: bool, jobs: int, mode: str,
+             max_leaf_fraction: float | None) -> None:
     """Measure solve-rate and baseline-vs-REAGENT route quality."""
     from reagent.eval.harness import WEIGHT_PROFILES
     from reagent.eval.harness import evaluate as run_eval
@@ -461,7 +472,10 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
         algorithm=algorithm,
         cutoff_number=cutoff_number,
         molecule_cost=_steer_config(steer),
-        max_leaf_fraction=mode_leaf_fraction(mode),
+        max_leaf_fraction=(
+            max_leaf_fraction if max_leaf_fraction is not None
+            else mode_leaf_fraction(mode)
+        ),
     )
     targets = (HARD_TARGETS if hard else TARGETS)[:max_targets]
 

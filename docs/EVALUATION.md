@@ -188,6 +188,47 @@ targets than on the hard set where it was first described.
 Two of the twenty-five searches stopped on the 1800 s clock rather than the
 iteration budget, so those two measure the timeout.
 
+## Modes: what the constraint costs and buys
+
+`--mode build` treats a leaf as purchasable only if it is at most 60% of the
+target's heavy atoms, enforced in the stock layer so a degenerate route is never
+proposed rather than filtered afterwards. Both widened sets, same configuration:
+
+| | moderate 25, plain | moderate 25, build | hard 24, plain | hard 24, build |
+|---|---|---|---|---|
+| solve-rate | 1.00 | 0.84 | 1.00 | 0.92 |
+| **solved by building** | **0.60** | **0.84** | **0.96** | **0.92** |
+| mean route length | 1.08 | 2.24 | 2.00 | 2.45 |
+| mean largest leaf | 0.78 | 0.52 | 0.58 | 0.50 |
+| buys the answer | 10 of 25 | 0 of 25 | 1 of 24 | 0 of 24 |
+| baseline safety | 0.439 | 0.335 | 0.502 | 0.468 |
+| REAGENT safety | 0.556 | 0.443 | 0.567 | 0.551 |
+
+**On small targets the constraint pays, and by more than expected.** The honest
+solve-rate goes from 0.60 to 0.84. The prediction before running was 0.60 held
+flat, on the assumption that the ten degenerate targets would simply become
+unsolvable. Six of the ten did not: the search found genuine multi-step routes
+once the shortcut was removed. So the shortcut was not only corrupting the
+metric, it was **suppressing real routes**, because a one-step purchase
+terminates the search before anything better is explored.
+
+**On large targets it costs a little and buys a little.** Honest solve-rate
+falls from 0.96 to 0.92, two targets going unsolvable, while mean largest leaf
+improves from 0.58 to 0.50 and route length from 2.00 to 2.45. There was almost
+no degeneracy to fix there, so the constraint mostly just bites.
+
+That is the calibration answer for 0.6: well judged for targets around 15 heavy
+atoms, slightly strict for targets around 23. `--max-leaf-fraction` overrides it
+on both `plan` and `evaluate`. It has not been swept; 0.6 is one measured point,
+not an optimum.
+
+**Safety scores fall under `build`, and that is the honest direction.** Moderate
+REAGENT safety goes 0.556 to 0.443. Buying a finished molecule scores well on
+safety precisely because it avoids handling reagents, so removing that option
+removes a score that was never about the synthesis being safe. It is the same
+"safest to run is not best synthesis" tension recorded above, now visible from
+the other side.
+
 ## Safety is scored per hazard handled, not per step taken
 
 The structural-alert score used to subtract 0.1 for every *distinct* hazard

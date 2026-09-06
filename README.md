@@ -24,6 +24,7 @@ on top.
 
 ## Features
 
+- Two modes over one engine: `build` refuses to buy the answer, `source` buys freely
 - Seven scored objectives: feasibility, precursor availability, cost, safety, sustainability, efficiency, and buy-versus-build
 - Four tree searches over the same single-step model: MCTS, Retro\*, DFPN, breadth-first
 - Real vendor catalogues: turn an eMolecules or Enamine dump into usable stock
@@ -123,6 +124,17 @@ reagent plan <SMILES> [options]
 Plans and ranks routes for a target. Add `--show-features` to print the
 deterministic feature vector per route, `--assess` or `--local` to run the agent
 layer, `--rag` to cite precedent.
+
+`--mode` says what you are asking for:
+
+| Mode | Weights | Constraint |
+|---|---|---|
+| `balanced` (default) | feasibility-led | none |
+| `build` | buy-versus-build led | a purchased leaf may be at most 60% of the target |
+| `source` | cost and step-count led | none, buying an advanced intermediate is the goal |
+
+Every route now reports how much of the target it buys, so a one-step answer
+that purchases the compound is visible rather than silently ranked first.
 
 ```bash
 reagent plan "CC(=O)Oc1ccccc1C(=O)O"
@@ -301,12 +313,26 @@ which is not the same achievement.
 The lift grew because the baseline fell on the more varied targets while
 REAGENT's pick held.
 
-**The catalogue cap is relative to target size, not absolute.** Run against the
-same capped catalogue, the moderate set (mean 15.0 heavy atoms, against the hard
-set's 22.7) collapses: route length 1.08 and 10 of 25 routes buy a nearly
-finished molecule. A 14-atom building block is 93% of the mean moderate target
-and 62% of the mean hard one. Pick the cap against the targets in hand rather
-than taking 14 as a rule.
+**Buying the answer is now a mode, not an accident.** A catalogue cap in absolute
+heavy atoms cannot serve targets of different sizes: 14 atoms is 62% of the mean
+hard target and 93% of the mean moderate one. So `--mode build` caps a purchased
+leaf as a *fraction* of the target, enforced during the search:
+
+| | moderate, plain | moderate, `build` | hard, plain | hard, `build` |
+|---|---|---|---|---|
+| Solve-rate | 1.00 | 0.84 | 1.00 | 0.92 |
+| **Solved by building** | **0.60** | **0.84** | **0.96** | **0.92** |
+| Mean route length | 1.08 | 2.24 | 2.00 | 2.45 |
+| Buys the answer | 10 of 25 | 0 of 25 | 1 of 24 | 0 of 24 |
+
+On small targets this pays twice over. The honest solve-rate rises from 0.60 to
+0.84, because removing the shortcut did not just relabel failures: the search
+found genuine multi-step routes for 6 of the 10 targets it had been buying. A
+one-step purchase terminates the search before anything better is explored.
+
+On large targets it costs a little, 0.96 to 0.92, and there was barely any
+degeneracy to fix. `--max-leaf-fraction` tunes it; 0.6 is one measured point,
+not a swept optimum.
 
 **The feedback loop learns.** Twenty targets, a hidden user preference the loop
 cannot see, regret measured as the utility gap against that hidden preference:
