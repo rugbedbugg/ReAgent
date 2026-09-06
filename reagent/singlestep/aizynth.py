@@ -181,8 +181,23 @@ class AiZynthBackend:
 
         from reagent.search import resolve as resolve_algorithm
 
-        self.algorithm = algorithm
-        self._finder.config.search.algorithm = resolve_algorithm(algorithm)
+        # Several searches can run over the same single-step model and their
+        # results pooled. They disagree usefully: on naproxen at 500 iterations
+        # Retro* returned 9 solved, structurally distinct routes against MCTS's
+        # 5, overlapping only partly. Selection can only choose among what it is
+        # given, so the union is strictly more to choose from. Combining
+        # *searches* is a different experiment from combining expansion
+        # policies, which was measured and did nothing.
+        self.algorithms = [algorithm] if isinstance(algorithm, str) else list(algorithm)
+        if not self.algorithms:
+            raise ValueError("At least one search algorithm is required.")
+        # Resolve every name now, not lazily in plan(): a typo in the second
+        # algorithm would otherwise surface only after the model and stock have
+        # loaded and the first search has run.
+        for name in self.algorithms:
+            resolve_algorithm(name)
+        self.algorithm = self.algorithms[0]
+        self._finder.config.search.algorithm = resolve_algorithm(self.algorithm)
 
         # Retro* builds every MoleculeNode with cost = molecule_cost(mol), and
         # that cost feeds the value function deciding what to expand next. So a
@@ -196,6 +211,7 @@ class AiZynthBackend:
         if time_limit is not None:
             self._finder.config.search.time_limit = time_limit
         self.last_search_stats: dict = {}
+        self._hit_time_limit_any = False
 
     def plan(self, target_smiles: str, max_routes: int = 10) -> list[Route]:
         self._finder.target_smiles = target_smiles
@@ -211,18 +227,38 @@ class AiZynthBackend:
             for stock in self._relative_stocks:
                 stock.set_target_size(size)
 
-        self._finder.tree_search()
-        self.last_search_stats = dict(self._finder.search_stats)
-        self._finder.build_routes()
+        from reagent.optimize.aggregate import route_signature
+        from reagent.search import resolve as resolve_algorithm
 
-        routes: list[Route] = []
-        collection = self._finder.routes
-        for tree in collection.dicts[:max_routes]:
-            solved = self._is_solved(tree)
-            route = _tree_to_route(target_smiles, tree, solved)
-            self._score_filter(route)
-            routes.append(route)
-        return routes
+        pooled: list[Route] = []
+        seen: set = set()
+        self.last_search_stats = {}
+        self._hit_time_limit_any = False
+
+        for name in self.algorithms:
+            self._finder.config.search.algorithm = resolve_algorithm(name)
+            self._finder.tree_search()
+            stats = dict(self._finder.search_stats)
+            self.last_search_stats = stats
+            self._hit_time_limit_any = self._hit_time_limit_any or self._stats_hit_limit(stats)
+            self._finder.build_routes()
+
+            for tree in self._finder.routes.dicts:
+                route = _tree_to_route(target_smiles, tree, self._is_solved(tree))
+                # Two searches over one model find the same route often enough
+                # that pooling without this would just pad the candidate list
+                # with duplicates and crowd out genuine alternatives.
+                signature = route_signature(route)
+                if signature in seen:
+                    continue
+                seen.add(signature)
+                self._score_filter(route)
+                pooled.append(route)
+
+        # Solved routes first, so a pool that overflows max_routes does not drop
+        # a solved route in favour of an unsolved one from an earlier search.
+        pooled.sort(key=lambda r: (not r.solved,))
+        return pooled[:max_routes]
 
     @property
     def search_time_limit(self) -> int:
@@ -242,7 +278,14 @@ class AiZynthBackend:
         comparison across ``iterations`` values is measuring the wall-clock
         limit rather than the search budget.
         """
-        stats = self.last_search_stats
+        # With several algorithms pooled, "the last search" is not the whole
+        # story: any one of them hitting the clock invalidates a comparison
+        # across iteration budgets, so the flag is sticky across the pool.
+        if getattr(self, "_hit_time_limit_any", False):
+            return True
+        return self._stats_hit_limit(self.last_search_stats)
+
+    def _stats_hit_limit(self, stats: dict) -> bool:
         if not stats or stats.get("returned_first"):
             return False
         return stats.get("iterations", 0) < self._finder.config.search.iteration_limit

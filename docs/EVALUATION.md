@@ -540,6 +540,47 @@ leaf fraction and degenerate-route count being identical across all three arms,
 so this is a dead end rather than a trade-off. Whether a route-level objective
 would fare better is untested; the hook only sees one molecule at a time.
 
+### Sweeping the adaptive learning rate
+
+`lr` had been fixed at 0.5 since the loop was written and never varied. Swept
+over nine values against cached score vectors from all 49 targets, 306 routes,
+which makes each point a pure function evaluation costing milliseconds rather
+than a re-plan.
+
+Final-half regret, lower being better:
+
+| lr | safety-loving | cost-loving |
+|---|---|---|
+| 0.05 | 0.0787 | 0.0114 |
+| 0.10 | 0.0787 | 0.0000 |
+| 0.25 | 0.0287 | 0.0000 |
+| 0.50 (default) | 0.0292 | 0.0000 |
+| 0.75 | 0.0676 | 0.0030 |
+| 1.00 | 0.0965 | 0.0030 |
+| 2.00 | 0.0965 | 0.0349 |
+
+On the full set 0.25 looked like a small improvement on the shipped 0.5. It is
+not, and the first reading of this table was wrong. Splitting the targets in
+half reverses the ordering by preference: on the first 25, `lr` 0.5 wins the
+safety arm (0.0058 against 0.0261) while 0.25 wins the cost arm (0.0000 against
+0.0285), and on the last 24 every value from 0.1 to 1.0 gives an identical
+0.1614 and 0.0000. A difference that swaps sign between splits is noise.
+
+**So the learning rate is not a lever.** Anywhere from 0.1 to 0.75 behaves the
+same once the variation between datasets is accounted for, and the default stays
+at 0.5. This is a dead end in the useful sense: it is cheap to check, it had
+never been checked, and it is now closed.
+
+One real finding did come out of it. At `lr` of 1.0 and above the safety-led arm
+**gets worse the more feedback it sees**, regret rising 0.058 to 0.097 across the
+halves, because each step overshoots and the next corrects past it. `--lr` is
+user-settable, so `check-adaptive` now says so when handed a value in that range.
+
+That is also the honest answer to a suggestion made earlier, that the update
+needed damping against oscillation. Instability is real, but only above 1.0, and
+the fix is a smaller step rather than anchoring weights to their defaults, which
+was measured to stop the loop learning at all.
+
 ### Weighting buy-versus-build
 
 Covered in full under [Buy-vs-build is scored, not

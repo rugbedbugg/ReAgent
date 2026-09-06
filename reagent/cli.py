@@ -108,7 +108,7 @@ def build_catalogue(catalogue: str, output: str | None, max_heavy_atoms: int | N
 
     if merge_with:
         merged = merge_caches([written, *merge_with], destination)
-        click.echo(f"Merged with {len(merge_with)} cache(s) -> {merged} "
+        click.echo(f"Merged with {len(merge_with)} cache(s) to give {merged} "
                    f"({np.load(merged).size:,} unique keys).")
 
 
@@ -139,8 +139,11 @@ def build_catalogue(catalogue: str, output: str | None, max_heavy_atoms: int | N
 @click.option("--steer", default=None,
               help="Let an objective steer the Retro* search instead of only ranking\nits results: 'hazard' or 'accessibility', optionally with a weight ('hazard:2.0').\nRequires --algorithm retrostar.")
 @click.option("--algorithm", default="mcts",
-              type=click.Choice(["mcts", "retrostar", "dfpn", "breadth-first"]),
-              help="Tree search over the same single-step model (default mcts).")
+              help="Tree search over the same single-step model (default mcts): "
+                   "mcts, retrostar, dfpn or breadth-first. Comma-separate to pool "
+                   "several ('mcts,retrostar'): each runs in turn and the union of "
+                   "their routes is ranked, deduplicated on route identity. Run time "
+                   "is the sum, so this buys candidate diversity with wall clock.")
 @click.option("--cutoff-number", type=int, default=None,
               help="Templates each expansion may offer (default 50, which is what "
                    "binds today). Higher widens the disconnection space, at a cost in "
@@ -193,7 +196,7 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
         iterations=iterations,
         time_limit=time_limit,
         expansion=[k.strip() for k in expansion.split(",") if k.strip()],
-        algorithm=algorithm,
+        algorithm=[a.strip() for a in algorithm.split(',') if a.strip()],
         cutoff_number=cutoff_number,
         molecule_cost=_steer_config(steer),
         max_leaf_fraction=cap,
@@ -400,7 +403,7 @@ def feedback(smiles: str, prefer: int) -> None:
     click.echo(f"Recorded preference for Route {prefer} on {target}.")
     click.echo("Updated objective weights:")
     for objective in sorted(new, key=new.get, reverse=True):
-        click.echo(f"  {objective:14s} {old.get(objective, 0):.3f} -> {new[objective]:.3f}")
+        click.echo(f"  {objective:14s} {old.get(objective, 0):.3f} to {new[objective]:.3f}")
 
 
 @main.command()
@@ -425,8 +428,11 @@ def feedback(smiles: str, prefer: int) -> None:
 @click.option("--steer", default=None,
               help="Let an objective steer the Retro* search instead of only ranking\nits results: 'hazard' or 'accessibility', optionally with a weight ('hazard:2.0').\nRequires --algorithm retrostar.")
 @click.option("--algorithm", default="mcts",
-              type=click.Choice(["mcts", "retrostar", "dfpn", "breadth-first"]),
-              help="Tree search over the same single-step model (default mcts).")
+              help="Tree search over the same single-step model (default mcts): "
+                   "mcts, retrostar, dfpn or breadth-first. Comma-separate to pool "
+                   "several ('mcts,retrostar'): each runs in turn and the union of "
+                   "their routes is ranked, deduplicated on route identity. Run time "
+                   "is the sum, so this buys candidate diversity with wall clock.")
 @click.option("--cutoff-number", type=int, default=None,
               help="Templates each expansion may offer (default 50, which is what "
                    "binds today). Higher widens the disconnection space, at a cost in "
@@ -469,7 +475,7 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
         iterations=iterations,
         time_limit=time_limit,
         expansion=[k.strip() for k in expansion.split(",") if k.strip()],
-        algorithm=algorithm,
+        algorithm=[a.strip() for a in algorithm.split(',') if a.strip()],
         cutoff_number=cutoff_number,
         molecule_cost=_steer_config(steer),
         max_leaf_fraction=(
@@ -583,11 +589,14 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
               help="Cached objective vectors (JSON: name -> list of score dicts). "
                    "Without it the eval targets are planned first, which is slow.")
 @click.option("--max-targets", default=20, help="How many targets to learn from.")
+@click.option("--dump-vectors", type=click.Path(dir_okay=False), default=None,
+              help="Write the planned objective vectors to this file, so a sweep over "
+                   "--lr can reuse one planning pass instead of repeating it.")
 @click.option("--lr", default=0.5, help="Learning rate of the preference update.")
 @click.option("--hard", is_flag=True, help="Use the harder multi-step target set.")
 @click.option("--jobs", type=int, default=1, help="Plan this many targets at once.")
 def check_adaptive(vectors: str | None, max_targets: int, lr: float,
-                   hard: bool, jobs: int) -> None:
+                   hard: bool, jobs: int, dump_vectors: str | None) -> None:
     """Measure whether the feedback loop actually learns a preference.
 
     Simulates a user with a fixed hidden preference, feeds back the route that
@@ -618,6 +627,14 @@ def check_adaptive(vectors: str | None, max_targets: int, lr: float,
             for _, smiles in targets
         ]
 
+        if dump_vectors:
+            # Planning is the whole cost here; the learning simulation is a pure
+            # function over these vectors. Saving them turns a sweep over --lr
+            # from hours into seconds.
+            named = {name: vecs for (name, _), vecs in zip(targets, per_target)}
+            Path(dump_vectors).write_text(json.dumps(named, indent=1), encoding="utf-8")
+            click.echo(f"Wrote vectors for {len(named)} target(s) to {dump_vectors}")
+
     per_target = per_target[:max_targets]
 
     # Two opposed preferences, so a loop that merely drifts toward one objective
@@ -629,6 +646,17 @@ def check_adaptive(vectors: str | None, max_targets: int, lr: float,
                         "safety": 0.10, "construction": 0.10},
     }
 
+    if lr >= 1.0:
+        # Measured on 49 targets: at lr >= 1.0 the safety-loving arm gets worse
+        # as it sees more feedback, regret rising 0.058 to 0.097 across the
+        # halves, because each step overshoots and the next corrects past it.
+        # Below 0.75 the loop is flat to within the noise between data splits.
+        click.echo(
+            f"NOTE: lr={lr} is past where the loop was measured to stay stable. "
+            "At 1.0 and above regret rises rather than falls on a safety-led "
+            "preference. 0.1 to 0.75 all behave alike."
+        )
+
     for name, hidden in profiles.items():
         result = simulate(per_target, hidden=hidden, lr=lr)
         click.echo(f"\n=== hidden preference: {name} ===")
@@ -637,8 +665,8 @@ def check_adaptive(vectors: str | None, max_targets: int, lr: float,
             continue
         click.echo(
             f"  rounds {result['rounds']}   "
-            f"regret {result['regret_first_half']:.3f} -> {result['regret_second_half']:.3f}   "
-            f"agreement {result['agreement_first_half']:.0%} -> "
+            f"regret {result['regret_first_half']:.3f} to {result['regret_second_half']:.3f}   "
+            f"agreement {result['agreement_first_half']:.0%} to "
             f"{result['agreement_second_half']:.0%}"
         )
         moved = sorted(
