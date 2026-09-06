@@ -1,683 +1,373 @@
-# ReAgent 
+# ReAgent
 
-Plans retrosynthetic routes for a target molecule and scores each candidate along
-six independent objectives (feasibility, precursor availability, cost, safety,
-sustainability, efficiency). Chemistry facts are computed deterministically with
-RDKit and cheminformatics data; LLM-backed specialist agents interpret those
-facts, weigh them, and emit a cited rationale for the selected route.
+![GitHub last commit](https://img.shields.io/github/last-commit/rugbedbugg/ReAgent?style=for-the-badge&labelColor=000000)
+![GitHub repo size](https://img.shields.io/github/repo-size/rugbedbugg/ReAgent?style=for-the-badge&labelColor=000000)
+![Stars](https://img.shields.io/github/stars/rugbedbugg/ReAgent?style=for-the-badge&labelColor=000000)
+![License](https://img.shields.io/github/license/rugbedbugg/ReAgent?style=for-the-badge&labelColor=000000)
+![AUR version](https://img.shields.io/aur/version/reagent?style=for-the-badge&labelColor=000000)
+![CI](https://img.shields.io/github/actions/workflow/status/rugbedbugg/ReAgent/ci.yml?branch=main&style=for-the-badge&labelColor=000000)
+
+Plans retrosynthetic routes for a target molecule and scores every candidate on
+seven independent objectives, so the route you get is the one that best fits
+what you actually care about rather than whichever the search returned first.
+Chemistry facts are computed deterministically with RDKit; LLM-backed specialist
+agents interpret those facts and write a cited rationale for the chosen route.
 
 Single-step model and tree search come from
 [AiZynthFinder](https://github.com/MolecularAI/aizynthfinder). ReAgent adds the
-agentic evaluation, multi-objective aggregation, retrieval grounding, and
-adaptive layers on top.
+evaluation, multi-objective selection, retrieval grounding, and adaptive layers
+on top.
 
-## Requirements
+## Status
 
-- Python 3.10 or 3.11
-- Agent layer needs one of: local [Ollama](https://ollama.com) (`--local`), or
-  `ANTHROPIC_API_KEY` (`--assess`). Planning, features, RAG, and evaluation run
-  without either.
+**Active**
 
-## Setup
+## Features
 
-The toolchain is pinned in `mise.toml` (Python 3.11, uv), which also creates and
-activates `.venv` on entering the directory. With
-[mise](https://mise.jdx.dev) installed:
+- Seven scored objectives: feasibility, precursor availability, cost, safety, sustainability, efficiency, and buy-versus-build
+- Four tree searches over the same single-step model: MCTS, Retro\*, DFPN, breadth-first
+- Real vendor catalogues: turn an eMolecules or Enamine dump into usable stock
+- Runs on 8 GB of RAM: hashed stock lookup cuts a planning run from 4.91 GB to 0.63 GB
+- Offline scoring with a local Ollama model, or the Anthropic API, or neither
+- Learns your preferences from feedback and applies them to later runs
+- Retrieval grounding: every disconnection cited against USPTO precedent
+- Deterministic scoring, so the same inputs give the same answer
 
-```sh
+## Tech Stack
+
+- **Python** (3.10 or 3.11; the ceiling is a dependency constraint, not a choice)
+- **RDKit**: all deterministic chemistry, fingerprints, and structural alerts
+- **AiZynthFinder**: pretrained USPTO single-step model and the tree searches
+- **ONNX Runtime**: inference for the expansion and filter policies
+- **NumPy**: hashed stock lookup as a sorted array of 64-bit digests
+- **Click**: CLI
+- **Anthropic SDK / Ollama**: the optional agent layer
+
+## Architecture / Pipeline
+
+### Plan
+
+1. Expansion policy proposes disconnections for the target
+2. Tree search recursively breaks it down toward purchasable precursors
+3. Stock lookup decides what counts as purchasable
+4. Search returns a set of candidate routes
+
+### Score
+
+1. Deterministic features computed per route with RDKit: hazards, atom economy, accessibility, leaf fractions
+2. Each feature mapped to a 0-to-1 objective score by a fixed rubric
+3. Scores min-max normalised across candidates, then combined as a weighted sum
+4. Ties broken on route identity, never arrival order
+5. Optional agent pass writes the rationale, citing retrieved precedent
+
+### Adapt
+
+1. `reagent feedback` records which route you preferred
+2. Weights shift toward the objectives that distinguished it
+3. Later runs apply the learned weights and recall similar past targets
+
+## Install
+
+### Arch Linux (AUR)
+
+```bash
+paru -S reagent
+# or
+yay -S reagent
+```
+
+### Windows (Chocolatey)
+
+Not yet on the community feed. The package is complete and lives in
+[`SUBMISSIONS/chocolatey`](SUBMISSIONS/chocolatey); build it locally with
+`choco pack` and `choco install reagent -s .`.
+
+### From Source
+
+Needs Python 3.10 or 3.11. The toolchain is pinned in `mise.toml`, which also
+creates and activates `.venv` on entering the directory.
+
+```bash
+git clone https://github.com/rugbedbugg/ReAgent.git
+cd ReAgent
 mise trust
 mise install        # Python 3.11 + uv; creates .venv
 mise run install    # editable install with dev extras
-
-# Pretrained single-step model + building-block stock (~760 MB)
-download_public_data data
-
-# One-time: hash the stock so later runs need ~0.6 GB instead of ~4.9 GB
-reagent build-stock-cache
 ```
 
 Without mise, any Python 3.10 or 3.11 interpreter works:
 
-```sh
+```bash
 uv venv --python 3.11
 uv pip install -e ".[dev]"
 ```
 
-Other tasks: `mise run test`, `mise run lint`.
+### Required data
 
-## Usage
+Every command needs the pretrained model and stock. This is a one-time download
+of about 760 MB.
 
-```sh
-# Plan routes (no scoring)
+```bash
+download_public_data data     # expansion policy, filter policy, ZINC stock
+reagent build-stock-cache     # hash the stock: 4.91 GB peak becomes 0.63 GB
+```
+
+## Commands / Usage
+
+### Plan routes
+
+```bash
+reagent plan <SMILES> [options]
+```
+
+Plans and ranks routes for a target. Add `--show-features` to print the
+deterministic feature vector per route, `--assess` or `--local` to run the agent
+layer, `--rag` to cite precedent.
+
+```bash
+reagent plan "CC(=O)Oc1ccccc1C(=O)O"
+reagent plan "CC(=O)Oc1ccccc1C(=O)O" --local --hybrid --ghs
+```
+
+Scoring runs also print each route's confidence (the weakest step's model
+probability), flag a recommended route the base model distrusts rather than
+presenting it as trustworthy, and log the run to `data/episodes.jsonl`.
+
+### Record a preference
+
+```bash
+reagent feedback <SMILES> --prefer <N>
+```
+
+Shifts objective weights toward those that distinguish your preferred route,
+saved to `data/weights.json` and applied by later runs.
+
+### Build stock
+
+```bash
+reagent build-stock-cache                    # hash the bundled ZINC stock
+reagent build-catalogue <FILE> [options]     # hash a vendor catalogue
+```
+
+`build-catalogue` reads `.smi` or `.sdf`, plain or gzipped, so an eMolecules or
+Enamine download goes straight in. eMolecules publishes a free monthly dump
+needing no account, which is what every catalogue figure here was measured
+against:
+
+```bash
+mkdir -p data/catalogues
+curl -L -o data/catalogues/emolecules.smi.gz \
+  https://downloads.emolecules.com/free/2026-09-01/version.smi.gz   # 350 MB, 33.6M entries
+
+# ~25 min on 8 cores; InChI keys are the whole cost.
+reagent build-catalogue data/catalogues/emolecules.smi.gz \
+  --max-heavy-atoms 14 --merge-with data/zinc_stock.hashes.npy \
+  --output data/catalogues/zinc_plus_emol14.hashes.npy
+```
+
+Use `--max-heavy-atoms 14`. It is not a performance knob: it decides whether the
+catalogue is a shelf of building blocks or a shelf of nearly-finished drugs. See
+[the evaluation](docs/EVALUATION.md#why---max-heavy-atoms-decides-the-result).
+
+### Measure
+
+```bash
+reagent evaluate [options]         # solve-rate and baseline-vs-REAGENT quality
+reagent check-adaptive [options]   # does the feedback loop actually learn?
+reagent check-agents [options]     # do LLM scores match the deterministic ones?
+```
+
+## Options / Configuration
+
+### Common (`plan` and `evaluate`)
+
+| Flag | Default | Description |
+|---|---|---|
+| `--max-routes` | `5` plan, `25` evaluate | Candidate routes to consider. |
+| `--algorithm` | `mcts` | Tree search: `mcts`, `retrostar`, `dfpn`, `breadth-first`. |
+| `--iterations` | `100` | Search budget. Run time is roughly linear in it. |
+| `--time-limit` | `120` | Wall-clock seconds for the search. |
+| `--hashed-stock` | off | Look stock up via hashed keys (~140 MB instead of ~2.3 GB). |
+| `--stock-cache` | ZINC | Hashed catalogue to use instead of ZINC. Implies `--hashed-stock`. |
+| `--permissive-stock` | off | Treat any molecule at or below N heavy atoms as purchasable. |
+| `--expansion` | `uspto` | Comma-separated policies to run together. |
+| `--cutoff-number` | `50` | Templates each expansion may offer. |
+| `--steer` | off | Let `hazard` or `accessibility` steer a Retro\* search. |
+
+**On budget.** The search stops on whichever limit binds first, so raising
+`--iterations` alone changes nothing once the clock binds, which it does on a
+slow machine well before a few hundred iterations. Raise both together, or the
+run measures the timeout rather than the budget. Budget is the single most
+effective knob measured here: at 500 iterations the eval set goes from 9/10 to
+10/10 solved on real ZINC stock.
+
+**On `--permissive-stock`.** It assumes availability rather than checking it, so
+treat the extra hits as optimistic. `--stock-cache` with a real vendor catalogue
+is the honest version of the same idea and should be preferred where one exists.
+
+**On `--hashed-stock`.** Identical results, measured on aspirin at 500
+iterations: 15 candidates, 15 solved, 30/30 leaves in stock, at 0.63 GB peak RSS
+against 4.91 GB. The trade is hash collisions: with 17M keys in a 64-bit space
+the chance any two collide is about 8e-6.
+
+**On `--algorithm retrostar`.** It needs no extra model and finds more
+candidates, which is what the selection layer wants: on naproxen at 500
+iterations it returned 9 solved, structurally distinct routes against MCTS's 5.
+It costs memory, 4.3 GB peak against MCTS's 2.9 GB, so MCTS remains the default.
+
+### Scoring (`plan` only)
+
+| Flag | Default | Description |
+|---|---|---|
+| `--assess` | off | Score with the Anthropic API (`ANTHROPIC_API_KEY`). |
+| `--local` | off | Score with a local Ollama model. Default `qwen2.5:3b-instruct`. |
+| `--hybrid` | off | Score numerically; the LLM only writes the rationale. |
+| `--rag` | off | Ground each disconnection in retrieved USPTO precedent. |
+| `--ghs` | off | Real GHS reagent hazards from PubChem instead of the Brenk screen. |
+| `--show-features` | off | Print the deterministic feature vector per route. |
+
+**On `--hybrid`.** It removes small-model arithmetic drift over multi-step routes
+(hazard counts, cost sums) while keeping the prose. A 3B instruct model follows
+the rubric reliably; smaller models are less consistent.
+
+### Evaluation (`evaluate` only)
+
+| Flag | Default | Description |
+|---|---|---|
+| `--max-targets` | `10` | Targets from the eval set to run. |
+| `--hard` | off | Use the harder multi-step target set. |
+| `--jobs` | `1` | Plan this many targets at once. Capped by free memory, not cores. |
+
+### Config
+
+The agent layer needs one of a local [Ollama](https://ollama.com) server
+(`--local`) or `ANTHROPIC_API_KEY`, read from the environment or `.env`.
+Planning, features, RAG, and evaluation all run without either.
+
+`OLLAMA_HOST` selects the server, default `http://localhost:11434`.
+
+## Quick Start / Demo
+
+```bash
+# 1) Install and fetch the model + stock (one time, ~760 MB)
+paru -S reagent
+reagent-download-data ~/.local/share/reagent
+reagent build-stock-cache
+
+# 2) Plan a route for aspirin
 reagent plan "CC(=O)Oc1ccccc1C(=O)O"
 
-# Print the deterministic feature vector per route
+# 3) Look at why, with the deterministic numbers
 reagent plan "CC(=O)Oc1ccccc1C(=O)O" --show-features
-```
 
-### plan flags
+# 4) Score it offline with a local model
+reagent plan "CC(=O)Oc1ccccc1C(=O)O" --local --hybrid
 
-- `--permissive-stock N`: treat any molecule with <= N heavy atoms as
-  purchasable. Raises solve-rate and diversity (eval set: 9/10 to 10/10 at
-  N=11), but it assumes availability rather than checking it, so treat the extra
-  hits as optimistic. `--stock-cache` with a real vendor catalogue is the
-  honest version of the same idea and should be preferred where one is
-  available.
-- `--iterations N`: MCTS search budget (default 100). Run time roughly linear
-  in N, and the single most effective knob measured here: at N=500 the eval set
-  goes from 9/10 to 10/10 solved on the real ZINC stock, with mean route length
-  1.11 to 1.30. That is a better 10/10 than `--permissive-stock` buys, because
-  every leaf is genuinely purchasable rather than assumed so.
-- `--time-limit SECONDS`: wall-clock limit on the search (default 120). The
-  search loop stops on whichever limit binds first
-  (`while time_past < time_limit and i <= iteration_limit`), so raising
-  `--iterations` alone changes nothing once the clock binds -- which it does on
-  a slow machine well before a few hundred iterations. Raise both together, or
-  the run measures the timeout rather than the budget. `plan` and `evaluate`
-  both report when a search stopped on the clock.
-- `--local [MODEL]`: score with a local Ollama model (offline, no API key).
-  Default `qwen2.5:3b-instruct`; server from `OLLAMA_HOST` (default
-  `http://localhost:11434`). A 3B instruct model follows the rubric reliably;
-  smaller models are less consistent.
-- `--hybrid`: score objectives deterministically (rubrics applied numerically),
-  LLM writes the rationale only. Removes small-model arithmetic drift over
-  multi-step routes (hazard counts, cost sums) while keeping the prose.
-- `--expansion A,B`: run several expansion policies together. The policy
-  collection concatenates every selected policy's actions, so the search sees
-  the union of their disconnections -- a different experiment from swapping one
-  policy for another. Measured on the drug-like eval set,
-  `--expansion uspto,ringbreaker` changed nothing: solve-rate, route length, and
-  every selected route were identical to `uspto` alone. It is not free, though.
-  Ringbreaker returns its full 50-template quota for every molecule (including
-  aspirin, where breaking the benzene ring is nonsense), so the branching factor
-  doubles from 50 to 100 and the extra branches lead to precursors that are not
-  purchasable. The budget is spent on routes that cannot solve. Worth revisiting
-  only on targets whose synthesis actually forms a ring.
-- `--algorithm NAME`: which tree search runs over the same single-step model --
-  `mcts` (default), `retrostar`, `dfpn`, or `breadth-first`. Retro* needs no
-  extra model: its molecule cost defaults to `ZeroMoleculeCost`, so it runs on
-  the files `download_public_data` already fetched. On naproxen at
-  `--iterations 500` it returned 9 solved, structurally distinct routes against
-  MCTS's 5, with a shorter worst case (5 steps vs 7). More candidates is
-  precisely what the selection layer needs. It costs memory: peak RSS 4.3 GB
-  against MCTS's ~2.9 GB, which is close to the limit on an 8 GB machine.
-- `--cutoff-number N`: how many templates each expansion may offer (default 50).
-  The policy returns `min(cumulative-probability index, cutoff_number)`
-  templates, and the count is what binds: every policy measured returned exactly
-  50 for every molecule, so the next-best disconnections never reach the search.
-  Raising it widens the disconnection space at a cost in branching, time, and
-  memory, and whether that pays is target-dependent. Measured on Retro* at
-  `--iterations 500`, solved routes at cutoff 50 vs 200: aspirin 15 to 13,
-  naproxen 9 to 8, lidocaine 5 to 9 -- net +1 route across the three, for 51%
-  more peak memory (1.25 GB to 1.89 GB).
-
-  The cap really does discard templates that would have helped lidocaine, whose
-  useful disconnections rank below the top 50. On the other two, spreading a
-  fixed iteration budget over more branches finished fewer routes than it
-  gained. Raise it for a target that will not solve; leave it alone otherwise.
-- `--hashed-stock`: look purchasability up in a sorted array of 64-bit hashed
-  InChI keys instead of AiZynthFinder's set of 17M key strings. Measured on
-  aspirin at `--iterations 500`: identical results (15 candidates, 15 solved,
-  30/30 leaves in stock) at **0.63 GB peak RSS against 4.91 GB**.
-
-  The saving comes from never building the original catalogue, not from the
-  hashes being smaller. Loading it holds a pandas frame and the string set at
-  once and peaks at 4.83 GB -- that transient, not the 2.24 GB steady state, is
-  what gets runs OOM-killed. So this flag hands AiZynthFinder a config with no
-  `stock` section at all and loads the 140 MB cache instead.
-
-  Hash collisions are the trade: with 17M keys in a 64-bit space the chance any
-  two collide is about 8e-6, and a collision would make one molecule look
-  purchasable when it is not. A Bloom filter, the obvious alternative, applies
-  its false-positive rate to every lookup and would inflate solve-rate.
-- `--stock-cache PATH`: plan against a different hashed catalogue than ZINC
-  (implies `--hashed-stock`). Build one with `reagent build-catalogue`:
-
-  eMolecules publishes a free monthly dump needing no account, which is what
-  every catalogue figure here was measured against:
-
-  ```sh
-  mkdir -p data/catalogues
-  curl -L -o data/catalogues/emolecules.smi.gz \
-    https://downloads.emolecules.com/free/2026-09-01/version.smi.gz   # 350 MB, 33.6M entries
-
-  # ~25 min on 8 cores; InChI keys are the whole cost. 14, not 20 -- see below.
-  reagent build-catalogue data/catalogues/emolecules.smi.gz \
-    --max-heavy-atoms 14 --merge-with data/zinc_stock.hashes.npy \
-    --output data/catalogues/zinc_plus_emol14.hashes.npy
-
-  reagent evaluate --hard --algorithm retrostar --iterations 500 --time-limit 3600 \
-    --stock-cache data/catalogues/zinc_plus_emol14.hashes.npy
-  ```
-
-  Substitute a later dated directory for a fresher dump; Enamine's SDF downloads
-  work the same way but need an account.
-
-  Reads `.smi`/`.sdf`, plain or gzipped, so an Enamine or eMolecules download
-  goes straight in. Two decisions are worth understanding before trusting the
-  result:
-
-  `--max-heavy-atoms` is not a performance knob -- it decides whether the
-  catalogue is a shelf of building blocks or a shelf of nearly-finished drugs.
-  Measured on the hard set: at 14 the routes are genuine and average 2.00 steps;
-  at 20 the same catalogue reaches the same solve-rate with 1.10 steps because
-  four to six of ten routes just buy an advanced intermediate. Use 14. Building
-  it takes ~25 min for a 33M-entry file on 8 cores, nearly all of it InChI keys.
-
-  Salts are indexed twice by default, as listed and as their largest fragment.
-  Catalogues sell the amine hydrochloride; a route asks for the free amine, and
-  without the split a shelf of purchasable salts reads as empty stock. Pass
-  `--no-split-salts` to index only what the vendor literally lists.
-- `--steer hazard[:weight]` / `--steer accessibility[:weight]`: let an objective
-  influence the search rather than only rank its output. Retro* builds every
-  molecule node with `cost = molecule_cost(mol)`, and that cost feeds the value
-  function choosing what to expand, so a cost here changes which routes are
-  *found*. Everything else in this project scores routes the search already
-  returned -- it can pick the safest candidate on offer, but it cannot cause a
-  safer one to exist.
-
-  Only per-molecule objectives fit the hook, which sees one molecule with no
-  route or target context: structural-alert hazard and synthetic accessibility.
-  Atom economy, step count and buy-versus-build are route-level and stay in the
-  ranking layer. Retro* only; the other algorithms have no such hook.
-
-  Two caveats. A non-zero cost drops Retro*'s admissibility guarantee -- the
-  default `ZeroMoleculeCost` is trivially admissible and these are not -- so the
-  search is guided rather than provably optimal. And `--steer hazard:0` is the
-  control arm: same code path, zero cost, identical to not steering, which is
-  what makes an honest A/B possible.
-
-  **Measured, it does not pay.** Three arms on the hard set at <=14, everything
-  but the steering weight held fixed:
-
-  | arm | solve-rate | length | baseline safety | REAGENT safety | leaf | degenerate |
-  |---|---|---|---|---|---|---|
-  | `hazard:0` (control) | 1.00 | 2.00 | 0.529 | 0.628 | 0.64 | 1 |
-  | `hazard:1.0` | 1.00 | 2.00 | 0.545 | 0.682 | 0.64 | 1 |
-  | `hazard:2.0` | 1.00 | 2.00 | 0.545 | 0.609 | 0.64 | 1 |
-
-  The hook works: unsteered, REAGENT safety is 0.628 in four independent runs
-  and baseline safety 0.529-0.532, so the steered figures are genuinely
-  different rather than noise. But the effect saturates at once -- baseline
-  safety is *identical* at both weights -- and its size, +0.013, sits below the
-  0.02 threshold set before running. Worse, the effect on the selected route is
-  not directionally controlled: steering harder moved it from 0.682 to 0.609.
-
-  So hazard cost perturbs the search into a slightly different region without
-  steering it toward safety. It costs nothing either -- solve-rate, route
-  length, leaf fraction and degenerate-route count are identical across all
-  three arms -- so this is a dead end rather than a trade-off. Whether a
-  route-level objective would fare better is untested; the hook only sees one
-  molecule at a time.
-- `--ghs`: score safety from real GHS H-codes fetched from PubChem instead of the
-  offline Brenk screen. Cached to `data/ghs_cache.json`; missing record or
-  offline falls back to Brenk. Score is the worst hazard tier among reagents and
-  intermediates, excluding the target (common to every route), so routes are
-  compared on reagents that differ.
-- `--assess`: score with the Anthropic API (`ANTHROPIC_API_KEY` from env or
-  `.env`).
-- `--rag`: ground each disconnection in retrieved USPTO precedent (most similar
-  templates by RDKit reaction fingerprint), feed corpus occurrence into the
-  feasibility agent, cite as evidence. Index built once from
-  `data/uspto_templates.csv.gz`, cached to `data/rag_index.npz`. Works alone
-  (prints precedents, no scoring) or with `--assess` / `--local`.
-
-```sh
-reagent plan "CC(C)Cc1ccc(C(C)C(=O)O)cc1" --permissive-stock 11 --iterations 300
-reagent plan "CC(=O)Oc1ccccc1C(=O)O" --local --hybrid --ghs
-reagent plan "CC(=O)Oc1ccccc1C(=O)O" --local --rag
-```
-
-Scoring runs also:
-
-- print each route's confidence (weakest step's model probability) and flag a
-  recommended route the base model distrusts, rather than presenting it as
-  trustworthy;
-- print a rationale (why the top route won, why others were passed over, with
-  cited precedent);
-- log the run to episodic memory (`data/episodes.jsonl`).
-
-### feedback
-
-```sh
+# 5) Tell it which route you preferred; later runs adapt
 reagent feedback "CC(=O)Oc1ccccc1C(=O)O" --prefer 2
 ```
 
-Shifts objective weights toward those that distinguish your preferred route
-(saved to `data/weights.json`), applied by later runs, which also recall similar
-past targets.
+## Results
 
-## Evaluation
+Measured on consumer hardware without a GPU. Scoring is deterministic, so these
+isolate the selection strategy rather than LLM variance.
 
-```sh
-reagent evaluate --max-targets 10
-```
-
-Plans a fixed set of drug-like targets and compares two selection strategies over
-the same candidate routes: a feasibility-only baseline vs. ReAgent's weighted
-multi-objective selection. Reports solve-rate and mean safety, sustainability,
-and cost under two weight profiles. Scoring is deterministic (rubrics applied
-numerically), so the measurement isolates selection strategy, not LLM variance.
-
-Results on the bundled 10-target set, at the default budget:
-
-- Solve-rate 0.90 for both strategies (selection does not change solvability).
-- Feasibility-led default weights: pick changes on 2/10, mean safety 0.43 to 0.49.
-- Safety-tilted weights: pick changes on 6/10, mean safety 0.43 to 0.64 and
-  sustainability 0.82 to 0.88, at the same solve-rate.
-
-With `--algorithm retrostar --iterations 500 --time-limit 1800` on the same set
-and stock, the best configuration measured here:
-
-- Solve-rate 1.00; mean route length 1.20.
-- Feasibility-led: pick changes on 3/10, mean safety 0.52 to 0.59.
-- Safety-tilted: pick changes on 8/10, mean safety 0.52 to 0.75, sustainability
-  0.82 to 0.88, cost 0.67 to 0.74.
-- Retro* improves the candidate pool before any selection happens: baseline
-  safety is 0.52 against MCTS's 0.44 on the same targets. It also leaves more
-  for selection to do -- 8 of 10 targets respond to the weights, against 6 under
-  MCTS -- which is the point of a multi-objective layer. Costs ~4.3 GB peak RSS
-  against MCTS's ~2.9 GB, so MCTS remains the default.
-
-At `--iterations 500 --time-limit 1800` with the default MCTS search:
-
-- Solve-rate 1.00; mean route length 1.30.
-- Feasibility-led: pick changes on 2/10, mean safety 0.44 to 0.54.
-- Safety-tilted: pick changes on 6/10, mean safety 0.44 to 0.68, sustainability
-  0.83 to 0.88.
-- Budget therefore buys solvability, and the selection layer's contribution is
-  unchanged in shape by it: the same 2 and 6 targets respond to the weights.
-- The multi-objective layer earns its value when objectives beyond feasibility
-  are weighted, which is what the feedback loop tunes. (Figures use the offline
-  Brenk screen; exact values shift with the objective data sources chosen.)
-
-### The harder target set
-
-```sh
-reagent evaluate --hard --max-targets 10 --max-routes 15 \
-  --hashed-stock --algorithm retrostar --iterations 500 --time-limit 1800
-```
-
-`--hard` swaps in ten multi-step drugs (fluoxetine, sertraline, celecoxib and
-friends). Under the same best-measured configuration as above, against three
-stocks -- ZINC alone, and ZINC unioned with the free eMolecules catalogue capped
-at two different building-block sizes:
-
-All nine measurements below come from one code version, after ties were made
-deterministic. Figures are feasibility-led / safety-tilted / build-it-yourself.
+**Stock coverage is the finding.** Ten multi-step drugs, Retro\* at 500
+iterations, against three stocks:
 
 | | ZINC | + eMolecules <=20 | + eMolecules <=14 |
 |---|---|---|---|
-| new keys over ZINC | -- | +4,970,253 (+28.5%) | +1,151,516 (+6.6%) |
-| solve-rate | 0.70 | 1.00 | 1.00 |
-| mean route length | 1.71 / 1.86 / 1.71 | 1.10 | 2.00 |
-| mean largest-leaf fraction | 0.59 | 0.74 / 0.76 / 0.74 | 0.64 |
-| routes buying an advanced intermediate | 0 of 7 | 3 / 4 / 3 of 10 | 1 of 10 |
-| picks changed | 3 / 4 / 3 | 1 / 3 / 1 | 5 / 6 / 5 |
-| baseline safety | 0.496 | 0.566 | 0.529 |
-| REAGENT safety | 0.618 / 0.640 / 0.618 | 0.622 / 0.766 / 0.622 | 0.555 / 0.628 / 0.550 |
+| Solve-rate | 0.70 | 1.00 | 1.00 |
+| Mean route length | 1.71 | 1.10 | 2.00 |
+| Routes buying an advanced intermediate | 0 of 7 | 3 of 10 | 1 of 10 |
+| Baseline safety | 0.496 | 0.566 | 0.529 |
+| REAGENT safety | 0.618 | 0.622 | 0.555 |
 
-**Stock coverage was the cap, and a capped real catalogue lifts it.** ZINC leaves
-three targets unsolved. Adding eMolecules at <=14 heavy atoms reaches 1.00 with
-routes that get *longer*, 1.71 to 2.00 steps, and only one route buying an
-advanced intermediate. Uncapped at <=20 it also reaches 1.00, but by cheating:
-route length falls to 1.10 and three to four routes buy the penultimate
-compound. The cap is what makes the solve-rate mean something, and enforcing it
-discards 77% of what the vendor added.
+ZINC leaves 3 of 10 hard targets unsolved. A real catalogue capped at 14 heavy
+atoms reaches 1.00 with routes that get *longer* rather than shorter. Uncapped
+at 20 it also reaches 1.00, but by buying the penultimate compound on 3 of 10,
+which is not the same achievement.
 
-**Weighting safety works; weighting buy-versus-build does not.** The
-safety-tilted profile separates on every stock -- one more pick changed than the
-default, and clearly higher safety (0.766 against 0.622 at <=20). The
-`build-it-yourself` profile, at 0.30 on `construction`, produces output identical
-to the default on ZINC and <=20 and near-identical at <=14.
+**The feedback loop learns.** Twenty targets, a hidden user preference the loop
+cannot see, regret measured as the utility gap against that hidden preference:
 
-That is a correction. Before ties were made deterministic, this profile appeared
-to cut degenerate routes at <=20 from 5 to 3 and pull the leaf fraction to 0.62,
-and that was recorded here as the objective doing its job. It was not: with
-stable tie-breaking the *default* profile reaches 3 degenerate routes by itself,
-and the apparent gain was arrival order deciding ties. `construction` earns its
-place as a reported metric -- it is what makes degenerate routes countable at all
--- but weighting it changes nothing measurable on these targets.
+| Hidden preference | Regret | Agreement | Matched route |
+|---|---|---|---|
+| Safety-loving | 0.077 to 0.006 | 70% to 80% | 17 of 20 |
+| Cost-loving | 0.174 to 0.023 | 60% to 70% | 13 of 20 |
 
-**Stable tie-breaking moved more than expected.** Route sets were always
-deterministic; their order was not, and `max` keeps the first of equal scores. On
-ZINC the default profile went from 1 changed pick to 3, and REAGENT safety from
-0.513 to 0.618. The tiebreak is arbitrary but reproducible -- ordered by route
-signature -- so it is not designed to pick better routes; landing on safer ones
-here is a side effect. What it guarantees is that the same inputs give the same
-answer.
+**It runs on 8 GB.** `--hashed-stock` takes a planning run from 4.91 GB to
+0.63 GB peak RSS with identical results.
 
-### Safety is scored per hazard handled, not per step taken
+Full methodology, all three weight profiles, the objective spreads, and five
+measured dead ends: **[docs/EVALUATION.md](docs/EVALUATION.md)**.
 
-The structural-alert score used to subtract 0.1 for every *distinct* hazard
-found anywhere in the route. That set grows with the number of molecules, so a
-longer route scored worse for being longer. Measured on sertraline, where both
-candidates handle methyl iodide and have identical hazard density (1 of 3
-molecules against 2 of 6):
+## Project Structure
 
-| | old | new |
-|---|---|---|
-| buy the penultimate intermediate, 1 step | 0.400 | 0.317 |
-| build it from building blocks, 3 steps | 0.300 | 0.317 |
-
-Two consequences, both bad. Safety duplicated `efficiency`, which already scores
-step count. And weighting safety up actively selected routes that buy the
-molecule rather than make it -- on an uncapped catalogue the safety-tilted
-profile chose *more* such routes than the feasibility-led one (6 vs 4 of 10) and
-posted the project's best safety figure, 0.900, doing it.
-
-The score now depends only on intensive facts: how bad the worst single compound
-handled is (`max_molecule_hazards`, saturating at three alerts) and what
-fraction of the route's molecules carry an alert (`hazard_density`). Neither
-moves when steps are added at constant hazard. The old rubric's endpoints are
-kept -- a clean route is categorically 1.0, any hazard caps the score at 0.6,
-and the floor is 0.1 -- so scores remain comparable in magnitude to those above.
-
-**This narrowed the spread of safety across a candidate set, on purpose.** Real
-candidates for one target: warfarin 0.100 -> 0.060, diazepam 0.300 -> 0.147, at
-finer resolution (2 -> 4 and 4 -> 5 distinct values). The lost range was the bias
--- the old score varied across candidates largely because they had different
-numbers of molecules. Removing a length signal removes the variance that signal
-was producing. What remains is the genuine hazard difference between routes,
-which for these targets is small, and that is why the two weight profiles now
-agree at <=14.
-
-Fixing this did **not** stop safety-weighting from selecting bought
-intermediates at <=20 (5 and 6 routes, against 4 and 6 before). That preference
-turns out to be legitimate rather than a defect: building sertraline means
-handling methyl iodide (`alkyl_halide`, `iodine`), buying the ketimine means
-handling one mild `imine_1` alert, so the bought route really is safer to *run*.
-"Safest to run" and "best synthesis" are different questions. The remedy is the
-catalogue cap, not the safety objective.
-
-Cumulative exposure is deliberately not modelled: a ten-step route really does
-involve more handling than a one-step route, but that is what `efficiency`
-measures, and folding it into safety is what caused the defect.
-
-### Buy-vs-build is scored, not assumed
-
-Every other objective rewards the degenerate route. Ordering the penultimate
-intermediate and running one final step is short, cheap, high-probability, and
-handles almost no reagents -- so it wins efficiency, cost, feasibility and
-safety at once. Nothing in the objective set could see that the "synthesis" was
-one step of someone else's work, and solve-rate cannot tell the two apart.
-
-`construction` scores the largest leaf as a fraction of the target: the most
-advanced thing the route buys. A convergent coupling of two similar halves sits
-near 0.5, which is the best two components can do; buying the penultimate
-compound sits near 1.0. The score ramps linearly from 1.0 at a fraction of 0.5
-to 0.0 at 0.9. Sertraline's two candidate routes: buying the ketimine (19 of 20
-heavy atoms) scores 0.0, building it from 1-aminotetralone and
-1-bromo-3,4-dichlorobenzene scores 0.75.
-
-Its 0.15 weight comes entirely out of `availability`, which nominally held 0.25
-and decides nothing: every *solved* route has all its leaves in stock by
-definition, so availability is constant across the candidate set and the
-normalizer drops it. Taking weight from any other objective would have changed
-rankings that were measured and are correct -- an earlier attempt funded it from
-`safety` and `feasibility`, and the existing test that the safer route wins a
-near-tie caught the regression.
-
-A third weight profile, `build-it-yourself`, tilts to 0.30 on it. Genuine
-building-block routes to one target differ little in hazard, so tilting safety
-moves the pick less than it appears to; how much of the molecule a route builds
-does vary across candidates, so this is where the selection layer has something
-real to express a preference over.
-
-### Are the weights doing anything? A control says yes
-
-Two weight profiles picking identical routes looks like evidence that the
-weights are decoration. It is not, and the test that settles it is a selection
-rule that uses no tuned weights: take the Pareto front, normalize the objectives
-across the candidate set, and pick the route closest to the ideal point of 1.0
-on everything.
-
-On the hard set at <=14, against the same candidates:
-
-| rule | safety | sustainability | cost | agrees with weighted |
-|---|---|---|---|---|
-| feasibility-only baseline | 0.529 | 0.898 | 0.535 | -- |
-| tuned weights (REAGENT, safety-tilted) | 0.628 | 0.914 | 0.578 | -- |
-| closest to the ideal point | 0.370 | 0.837 | 0.498 | 1 of 10 |
-
-These figures were the least stable in the project before ties were made
-deterministic -- the rule selects off the Pareto front, so a candidate set
-arriving in a different order flipped its pick and moved the mean by ~0.07.
-Three runs then gave safety 0.344, 0.414 and 0.418; the row now reproduces. The
-conclusion never depended on that: every one of those values, and this one, sits
-well below the baseline.
-
-The ideal-point rule loses to the plain baseline on every objective. Equal
-distance on every axis is not the absence of a weighting -- it *is* a uniform
-one, which cuts feasibility from 0.30 to 1/7 and lifts the noisier proxies to
-equal standing. Balancing seven objectives beats optimizing none of them and
-loses to optimizing the right ones.
-
-It stays in the evaluation output as a control rather than a recommendation. The
-profiles agreeing with each other says the objectives are correlated across the
-candidates on offer; this says the weight vector nonetheless earns its place.
-
-### What the objective spreads say, and what they do not
-
-Median spread across the candidate sets of eight hard targets, per objective:
-
-| objective | median | min | max | under the 0.10 floor |
-|---|---|---|---|---|
-| cost | 0.179 | 0.075 | 0.242 | 2 of 8 |
-| safety | 0.169 | 0.060 | 0.733 | 1 of 8 |
-| sustainability | 0.154 | 0.076 | 0.291 | 2 of 8 |
-| construction | 0.116 | 0.000 | 0.375 | 2 of 8 |
-| efficiency | 0.075 | 0.000 | 0.300 | 4 of 8 |
-| feasibility | 0.025 | 0.003 | 0.894 | 7 of 8 |
-| availability | 0.000 | 0.000 | 0.000 | 8 of 8 |
-
-Two things follow, one of which is not what it first looks like.
-
-`availability` is constant on every target, confirming it can never separate
-solved routes -- which is why `construction`'s weight was taken from it.
-
-`feasibility` carries the largest weight (0.30) yet sits under the near-tie
-floor on seven of eight targets, so it is damped on most of them. That reads
-like a miscalibration, and giving it a lower floor of its own was tried. It is
-not one: a 0.02 gap between two candidates the *same policy model* produced is
-not evidence that one route is better, and stretching it to a full swing lets it
-outvote a 0.6 difference in safety. Whether small likelihood differences carry
-information is answerable only against reference routes, which this project does
-not have. The floor stays, and feasibility's nominal 0.30 buys less than it
-appears to -- an honest limitation rather than a bug to fix blind.
-
-### Aggregation
-
-Objectives are min-max normalized across the candidate routes before the
-weighted sum. Raw scores do not span comparable ranges -- on a typical target
-feasibility varies 0.47-0.73 across candidates while safety varies 0.20-0.30 and
-cost 0.11-0.15 -- so weighting the raw values lets the widest-ranging objective
-decide the ranking whatever the weights say. Normalizing makes a weight express
-preference rather than range; it is why the safety-tilted profile shifts the pick
-on 6 targets rather than 4.
-
-Two details keep that from overcorrecting:
-
-- Rescaling is floored at a minimum spread (`MIN_SPAN`), so a difference too
-  small to be meaningful is not stretched into a decisive one.
-- An objective every candidate scores identically is dropped rather than
-  weighted. Among solved routes `availability` is always 1.0 by construction (a
-  route is solved iff every leaf is in stock), and on single-step targets
-  `efficiency` is constant too; left in, they would consume weight while being
-  unable to change any ranking.
-
-Each route reports both figures: the score it is ranked by (relative to the
-candidates on offer) and `abs`, the absolute weighted mean of its raw scores.
-
-Objective signals:
-
-- **feasibility**: expansion model prior (`policy_probability`) x filter model
-  forward-plausibility (`filter_feasibility`), so a confidently-suggested route
-  is still penalised if a step is judged implausible.
-- **cost**: RDKit synthetic-accessibility of the building blocks (proxy, no live
-  prices).
-- **safety**: Brenk structural-alert screen (medchem liabilities: reactive,
-  toxic, unstable groups). A real published signal, not a GHS reagent-hazard
-  classification; read as "structural alerts", not formal safety. `--ghs`
-  substitutes real GHS data.
-- **sustainability**: atom-economy / mass-intensity proxies (no solvent data).
-
-```sh
-reagent check-agents --local --max-targets 5
+```
+ReAgent/
+├── reagent/
+│   ├── core/           # RDKit helpers, data models, config
+│   ├── singlestep/     # AiZynthFinder adapter, stock and catalogue hashing
+│   ├── features/       # Deterministic chemistry facts (Brenk, SA score)
+│   ├── agents/         # Orchestrator, specialists, rationale, LLM adapters
+│   ├── optimize/       # Weighted-sum and Pareto aggregation
+│   ├── rag/            # Reaction-precedent fingerprints, index, retrieval
+│   ├── adaptive/       # Episodic memory and feedback-driven weight tuning
+│   ├── search/         # Search-algorithm registry and cost hooks
+│   ├── eval/           # Solve-rate, harness, parallel planning
+│   └── cli.py          # Command-line interface
+├── tests/              # 127 tests
+├── docs/EVALUATION.md  # Full measurements
+├── SUBMISSIONS/        # AUR and Chocolatey packaging
+└── config/             # Search and scoring configuration
 ```
 
-Scores real routes with the agent team and reports per-objective mean absolute
-error, ranking agreement, and parse-failure rate vs. the deterministic reference.
-On a 3B model the agents track the reference closely on short routes; residual
-error concentrates on arithmetic-heavy objectives (cost; safety on multi-step
-routes). `--hybrid` removes that drift.
+## Testing
 
-```sh
-reagent check-adaptive --vectors data/vectors.json
+```bash
+mise run test     # or: pytest
+mise run lint     # or: ruff check .
 ```
 
-Measures whether the feedback loop learns anything. `update_from_preference` has
-unit tests, but they cover a single update step, and a step can move the weights
-the right way every time while never converging, oscillating, or drifting
-somewhere that ranks worse than the defaults did. Only a sequence shows which.
+127 tests covering the deterministic scoring rubrics, aggregation and
+tie-breaking, stock hashing, catalogue ingestion, CLI parsing, and the adaptive
+loop. `ci.yml` runs Ruff and pytest on 3.10 and 3.11 for every push to `main`
+and every pull request. `release.yml` runs on a `v*` tag: it repeats the matrix,
+checks the tag against the version in `pyproject.toml`, builds the sdist and
+wheel, runs `twine check`, and publishes with them attached.
 
-So this simulates a user with a fixed hidden preference, shows them one target's
-candidates at a time, takes the route that preference would actually choose as
-the feedback, and reports **regret** -- the hidden-utility gap between the route
-the learned weights recommend and the best one available, normalized by the
-spread across candidates so a target whose routes are near-identical cannot
-dominate the average. Falling regret from the first half of the sequence to the
-second is the loop working.
+## Notes / Gotchas
 
-Two opposed hidden preferences are run over the same targets, safety-loving and
-cost-loving. That matters: a loop that drifts toward one objective whatever it
-is told would look like learning under a single preference, and only fails
-visibly when the opposite preference has to move the weights the other way.
-
-Measured over 20 targets and 209 real candidate routes:
-
-| hidden preference | regret | agreement | learned safety | learned cost |
-|---|---|---|---|---|
-| safety-loving | 0.077 -> 0.006 | 70% -> 80% | 0.672 | 0.155 |
-| cost-loving | 0.174 -> 0.023 | 60% -> 70% | 0.335 | 0.417 |
-
-Both start from safety 0.150 and cost 0.150. The loop learns: regret falls about
-90%, each user's own objective ends on top, and the learned weights pick that
-user's preferred route on 17 of 20 targets for safety and 13 of 20 for cost.
-
-It is not a clean recovery, though. The cost-loving user still lifts safety from
-0.150 to 0.335, because safety has the widest spread in real candidate sets and
-routes preferred on cost usually differ in safety too, so the update credits it.
-Cost is recovered less well than safety for the same reason -- less spread to
-learn from. Read the learned vector as a direction, not as the user's true
-preference.
-
-The striking part is what happens to the objectives nobody weighted: feasibility
-falls from 0.300 to 0.029 and 0.112, and availability to ~0.00, under *both*
-users. The feedback loop rediscovers on its own what the spread measurement
-found separately -- those two objectives barely discriminate between candidates.
-Two unrelated methods agreeing that feasibility's nominal 0.30 buys little is
-stronger evidence than either on its own.
-
-## Releases
-
-`.github/workflows/ci.yml` runs Ruff and pytest on 3.10 and 3.11 for every push
-to `main` and every pull request. `.github/workflows/release.yml` runs on a
-`v*` tag: it repeats the full lint-and-test matrix, checks the tag against the
-version in `pyproject.toml` (a release whose artifact reports a different
-version than its tag is worse than no release), builds the sdist and wheel,
-runs `twine check`, and publishes the release with them attached.
-
-A tag therefore publishes. The guard against publishing something wrong is the
-`verify` job, which gates the build: lint and tests must pass on both supported
-interpreters, and the tag must match the packaged version, before any artifact
-is produced.
-
-## Package layout
-
-| Module | Responsibility | Status |
-|---|---|---|
-| `reagent/core` | RDKit helpers, data models (`Route`, `Reaction`, `Assessment`), config | implemented |
-| `reagent/singlestep` | Single-step retrosynthesis backend adapter (AiZynthFinder) | implemented |
-| `reagent/features` | Deterministic chemistry facts (incl. Brenk alerts, SA score) feeding the agents | implemented |
-| `reagent/agents` | Orchestrator, specialist evaluators, rationale, LLM adapters (Anthropic, Ollama) | implemented |
-| `reagent/optimize` | Weighted-sum and Pareto route aggregation over seven objectives | implemented |
-| `reagent/rag` | Reaction-precedent fingerprints, index, retrieval | implemented |
-| `reagent/adaptive` | Episodic memory and feedback-driven weight tuning | implemented |
-| `reagent/eval/adaptive_check` | Regret-over-a-sequence measurement of that loop | implemented |
-| `reagent/eval` | Solve-rate, deterministic scoring, baseline-vs-ReAgent harness | implemented |
-| `reagent/search` | Search-algorithm registry (`mcts`, `retrostar`, `dfpn`, `breadth-first`) | implemented |
-
-## Development hardware and its consequences
-
-Developed, run, and benchmarked entirely on modest consumer hardware without a
-GPU and with limited memory. No model was trained here: the single-step model is
-AiZynthFinder's pretrained USPTO model reused unchanged, and the local agent
-model (`qwen2.5:3b-instruct`) is downloaded, not trained. That environment shaped
-the system and every number here:
-
-- **Small local agent model.** Defaults to 3B because larger models did not fit
-  alongside the planner and stock in memory. `--hashed-stock` has since freed
-  ~4 GB, so a larger local model is now worth trying; not benchmarked.
-- **Memory-bound pipeline** (largely fixed). The stock load peaked at 4.83 GB and
-  the kernel OOM-killed runs on an 8 GB machine. `--hashed-stock` brings a
-  planning run to 0.63 GB peak, so the low `--iterations` default is no longer
-  forced by memory.
-- **Heuristics stand in for missing data.** `--permissive-stock` approximates a
-  catalogue; cost and greenness are proxies; default safety is Brenk. Only
-  `--ghs` uses real hazard data, and only online.
-- **Benchmark numbers reflect these choices.** Measured with this model, stock,
-  and budget on a small drug-like target set with short-to-moderate routes. They
-  characterize this configuration, not an upper bound with a better model, a real
-  catalogue, or a GPU. On the harder multi-step set this configuration drops to
-  solve-rate 0.70 and the selection layer stops responding to weights entirely --
-  a gap that a real building-block catalogue closes.
-
-Ceiling on route quality is the pretrained single-step model and stock, neither
-improvable in this environment. ReAgent is the evaluation, selection, grounding,
-and adaptation layer on top.
-
-### Known limitations
-
-- **Route generation is the ceiling for route *quality*.** Reuses
+- **Route generation is the ceiling for route quality.** ReAgent reuses
   AiZynthFinder's pretrained model and does not improve the disconnections it
-  proposes. Two no-training levers had no effect (ringbreaker policy as a
-  replacement for the USPTO policy; raising the filter cutoff to prune during
-  search). Combining the two policies rather than swapping them was tried since
-  (`--expansion uspto,ringbreaker`) and is a third dead end on this target set:
-  identical results at double the branching factor. Search budget is the one
-  lever that did pay: N=500 lifts solve-rate to 1.00 on the eval set (see the
-  flag notes). `--algorithm retrostar` pays a second time, improving the
-  candidate pool before selection runs (baseline safety 0.52 against MCTS's
-  0.44). Raising `cutoff_number` from 50 to 200 is target-dependent and roughly
-  a wash. A real building-block catalogue is the lever that pays on hard
-  targets: ZINC unioned with eMolecules capped at 14 heavy atoms takes the hard
-  set from 0.70 to 1.00 solved, with routes that get *longer* (1.71 to 2.00
-  steps) rather than shorter. See the harder-target-set results.
-- **Safety is a structural-alert screen, so severity is coarse.** One Brenk
-  alert on a molecule counts the same whether the group is mildly reactive or
-  acutely toxic; `--ghs` is the real severity data. The screen no longer
-  penalizes length -- see the scoring note below -- but it still cannot tell a
-  nuisance alert from a serious one offline.
+  proposes. It is the selection, grounding and adaptation layer on top.
+- **Search budget and a real catalogue are the two levers that pay.** Combining
+  expansion policies, raising the template cutoff, and steering the search by
+  hazard were each built, measured, and did not help.
+- **Safety is a structural-alert screen by default, so severity is coarse.** One
+  Brenk alert counts the same whether the group is mildly reactive or acutely
+  toxic. `--ghs` is the real severity data, but only online.
+- **Cost is a proxy** from synthetic accessibility, not supplier prices.
 - **Greenness is atom economy only.** No solvent-driven PMI or E-factor without
   reaction-condition data.
-- **Cost is a proxy** from synthetic accessibility, not supplier prices.
-- **Default safety is a structural-alert screen**, not reagent safety. Real GHS
-  data only with `--ghs` (online, PubChem); its score is the worst hazard among
-  reagents, blunt when routes share a reagent.
-- **Small-model rationale can misstate values** even when the score is correct.
-  Hybrid mode keeps scores exact.
-- **Slow.** A rationale-batching speedup was identified but not implemented.
-  The memory ceiling is fixed: `--hashed-stock` replaced the in-memory InChI-key
-  set with a sorted array of 64-bit digests, 4.91 GB peak down to 0.63 GB.
-- **Narrow validation.** Small drug-like target set, short-to-moderate routes.
-- **Multi-objective advantage is conditional** on objectives beyond feasibility
-  carrying weight (what the feedback loop tunes).
-- **Anthropic backend unverified.** Implemented but exercised only via the local
-  model.
-- **`--permissive-stock` is a heuristic**, not a real catalogue.
-- **`reagent/search` is a placeholder.**
+- **The multi-objective advantage is conditional** on objectives beyond
+  feasibility carrying weight, which is what the feedback loop tunes.
+- **Small-model rationales can misstate values** even when the score is correct.
+  `--hybrid` keeps the scores exact.
+- **Validation is narrow.** Small drug-like target sets, short to moderate
+  routes.
+- **The Anthropic backend is unverified.** Implemented but exercised only via the
+  local model.
 
 ## License
 
-Apache-2.0. See `LICENSE`.
+Apache-2.0, see [LICENSE](LICENSE).
+
+## Links
+
+- **Repo:** https://github.com/rugbedbugg/ReAgent
+- **AUR:** https://aur.archlinux.org/packages/reagent
+- **Evaluation:** [docs/EVALUATION.md](docs/EVALUATION.md)
+- **Issues:** https://github.com/rugbedbugg/ReAgent/issues
+- **Releases:** https://github.com/rugbedbugg/ReAgent/releases
