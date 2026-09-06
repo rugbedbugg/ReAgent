@@ -65,3 +65,51 @@ def test_progress_falls_back_to_lines_when_output_is_redirected(tmp_path, monkey
         click.echo("  planned fluoxetine  (1/10)", file=handle)
 
     assert "planned fluoxetine  (1/10)" in log.read_text()
+
+
+def test_an_unreadable_probe_is_not_the_same_as_a_full_machine():
+    """The bug this guards: /proc/meminfo does not exist on Windows or macOS,
+    the old reader returned 0 there, and 0 floors the job count. So --jobs was
+    silently 1 on every non-Linux platform, with nothing said about it."""
+    from reagent.eval import parallel
+
+    assert parallel._probe_linux_mb() is not None  # this is Linux
+    # None means "the platform did not answer", which is not "no memory free".
+    assert parallel._probe_memory_mb() != 0 or parallel._probe_memory_mb() is None
+
+
+def test_serial_fallback_on_an_unreadable_probe_says_so(monkeypatch):
+    import warnings as _warnings
+
+    from reagent.eval import parallel
+
+    monkeypatch.setattr(parallel, "_probe_memory_mb", lambda: None)
+    with _warnings.catch_warnings(record=True) as caught:
+        _warnings.simplefilter("always")
+        assert parallel.safe_job_count(8) == 1
+    assert any(issubclass(w.category, RuntimeWarning) for w in caught)
+    assert "serially" in str(caught[0].message)
+
+
+def test_an_explicit_zero_is_still_a_full_machine_and_warns_about_nothing(monkeypatch):
+    """Passing 0 in means the caller measured 0. That is not a probe failure
+    and must not produce a warning."""
+    import warnings as _warnings
+
+    from reagent.eval import parallel
+
+    with _warnings.catch_warnings(record=True) as caught:
+        _warnings.simplefilter("always")
+        assert parallel.safe_job_count(8, available_mb=0) == 1
+    assert not caught
+
+
+def test_each_platform_probe_returns_mb_or_none():
+    """Whichever probes can run here must return plausible megabytes, never
+    bytes or kilobytes, and never a negative."""
+    from reagent.eval import parallel
+
+    for probe in (parallel._probe_linux_mb, parallel._probe_windows_mb,
+                  parallel._probe_posix_mb):
+        reading = probe()
+        assert reading is None or (0 <= reading < 8_000_000), f"{probe.__name__}: {reading}"

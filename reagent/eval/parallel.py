@@ -15,6 +15,7 @@ planner is exactly the thing that would do it again.
 from __future__ import annotations
 
 import os
+import warnings
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -33,8 +34,8 @@ HEADROOM_GB = HEADROOM_MB / 1024
 _BACKEND = None
 
 
-def available_memory_mb() -> int:
-    """Memory the kernel says is actually available, in whole MB.
+def _probe_linux_mb() -> int | None:
+    """``MemAvailable`` from /proc/meminfo, in whole MB.
 
     ``MemAvailable`` rather than ``MemFree``: reclaimable page cache counts,
     which is most of the difference on a machine that has just read a 180 MB
@@ -47,8 +48,77 @@ def available_memory_mb() -> int:
             if line.startswith("MemAvailable:"):
                 return int(line.split()[1]) // 1024
     except (OSError, ValueError, IndexError):
-        pass
-    return 0
+        return None
+    return None
+
+
+def _probe_windows_mb() -> int | None:
+    """``ullAvailPhys`` from GlobalMemoryStatusEx, in whole MB."""
+    try:
+        import ctypes
+
+        class _MemoryStatus(ctypes.Structure):
+            _fields_ = [
+                ("dwLength", ctypes.c_ulong),
+                ("dwMemoryLoad", ctypes.c_ulong),
+                ("ullTotalPhys", ctypes.c_ulonglong),
+                ("ullAvailPhys", ctypes.c_ulonglong),
+                ("ullTotalPageFile", ctypes.c_ulonglong),
+                ("ullAvailPageFile", ctypes.c_ulonglong),
+                ("ullTotalVirtual", ctypes.c_ulonglong),
+                ("ullAvailVirtual", ctypes.c_ulonglong),
+                ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+            ]
+
+        status = _MemoryStatus()
+        status.dwLength = ctypes.sizeof(_MemoryStatus)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):
+            return None
+        return int(status.ullAvailPhys) // (1024 * 1024)
+    except (AttributeError, OSError, ValueError):
+        return None
+
+
+def _probe_posix_mb() -> int | None:
+    """Free pages times page size, for macOS and the BSDs.
+
+    Less generous than Linux's ``MemAvailable``: it does not count reclaimable
+    cache, so it under-reports and the job count comes out conservative. That
+    is the right direction to be wrong in.
+    """
+    try:
+        pages = os.sysconf("SC_AVPHYS_PAGES")
+        page_size = os.sysconf("SC_PAGE_SIZE")
+    except (AttributeError, OSError, ValueError):
+        return None
+    if pages < 0 or page_size < 0:
+        return None
+    return (pages * page_size) // (1024 * 1024)
+
+
+def _probe_memory_mb() -> int | None:
+    """Available memory in MB, or None when the platform will not say.
+
+    None and 0 mean different things and are kept apart on purpose: 0 is a
+    full machine, None is a machine that did not answer. Collapsing them is
+    what silently pinned ``--jobs`` to 1 on every non-Linux platform, since
+    the /proc reader returned 0 there and 0 always floors the job count.
+    """
+    for probe in (_probe_linux_mb, _probe_windows_mb, _probe_posix_mb):
+        reading = probe()
+        if reading is not None:
+            return reading
+    return None
+
+
+def available_memory_mb() -> int:
+    """Memory the kernel says is actually available, in whole MB.
+
+    0 when the platform will not say, which callers that care should
+    distinguish by using :func:`_probe_memory_mb` directly.
+    """
+    reading = _probe_memory_mb()
+    return 0 if reading is None else reading
 
 
 def available_memory_gb() -> float:
@@ -65,7 +135,25 @@ def safe_job_count(requested: int, available_mb: int | None = None) -> int:
     if requested <= 1:
         return 1
 
-    available = available_memory_mb() if available_mb is None else int(available_mb)
+    if available_mb is None:
+        probed = _probe_memory_mb()
+        if probed is None:
+            # Refusing to guess: a wrong guess here is an OOM kill, and this
+            # project has already been killed once at 4.9 GB on an 8 GB
+            # machine. Say so rather than degrading in silence, which is what
+            # the old reader did on every platform without /proc.
+            warnings.warn(
+                f"Cannot read available memory on this platform, so --jobs "
+                f"{requested} is being run serially. Pass --jobs 1 to silence "
+                f"this, or run on a platform where memory can be probed.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            return 1
+        available = probed
+    else:
+        available = int(available_mb)
+
     affordable = (available - HEADROOM_MB) // WORKER_RSS_MB
     cores = max(1, (os.cpu_count() or 2) - 1)
     return max(1, min(requested, affordable, cores))
