@@ -596,7 +596,8 @@ also uses a different search and stock configuration from the catalogue runs.
 The release queue prioritizes 0.5, 0.6 and 0.7 on both full target sets, with a
 small exploratory 0.4 arm. This is a compute allocation decision, not proof that
 other values are unhelpful. The 0.6 build controls are reused rather than rerun.
-See [the experiment plan](experiments/V0.3.0.md) for the exact order and controls.
+The local queue definition records the exact order and controls; experiment
+plans and live execution state are kept under ignored `data/evaluations/`.
 
 ## Measured dead ends
 

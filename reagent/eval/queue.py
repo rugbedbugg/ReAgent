@@ -1,6 +1,6 @@
 """Run a checked-in evaluation plan serially with memory gates and checkpoints.
 
-Usage: uv run --no-sync python -m reagent.eval.queue --plan docs/experiments/v0.3.0.json
+Usage: uv run --no-sync python -m reagent.eval.queue --plan data/evaluations/plans/v0.3.0.json
 This runner never commits, publishes, installs packages or downloads models.
 """
 
