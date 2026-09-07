@@ -545,13 +545,59 @@ The script rejects ties between different vectors instead of substituting array
 order for the production route-signature tiebreak. It does not reconstruct
 route lengths or leaf fractions from clipped scores.
 
-The interrupted source and pooling searches produced no complete aggregate
-results. The larger catalogue comparison and pooling measurements remain open;
+The interrupted September 6 source and pooling searches produced no complete
+aggregate results. A fresh hard-set catalogue result is recorded below;
+the moderate-set catalogue comparison and pooling measurements remain open.
 `evaluate --checkpoint DIRECTORY` now persists full routes per target so an
 interruption does not discard completed searches. Repeat the same search command
 and directory to resume. Each result includes whether the clock capped its
 search; resumed aggregate reports retain those warnings. The manifest rejects
 changed search settings, model/stock contents and search implementation.
+
+## Source mode on the hard catalogue set, September 7
+
+The resumed release work completed a fresh search over all 24 hard targets:
+Retro*, 500 iterations / 1,800 seconds, ZINC plus eMolecules capped at 14 heavy
+atoms, 15 candidates maximum, no target-relative purchasing constraint.
+All 24 targets were solved, with 278 returned candidates and no reported
+clock-limited searches. Full routes were checkpointed as each target finished.
+
+| profile | mean steps | safety | sustainability | cost |
+|---|---|---|---|---|
+| balanced (feasibility-led) | 2.000 | 0.5963 | 0.8969 | 0.5424 |
+| source-led | 1.958 | 0.5894 | 0.8967 | 0.5458 |
+
+On these same candidates, source weighting makes the selected route slightly
+shorter and improves the cost proxy slightly, at a small loss in safety score.
+Both profiles select one route buying an advanced intermediate. Cost remains
+a synthetic-accessibility proxy; this is not evidence of lower supplier prices.
+The `build-it-yourself` profile is also reported, but uses unconstrained
+candidates here and is not an evaluation of the full build mode.
+
+These fresh-search figures differ from the September 6 widened-set report.
+Do not interpret the cross-run difference as a scoring improvement: this
+comparison holds candidates fixed only within the September 7 run. Saved
+checkpoints make its ranking reproducible without assuming a repeated search
+will return the same candidates.
+
+Thirteen targets returned exactly 15 routes, so the earlier claim that this
+cap was harmless for a single search cannot be generalized to this run.
+Hitting the cap does not establish how many additional routes exist. The
+queued pooling comparisons use cap 40 for both the single-search and pooled
+arms to measure them under the same candidate limit.
+
+`measurements/source-hard-2026-09-07.json` records the exact profiles, per-target
+results, candidate counts, timeout count, search manifest and route-record
+digests. Regenerate it from the local full-route checkpoint:
+
+```sh
+uv run --no-sync python docs/measurements/summarize_checkpoint.py \
+  data/evaluations/hard-retrostar-emol14-2026-09-07/checkpoint --hard
+```
+
+The full route checkpoint remains under ignored `data/`; the tracked summary
+alone cannot reconstruct those routes. Scoring this checkpoint needs neither
+the original search models nor an LLM.
 
 ## Pooling needs a higher `--max-routes`
 
@@ -566,10 +612,11 @@ routes returned by `mcts,retrostar` on four hard targets, asked for up to 40:
 | warfarin | 6 |
 
 A cap of 15, which is what the evaluations here have used, binds on half of them
-and costs propranolol 18 of its 33 candidates. A single search never hit it:
-Retro* alone returned 9 on naproxen. So the cap was harmless until pooling made
-it the binding constraint, and the first pooled evaluation was measuring a
-clipped version of the lever.
+and costs propranolol 18 of its 33 candidates. Retro* alone returned 9 on
+naproxen, but that observation does not establish that cap 15 is harmless for
+every single search: the September 7 hard-set run reaches it on 13 targets.
+The first pooled evaluation used a clipped candidate pool; the next comparisons
+raise the cap for both arms.
 
 Use `--max-routes 40` with a pooled search. The number is not a swept optimum,
 it is simply above the largest count observed.
