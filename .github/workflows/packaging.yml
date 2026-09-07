@@ -7,6 +7,10 @@ name: Packaging
 on:
   workflow_dispatch:
     inputs:
+      refresh_metadata:
+        description: "Submit author/icon corrections for the three existing packages"
+        type: boolean
+        default: false
       publish:
         description: "Also push to the Chocolatey community feed (public, irreversible)"
         type: boolean
@@ -27,6 +31,7 @@ concurrency:
 jobs:
   chocolatey:
     name: chocolatey install
+    if: ${{ !inputs.refresh_metadata }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -79,6 +84,7 @@ jobs:
 
   aur:
     name: aur pkgbuild
+    if: ${{ !inputs.refresh_metadata }}
     runs-on: ubuntu-latest
     container: archlinux:base-devel
     steps:
@@ -140,3 +146,88 @@ jobs:
           $pkg = Get-ChildItem -Filter "reagent.*.nupkg" | Select-Object -First 1
           Write-Host "Pushing $($pkg.Name)"
           choco push $pkg.FullName --source https://push.chocolatey.org/
+
+  refresh-metadata:
+    name: Verify and submit package metadata corrections
+    if: github.event_name == 'workflow_dispatch' && inputs.refresh_metadata
+    runs-on: windows-latest
+    environment: chocolatey
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: reagent
+      - uses: actions/checkout@v4
+        with:
+          repository: rugbedbugg/ResonanceID-cli
+          ref: 91a4522399a153adfeaf5fd3419f8c6d4423afec
+          path: resonanceid-cli
+      - uses: actions/checkout@v4
+        with:
+          repository: rugbedbugg/Retro-Tetris
+          ref: b05f4c0635cab61b000bb04b90184e6e9ea3b184
+          path: retro-tetris
+      - name: Check key availability
+        shell: pwsh
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: |
+          if (-not $env:CHOCOLATEY_API_KEY) { throw 'CHOCOLATEY_API_KEY is missing' }
+      - name: Verify unchanged installers, metadata, and CDN icons; pack
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($id in @('reagent', 'resonanceid-cli', 'retro-tetris')) {
+            $version = if ($id -eq 'reagent') { '0.2.0' } else { '1.0.0' }
+            $expectedVersion = if ($id -eq 'reagent') { '0.2.0' } else { '1.0.0.20260907' }
+            $source = Join-Path $PWD "$id/SUBMISSIONS/chocolatey"
+            $archive = Join-Path $env:RUNNER_TEMP "$id.zip"
+            $original = Join-Path $env:RUNNER_TEMP "$id-original"
+            Invoke-WebRequest "https://community.chocolatey.org/api/v2/package/$id/$version" -OutFile $archive
+            Expand-Archive $archive $original
+            $oldTools = Join-Path $original 'tools'
+            $newTools = Join-Path $source 'tools'
+            $oldFiles = @(Get-ChildItem $oldTools -File -Recurse)
+            $newFiles = @(Get-ChildItem $newTools -File -Recurse)
+            if ($oldFiles.Count -ne $newFiles.Count) { throw "$id installer file count changed" }
+            foreach ($file in $oldFiles) {
+              $relative = [IO.Path]::GetRelativePath($oldTools, $file.FullName)
+              $newFile = Join-Path $newTools $relative
+              if ((Get-FileHash $file.FullName).Hash -ne (Get-FileHash $newFile).Hash) {
+                throw "$id installer changed: $relative"
+              }
+            }
+            [xml]$nuspec = Get-Content (Join-Path $source "$id.nuspec") -Raw
+            $metadata = $nuspec.package.metadata
+            if ($metadata.authors -ne 'Partha Pratim Gogoi' -or $metadata.owners -ne 'rugbedbugg' -or $metadata.version -ne $expectedVersion) {
+              throw "$id metadata mismatch"
+            }
+            if ($metadata.iconUrl -notmatch '^https://cdn.jsdelivr.net/gh/rugbedbugg/[^@]+@[0-9a-f]{40}/assets/icon.png$') {
+              throw "$id icon is not pinned to a commit on the CDN"
+            }
+            $icon = Join-Path $env:RUNNER_TEMP "$id.png"
+            Invoke-WebRequest $metadata.iconUrl -OutFile $icon
+            if ((Get-FileHash $icon).Hash -ne (Get-FileHash "$id/assets/icon.png").Hash) {
+              throw "$id CDN icon does not match committed icon"
+            }
+            Push-Location $source
+            choco pack
+            if ($LASTEXITCODE -ne 0) { throw "$id pack failed" }
+            Pop-Location
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chocolatey-metadata-corrections
+          path: '**/SUBMISSIONS/chocolatey/*.nupkg'
+          if-no-files-found: error
+      - name: Submit corrected packages
+        shell: pwsh
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: |
+          choco apikey --key $env:CHOCOLATEY_API_KEY --source https://push.chocolatey.org/
+          if ($LASTEXITCODE -ne 0) { throw 'Setting Chocolatey API key failed' }
+          foreach ($id in @('resonanceid-cli', 'retro-tetris', 'reagent')) {
+            $pkg = Get-ChildItem "$id/SUBMISSIONS/chocolatey/*.nupkg" | Select-Object -First 1
+            choco push $pkg.FullName --source https://push.chocolatey.org/
+            if ($LASTEXITCODE -ne 0) { throw "$id push failed" }
+          }
