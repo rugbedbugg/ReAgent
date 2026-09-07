@@ -436,8 +436,8 @@ python -m twine check dist/*
 tests on Python 3.10 and 3.11 for pushes to `main` and pull requests.
 `release.yml` validates the same matrix, checks a `v*` tag against the version
 in `pyproject.toml`, builds the sdist and wheel, runs `twine check`, and attaches
-the artifacts to a GitHub release. The release workflow has write permission
-only for its publication job.
+the artifacts to a GitHub release. The release workflow grants `contents: write`
+for that publication workflow; validation jobs do not publish artifacts.
 
 ## Notes / Gotchas
 
