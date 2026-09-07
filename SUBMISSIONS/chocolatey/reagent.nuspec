@@ -9,10 +9,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <licenseUrl>https://github.com/rugbedbugg/ReAgent/blob/main/LICENSE</licenseUrl>
     <projectUrl>https://github.com/rugbedbugg/ReAgent</projectUrl>
-    <!-- TODO(icon): add once assets/icon.png is committed. Must be a jsDelivr URL
-         pinned to an immutable ref that actually contains the file, e.g.
-         <iconUrl>https://cdn.jsdelivr.net/gh/rugbedbugg/ReAgent@COMMIT_SHA/assets/icon.png</iconUrl>
-         Do not pin @v0.2.0: that tag has no icon. -->
+    <iconUrl>https://cdn.jsdelivr.net/gh/rugbedbugg/ReAgent@7efd8e4189b13c62d5688962a84b4537a6954a7c/assets/icon.png</iconUrl>
     <description>ReAgent plans retrosynthetic routes for a target molecule and scores
 each candidate on seven independent objectives: feasibility, precursor
 availability, cost, safety, sustainability, efficiency, and how much of the
