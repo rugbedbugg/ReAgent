@@ -408,12 +408,10 @@ mise run test     # or: pytest
 mise run lint     # or: ruff check .
 ```
 
-127 tests covering the deterministic scoring rubrics, aggregation and
-tie-breaking, stock hashing, catalogue ingestion, CLI parsing, and the adaptive
-loop. `ci.yml` runs Ruff and pytest on 3.10 and 3.11 for every push to `main`
-and every pull request. `release.yml` runs on a `v*` tag: it repeats the matrix,
-checks the tag against the version in `pyproject.toml`, builds the sdist and
-wheel, runs `twine check`, and publishes with them attached.
+The suite covers deterministic scoring, route aggregation, stock handling,
+CLI modes, adaptive preferences, resumable evaluations, queue recovery, and
+package launchers. See the [pipeline baseline](.github/STANDARDS.md) for the
+shared CI/CD and README structure.
 
 ### CI and releases
 
