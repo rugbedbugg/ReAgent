@@ -148,6 +148,9 @@ def run_command(command, log_path, minimum_running_mb, on_start):
 
 def execute(plan, digest, output, wait_for=None):
     output.mkdir(parents=True, exist_ok=True)
+    minimum_start_mb = int(
+        os.environ.get("REAGENT_MINIMUM_START_MB", plan["minimum_start_mb"])
+    )
     with queue_lock(output / "queue.lock"):
         state_path = output / "state.json"
         state = json.loads(state_path.read_text()) if state_path.exists() else {
@@ -178,16 +181,22 @@ def execute(plan, digest, output, wait_for=None):
                 time.sleep(15)
 
         for job in plan["jobs"]:
+            previous = state["jobs"].setdefault(job["id"], {"attempts": []})
+            if any(
+                attempt.get("returncode") == 0 and "reason" not in attempt
+                for attempt in previous.get("attempts", [])
+            ):
+                previous["status"] = "completed"
+                continue
             state["current_job"] = job["id"]
             save("waiting for memory")
             announced = False
-            while available_memory_mb() < plan["minimum_start_mb"]:
+            while available_memory_mb() < minimum_start_mb:
                 if not announced:
-                    print(f"Waiting for {plan['minimum_start_mb']} MB available before {job['id']}",
+                    print(f"Waiting for {minimum_start_mb} MB available before {job['id']}",
                           flush=True)
                     announced = True
                 time.sleep(30)
-            previous = state["jobs"].setdefault(job["id"], {"attempts": []})
             log = output / f"{job['id']}-{len(previous['attempts']) + 1}.log"
             attempt = {"started_at": now(), "command": command_for(job), "log": str(log)}
             previous["attempts"].append(attempt)
