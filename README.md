@@ -5,7 +5,7 @@
 ![Stars](https://img.shields.io/github/stars/rugbedbugg/ReAgent?style=for-the-badge&labelColor=000000)
 ![License](https://img.shields.io/github/license/rugbedbugg/ReAgent?style=for-the-badge&labelColor=000000)
 ![AUR version](https://img.shields.io/aur/version/reagent?style=for-the-badge&labelColor=000000)
-![CI](https://img.shields.io/github/actions/workflow/status/rugbedbugg/ReAgent/ci.yml?branch=main&style=for-the-badge&labelColor=000000)
+[![CI](https://img.shields.io/github/actions/workflow/status/rugbedbugg/ReAgent/ci.yml?branch=main&style=for-the-badge&labelColor=000000)](https://github.com/rugbedbugg/ReAgent/actions/workflows/ci.yml)
 
 Plans retrosynthetic routes for a target molecule and scores every candidate on
 seven independent objectives, so the route you get is the one that best fits
@@ -101,18 +101,31 @@ Without mise, any Python 3.10 or 3.11 interpreter works:
 
 ```bash
 uv venv --python 3.11
-uv pip install -e ".[dev]"
+uv pip install --python .venv/bin/python -e ".[dev]"
 ```
 
-### Required data
+### Data and configuration
 
-Every command needs the pretrained model and stock. This is a one-time download
-of about 760 MB.
+Planning and evaluation commands need the pretrained model and stock. This is a
+one-time download of about 760 MB.
 
 ```bash
 download_public_data data     # expansion policy, filter policy, ZINC stock
 reagent build-stock-cache     # hash the stock: 4.91 GB peak becomes 0.63 GB
 ```
+
+Data is read from `./data` by default. Set `REAGENT_DATA` to use another
+directory, for example when keeping the model and stock outside a checkout:
+
+```bash
+export REAGENT_DATA="$HOME/.local/share/reagent"
+download_public_data "$REAGENT_DATA"
+reagent build-stock-cache
+```
+
+The deterministic planner, feature calculations, RAG index, and evaluation
+reports do not need an LLM. Use `--local` with an Ollama server or set
+`ANTHROPIC_API_KEY` for the optional agent layer; see [Options / Configuration](#options--configuration).
 
 ## Commands / Usage
 
@@ -395,7 +408,7 @@ ReAgent/
 │   ├── search/         # Search-algorithm registry and cost hooks
 │   ├── eval/           # Solve-rate, harness, parallel planning
 │   └── cli.py          # Command-line interface
-├── tests/              # 127 tests
+├── tests/              # automated test suite
 ├── docs/EVALUATION.md  # Full measurements
 ├── SUBMISSIONS/        # AUR and Chocolatey packaging
 └── config/             # Search and scoring configuration
@@ -408,12 +421,23 @@ mise run test     # or: pytest
 mise run lint     # or: ruff check .
 ```
 
-127 tests covering the deterministic scoring rubrics, aggregation and
-tie-breaking, stock hashing, catalogue ingestion, CLI parsing, and the adaptive
-loop. `ci.yml` runs Ruff and pytest on 3.10 and 3.11 for every push to `main`
-and every pull request. `release.yml` runs on a `v*` tag: it repeats the matrix,
-checks the tag against the version in `pyproject.toml`, builds the sdist and
-wheel, runs `twine check`, and publishes with them attached.
+The suite covers deterministic scoring rubrics, aggregation and tie-breaking,
+stock hashing, catalogue ingestion, CLI parsing, and the adaptive loop.
+
+```bash
+mise run install   # create/update the project environment
+mise run lint      # Ruff
+mise run test      # pytest
+python -m build    # optional local sdist and wheel build
+python -m twine check dist/*
+```
+
+`ci.yml` runs Ruff, pytest, source-distribution checks, and Windows CLI smoke
+tests on Python 3.10 and 3.11 for pushes to `main` and pull requests.
+`release.yml` validates the same matrix, checks a `v*` tag against the version
+in `pyproject.toml`, builds the sdist and wheel, runs `twine check`, and attaches
+the artifacts to a GitHub release. The release workflow has write permission
+only for its publication job.
 
 ## Notes / Gotchas
 
