@@ -101,18 +101,31 @@ Without mise, any Python 3.10 or 3.11 interpreter works:
 
 ```bash
 uv venv --python 3.11
-uv pip install -e ".[dev]"
+uv pip install --python .venv/bin/python -e ".[dev]"
 ```
 
-### Required data
+### Data and configuration
 
-Every command needs the pretrained model and stock. This is a one-time download
-of about 760 MB.
+Planning and evaluation commands need the pretrained model and stock. This is a
+one-time download of about 760 MB.
 
 ```bash
 download_public_data data     # expansion policy, filter policy, ZINC stock
 reagent build-stock-cache     # hash the stock: 4.91 GB peak becomes 0.63 GB
 ```
+
+Data is read from `./data` by default. Set `REAGENT_DATA` to use another
+directory, for example when keeping the model and stock outside a checkout:
+
+```bash
+export REAGENT_DATA="$HOME/.local/share/reagent"
+download_public_data "$REAGENT_DATA"
+reagent build-stock-cache
+```
+
+The deterministic planner, feature calculations, RAG index, and evaluation
+reports do not need an LLM. Use `--local` with an Ollama server or set
+`ANTHROPIC_API_KEY` for the optional agent layer; see [Options / Configuration](#options--configuration).
 
 ## Commands / Usage
 
@@ -395,7 +408,7 @@ ReAgent/
 │   ├── search/         # Search-algorithm registry and cost hooks
 │   ├── eval/           # Solve-rate, harness, parallel planning
 │   └── cli.py          # Command-line interface
-├── tests/              # 127 tests
+├── tests/              # automated test suite
 ├── docs/EVALUATION.md  # Full measurements
 ├── SUBMISSIONS/        # AUR and Chocolatey packaging
 └── config/             # Search and scoring configuration
