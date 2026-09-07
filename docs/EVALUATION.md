@@ -495,6 +495,64 @@ the run took the expected time, and the output looked plausible. Counting routes
 against the single-algorithm arms is what caught it: a union cannot be smaller
 than one of its members.
 
+## Source ranking on the saved vectors
+
+`evaluate --mode source` and `evaluate --mode balanced` use the same search
+configuration. Both report every weight profile, including `source-led`.
+Only build mode adds a search constraint. Repeating a balanced search solely
+to obtain source scores is unnecessary when its candidates have been saved.
+The older widened-set log predates the source profile, so it lacks that row.
+The source rows in the build-mode log use constrained candidates and cannot
+stand in for unconstrained source mode.
+
+The saved adaptive vectors permit a narrower comparison now: 306 solved-route
+vectors from 49 targets, generated on September 6 with
+`reagent check-adaptive --max-targets 49 --dump-vectors ...`. That command uses
+MCTS, hashed ZINC stock, up to 15 routes per target and the default search
+budget. It is a different candidate set from the Retro* 500-iteration runs
+with ZINC plus eMolecules above. Search timing and route identities were not
+saved with the vectors.
+
+Means below include solved targets only: 24 of 25 moderate targets and 20 of
+24 hard targets. Every score is higher-is-better; cost is a synthetic-accessibility
+proxy, not supplier prices.
+
+| set | profile | cost | safety | efficiency | construction | feasibility |
+|---|---|---|---|---|---|---|
+| moderate | balanced | 0.7035 | 0.5145 | 0.9125 | 0.4075 | 0.2838 |
+| moderate | source | 0.7181 | 0.5821 | 0.9188 | 0.3456 | 0.2155 |
+| hard | balanced | 0.4938 | 0.4165 | 0.7350 | 0.7828 | 0.1696 |
+| hard | source | 0.4963 | 0.4238 | 0.7350 | 0.7828 | 0.1372 |
+
+Source selects a different score vector on four moderate targets
+(paracetamol, acetanilide, vanillin, indomethacin) and one hard target
+(omeprazole). On the moderate set it trades construction and model feasibility
+for better cost, safety and efficiency scores. On the hard set the cost gain
+is small and efficiency does not change. This is evidence about ranking on
+these candidates, not a demonstrated reduction in purchase prices or a new
+end-to-end search benchmark.
+
+Reproduce the complete per-target output:
+
+```sh
+uv run --no-sync python docs/measurements/compare_source_vectors.py
+```
+
+The recorded output is `source-vectors-2026-09-07.json`, including the input
+SHA-256 and exact weights. Omeprazole has two tied source winners with identical
+vectors, so its scores are unambiguous but its route identity is not recoverable.
+The script rejects ties between different vectors instead of substituting array
+order for the production route-signature tiebreak. It does not reconstruct
+route lengths or leaf fractions from clipped scores.
+
+The interrupted source and pooling searches produced no complete aggregate
+results. The larger catalogue comparison and pooling measurements remain open;
+`evaluate --checkpoint DIRECTORY` now persists full routes per target so an
+interruption does not discard completed searches. Repeat the same search command
+and directory to resume. Each result includes whether the clock capped its
+search; resumed aggregate reports retain those warnings. The manifest rejects
+changed search settings, model/stock contents and search implementation.
+
 ## Pooling needs a higher `--max-routes`
 
 Pooling only helps if the candidates survive to the ranking layer. Distinct

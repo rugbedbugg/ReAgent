@@ -451,14 +451,19 @@ def feedback(smiles: str, prefer: int) -> None:
                    "and buys it 0.24 in honest solve-rate; on the hard set it costs "
                    "0.04 and buys little, so large targets can take a looser cap.")
 @click.option("--mode", type=click.Choice(["balanced", "build", "source"]), default="balanced",
-              help="'build' rejects leaves larger than 60% of the target, which is what "
-                   "makes solve-rate mean 'solved by building' rather than 'solved, "
-                   "possibly by buying the answer'.")
+              help="Select the search constraint: 'build' rejects leaves larger than "
+                   "60% of the target; 'balanced' and 'source' both buy freely. "
+                   "Every evaluation reports all weight profiles, including source-led, "
+                   "so balanced and source need only one planning run.")
+@click.option("--checkpoint", type=click.Path(file_okay=False, path_type=Path), default=None,
+              help="Save full routes after each target in this directory. Repeat the "
+                   "command to resume; completed targets are reused. Use a separate "
+                   "directory for each search configuration and one writer at a time.")
 def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
              hashed_stock: bool, stock_cache: str | None, iterations: int | None,
              time_limit: int | None, expansion: str, steer: str | None, algorithm: str,
              cutoff_number: int | None, hard: bool, jobs: int, mode: str,
-             max_leaf_fraction: float | None) -> None:
+             max_leaf_fraction: float | None, checkpoint: Path | None) -> None:
     """Measure solve-rate and baseline-vs-REAGENT route quality."""
     from reagent.eval.harness import WEIGHT_PROFILES
     from reagent.eval.harness import evaluate as run_eval
@@ -493,6 +498,30 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
     cache: dict[str, list] = {}
     time_capped = 0
     canonical_targets = [(name, canonical(smiles) or smiles) for name, smiles in targets]
+    saved = None
+    pending = canonical_targets
+    if checkpoint is not None:
+        from reagent.eval.checkpoint import Checkpoint, search_identity
+
+        click.echo("Checking checkpoint search settings and data fingerprints...")
+        try:
+            saved = Checkpoint(
+                checkpoint, search_identity(aizynth_config(), backend_kwargs, max_routes),
+            )
+            pending = []
+            for name, canon in canonical_targets:
+                result = saved.load(canon)
+                if result is None:
+                    pending.append((name, canon))
+                else:
+                    time_capped += int(result.time_capped)
+        except (OSError, ValueError) as exc:
+            raise click.ClickException(str(exc)) from exc
+        click.echo(f"Reusing {len(targets) - len(pending)}/{len(targets)} completed targets.")
+
+    def record(smiles, routes, capped):
+        if saved is not None:
+            saved.save(smiles, routes, capped)
 
     workers = safe_job_count(jobs)
     if workers < jobs:
@@ -501,11 +530,11 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
             f"{available_memory_gb():.1f} GB is available and each needs ~{WORKER_RSS_GB} GB."
         )
 
-    if workers > 1:
+    if pending and workers > 1:
         # The parent must not hold a planner of its own while workers hold
         # theirs -- that is 1.6 GB spent to do nothing, and the difference
         # between fitting in memory and being OOM-killed.
-        click.echo(f"Planning {len(targets)} targets across {workers} workers...")
+        click.echo(f"Planning {len(pending)} targets across {workers} workers...")
         done = 0
 
         # A live bar on a terminal, plain counted lines when redirected. The
@@ -514,7 +543,7 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
         # interactively but are exactly what a log wants.
         interactive = sys.stdout.isatty()
         bar = (
-            click.progressbar(length=len(canonical_targets), label="  planning", show_eta=True)
+            click.progressbar(length=len(pending), label="  planning", show_eta=True)
             if interactive
             else None
         )
@@ -527,30 +556,45 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
             if bar is not None:
                 bar.update(1)
             else:
-                click.echo(f"  planned {name}  ({done}/{len(canonical_targets)})")
+                click.echo(f"  planned {name}  ({done}/{len(pending)})")
 
         try:
-            cache, time_capped = plan_targets(
-                canonical_targets,
+            cache, newly_capped = plan_targets(
+                pending,
                 max_routes=max_routes,
                 backend_kwargs=backend_kwargs,
                 jobs=workers,
                 on_done=report,
+                on_result=record,
+                retain_results=saved is None,
             )
+            time_capped += newly_capped
         finally:
             if bar is not None:
                 bar.render_finish()
-    else:
+    elif pending:
         click.echo("Loading search backend...")
         backend = AiZynthBackend(aizynth_config(), **backend_kwargs)
-        for i, (name, canon) in enumerate(canonical_targets, start=1):
-            click.echo(f"  planning {name} ... ({i}/{len(canonical_targets)})")
-            cache[canon] = backend.plan(canon, max_routes=max_routes)
+        for i, (name, canon) in enumerate(pending, start=1):
+            click.echo(f"  planning {name} ... ({i}/{len(pending)})")
+            routes = backend.plan(canon, max_routes=max_routes)
+            record(canon, routes, backend.search_hit_time_limit)
+            if saved is None:
+                cache[canon] = routes
+            else:
+                click.echo(f"  saved {name}")
             if backend.search_hit_time_limit:
                 time_capped += 1
+        del backend
 
     def planner(smiles: str):
-        return cache[canonical(smiles) or smiles]
+        canon = canonical(smiles) or smiles
+        if saved is not None:
+            result = saved.load(canon)
+            if result is None:
+                raise click.ClickException(f"Missing checkpoint result for {canon}")
+            return result.routes
+        return cache[canon]
 
     if time_capped:
         click.echo(

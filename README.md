@@ -251,6 +251,23 @@ the rubric reliably; smaller models are less consistent.
 | `--hard` | off | Use the harder multi-step target set. |
 | `--jobs` | `1` | Plan this many targets at once. Capped by free memory, not cores. |
 
+Evaluation reports all four weight profiles, including `source-led`, from one
+planning pass. `--mode build` constrains the search; `--mode balanced` and
+`--mode source` use the same unconstrained search and produce the same report.
+
+For long runs, add `--checkpoint data/evaluations/hard-retrostar`. Full routes
+and timeout status are saved atomically after each completed target, including
+targets with no routes. Repeat the command to resume; a fully completed run
+recomputes all profile reports without loading a search backend. The checkpoint
+checks search settings, model and stock contents, and search code and dependency
+versions before reusing results. Use a new directory when these change, and
+run only one writer per directory. You can increase `--max-targets` to extend a
+run or change `--jobs` without invalidating its completed targets.
+
+Checkpointed runs load routes one target at a time for scoring. This reduces
+the accumulated route cache, but each search still needs enough memory for its
+own backend. If interrupted, only the unfinished targets need another search.
+
 ### Config
 
 The agent layer needs one of a local [Ollama](https://ollama.com) server

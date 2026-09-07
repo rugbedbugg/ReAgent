@@ -1,0 +1,1612 @@
+{
+  "input": "adaptive-vectors-49-targets.json",
+  "input_sha256": "e62fb896d66d2ffdcaa28c13c3583c8da8d29c26899c52536f2215519a53e1a0",
+  "scope": "Offline selection on saved solved-route vectors; no new search.",
+  "weights": {
+    "balanced": {
+      "feasibility": 0.3,
+      "availability": 0.1,
+      "cost": 0.15,
+      "safety": 0.15,
+      "construction": 0.15,
+      "sustainability": 0.08,
+      "efficiency": 0.07
+    },
+    "source": {
+      "feasibility": 0.25,
+      "availability": 0.1,
+      "cost": 0.3,
+      "safety": 0.1,
+      "construction": 0.02,
+      "sustainability": 0.05,
+      "efficiency": 0.18
+    }
+  },
+  "sets": {
+    "moderate": {
+      "targets": 25,
+      "solved_targets": 24,
+      "unsolved_targets": [
+        "ibuprofen"
+      ],
+      "changed_score_vectors": 4,
+      "mean_scores_over_solved_targets": {
+        "balanced": {
+          "feasibility": 0.283799522339078,
+          "availability": 1.0,
+          "cost": 0.7034722222222222,
+          "safety": 0.5144791666666667,
+          "construction": 0.4075144184597005,
+          "sustainability": 0.8604884962097732,
+          "efficiency": 0.9125
+        },
+        "source": {
+          "feasibility": 0.21551662138575703,
+          "availability": 1.0,
+          "cost": 0.7180555555555556,
+          "safety": 0.5821180555555556,
+          "construction": 0.3455826002778823,
+          "sustainability": 0.8821425385800536,
+          "efficiency": 0.91875
+        }
+      },
+      "per_target": [
+        {
+          "target": "aspirin",
+          "solved_candidates": 12,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.726054744553566,
+                "availability": 1.0,
+                "cost": 0.7166666666666667,
+                "safety": 0.38333333333333336,
+                "sustainability": 0.7500031222550173,
+                "efficiency": 0.95,
+                "construction": 0.32692307692307687
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.726054744553566,
+                "availability": 1.0,
+                "cost": 0.7166666666666667,
+                "safety": 0.38333333333333336,
+                "sustainability": 0.7500031222550173,
+                "efficiency": 0.95,
+                "construction": 0.32692307692307687
+              }
+            }
+          }
+        },
+        {
+          "target": "paracetamol",
+          "solved_candidates": 15,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.46680661103725435,
+                "availability": 1.0,
+                "cost": 0.725,
+                "safety": 0.2166666666666667,
+                "sustainability": 0.7156857639299867,
+                "efficiency": 0.95,
+                "construction": 0.4318181818181818
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                2
+              ],
+              "scores": {
+                "feasibility": 0.0045695999383926385,
+                "availability": 1.0,
+                "cost": 0.8166666666666667,
+                "safety": 0.4083333333333333,
+                "sustainability": 0.9150866870066346,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            }
+          }
+        },
+        {
+          "target": "ibuprofen",
+          "solved_candidates": 0,
+          "modes": {}
+        },
+        {
+          "target": "benzocaine",
+          "solved_candidates": 15,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.23696639871597291,
+                "availability": 1.0,
+                "cost": 0.7916666666666666,
+                "safety": 0.2166666666666667,
+                "sustainability": 0.8463832272741246,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.23696639871597291,
+                "availability": 1.0,
+                "cost": 0.7916666666666666,
+                "safety": 0.2166666666666667,
+                "sustainability": 0.8463832272741246,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            }
+          }
+        },
+        {
+          "target": "phenacetin",
+          "solved_candidates": 8,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.3230000138282776,
+                "availability": 1.0,
+                "cost": 0.7166666666666667,
+                "safety": 0.38333333333333336,
+                "sustainability": 0.7490209845739768,
+                "efficiency": 0.95,
+                "construction": 0.32692307692307687
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.3230000138282776,
+                "availability": 1.0,
+                "cost": 0.7166666666666667,
+                "safety": 0.38333333333333336,
+                "sustainability": 0.7490209845739768,
+                "efficiency": 0.95,
+                "construction": 0.32692307692307687
+              }
+            }
+          }
+        },
+        {
+          "target": "salicylamide",
+          "solved_candidates": 7,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                3
+              ],
+              "scores": {
+                "feasibility": 0.0021971399880945683,
+                "availability": 1.0,
+                "cost": 0.8083333333333333,
+                "safety": 1.0,
+                "sustainability": 0.8955249221285516,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                3
+              ],
+              "scores": {
+                "feasibility": 0.0021971399880945683,
+                "availability": 1.0,
+                "cost": 0.8083333333333333,
+                "safety": 1.0,
+                "sustainability": 0.8955249221285516,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            }
+          }
+        },
+        {
+          "target": "procaine",
+          "solved_candidates": 6,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.37248589013814926,
+                "availability": 1.0,
+                "cost": 0.7083333333333333,
+                "safety": 0.38333333333333336,
+                "sustainability": 0.9291668304958126,
+                "efficiency": 0.95,
+                "construction": 0.7794117647058824
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.37248589013814926,
+                "availability": 1.0,
+                "cost": 0.7083333333333333,
+                "safety": 0.38333333333333336,
+                "sustainability": 0.9291668304958126,
+                "efficiency": 0.95,
+                "construction": 0.7794117647058824
+              }
+            }
+          }
+        },
+        {
+          "target": "lidocaine",
+          "solved_candidates": 5,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.4162999987602234,
+                "availability": 1.0,
+                "cost": 0.7,
+                "safety": 0.43333333333333335,
+                "sustainability": 0.8653601867032984,
+                "efficiency": 0.95,
+                "construction": 0.33823529411764724
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.4162999987602234,
+                "availability": 1.0,
+                "cost": 0.7,
+                "safety": 0.43333333333333335,
+                "sustainability": 0.8653601867032984,
+                "efficiency": 0.95,
+                "construction": 0.33823529411764724
+              }
+            }
+          }
+        },
+        {
+          "target": "naproxen",
+          "solved_candidates": 1,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.0022997700510313736,
+                "availability": 1.0,
+                "cost": 0.7583333333333333,
+                "safety": 0.4083333333333333,
+                "sustainability": 1.0,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.0022997700510313736,
+                "availability": 1.0,
+                "cost": 0.7583333333333333,
+                "safety": 0.4083333333333333,
+                "sustainability": 1.0,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            }
+          }
+        },
+        {
+          "target": "ketoprofen",
+          "solved_candidates": 6,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.006094509882386774,
+                "availability": 1.0,
+                "cost": 0.6,
+                "safety": 0.45333333333333337,
+                "sustainability": 0.8180440721931364,
+                "efficiency": 0.7999999999999999,
+                "construction": 0.9342105263157896
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.006094509882386774,
+                "availability": 1.0,
+                "cost": 0.6,
+                "safety": 0.45333333333333337,
+                "sustainability": 0.8180440721931364,
+                "efficiency": 0.7999999999999999,
+                "construction": 0.9342105263157896
+              }
+            }
+          }
+        },
+        {
+          "target": "acetanilide",
+          "solved_candidates": 15,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.5724999904632568,
+                "availability": 1.0,
+                "cost": 0.7416666666666667,
+                "safety": 0.38333333333333336,
+                "sustainability": 0.6923849235213965,
+                "efficiency": 0.95,
+                "construction": 0.5000000000000001
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                14
+              ],
+              "scores": {
+                "feasibility": 0.001281599967624061,
+                "availability": 1.0,
+                "cost": 0.825,
+                "safety": 1.0,
+                "sustainability": 0.7969176527465788,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            }
+          }
+        },
+        {
+          "target": "methyl salicylate",
+          "solved_candidates": 8,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                5
+              ],
+              "scores": {
+                "feasibility": 0.0008917199846822768,
+                "availability": 1.0,
+                "cost": 0.8,
+                "safety": 1.0,
+                "sustainability": 0.9048516782834168,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                5
+              ],
+              "scores": {
+                "feasibility": 0.0008917199846822768,
+                "availability": 1.0,
+                "cost": 0.8,
+                "safety": 1.0,
+                "sustainability": 0.9048516782834168,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            }
+          }
+        },
+        {
+          "target": "caffeine",
+          "solved_candidates": 11,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                10
+              ],
+              "scores": {
+                "feasibility": 0.0036100000608712433,
+                "availability": 1.0,
+                "cost": 0.7666666666666666,
+                "safety": 1.0,
+                "sustainability": 0.9326340762939376,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                10
+              ],
+              "scores": {
+                "feasibility": 0.0036100000608712433,
+                "availability": 1.0,
+                "cost": 0.7666666666666666,
+                "safety": 1.0,
+                "sustainability": 0.9326340762939376,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            }
+          }
+        },
+        {
+          "target": "theophylline",
+          "solved_candidates": 9,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                4
+              ],
+              "scores": {
+                "feasibility": 0.001148979959031567,
+                "availability": 1.0,
+                "cost": 0.775,
+                "safety": 1.0,
+                "sustainability": 0.8395010530632023,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                4
+              ],
+              "scores": {
+                "feasibility": 0.001148979959031567,
+                "availability": 1.0,
+                "cost": 0.775,
+                "safety": 1.0,
+                "sustainability": 0.8395010530632023,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            }
+          }
+        },
+        {
+          "target": "vanillin",
+          "solved_candidates": 10,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                9
+              ],
+              "scores": {
+                "feasibility": 0.00010345999631099402,
+                "availability": 1.0,
+                "cost": 0.7583333333333333,
+                "safety": 0.43333333333333335,
+                "sustainability": 0.8260392744488059,
+                "efficiency": 0.95,
+                "construction": 0.20454545454545447
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                1
+              ],
+              "scores": {
+                "feasibility": 0.0065799701083451515,
+                "availability": 1.0,
+                "cost": 0.8166666666666667,
+                "safety": 0.4083333333333333,
+                "sustainability": 0.9869231018713714,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            }
+          }
+        },
+        {
+          "target": "diphenhydramine",
+          "solved_candidates": 8,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.9053999781608582,
+                "availability": 1.0,
+                "cost": 0.6833333333333333,
+                "safety": 0.43333333333333335,
+                "sustainability": 0.8750573980028923,
+                "efficiency": 0.95,
+                "construction": 0.4078947368421054
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.9053999781608582,
+                "availability": 1.0,
+                "cost": 0.6833333333333333,
+                "safety": 0.43333333333333335,
+                "sustainability": 0.8750573980028923,
+                "efficiency": 0.95,
+                "construction": 0.4078947368421054
+              }
+            }
+          }
+        },
+        {
+          "target": "diclofenac",
+          "solved_candidates": 6,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.8360000252723694,
+                "availability": 1.0,
+                "cost": 0.6916666666666667,
+                "safety": 0.44583333333333336,
+                "sustainability": 0.7854163075331841,
+                "efficiency": 0.95,
+                "construction": 0.8026315789473684
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.8360000252723694,
+                "availability": 1.0,
+                "cost": 0.6916666666666667,
+                "safety": 0.44583333333333336,
+                "sustainability": 0.7854163075331841,
+                "efficiency": 0.95,
+                "construction": 0.8026315789473684
+              }
+            }
+          }
+        },
+        {
+          "target": "flurbiprofen",
+          "solved_candidates": 2,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.0017335200823377819,
+                "availability": 1.0,
+                "cost": 0.44999999999999996,
+                "safety": 0.38333333333333336,
+                "sustainability": 0.7866455866444882,
+                "efficiency": 0.6499999999999999,
+                "construction": 0.5833333333333335
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.0017335200823377819,
+                "availability": 1.0,
+                "cost": 0.44999999999999996,
+                "safety": 0.38333333333333336,
+                "sustainability": 0.7866455866444882,
+                "efficiency": 0.6499999999999999,
+                "construction": 0.5833333333333335
+              }
+            }
+          }
+        },
+        {
+          "target": "mefenamic acid",
+          "solved_candidates": 8,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.17724894498288632,
+                "availability": 1.0,
+                "cost": 0.7083333333333333,
+                "safety": 0.43333333333333335,
+                "sustainability": 0.8687277453546524,
+                "efficiency": 0.95,
+                "construction": 0.861111111111111
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.17724894498288632,
+                "availability": 1.0,
+                "cost": 0.7083333333333333,
+                "safety": 0.43333333333333335,
+                "sustainability": 0.8687277453546524,
+                "efficiency": 0.95,
+                "construction": 0.861111111111111
+              }
+            }
+          }
+        },
+        {
+          "target": "phenylbutazone",
+          "solved_candidates": 2,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.6295322733104229,
+                "availability": 1.0,
+                "cost": 0.6166666666666667,
+                "safety": 0.33333333333333337,
+                "sustainability": 0.7699534853527551,
+                "efficiency": 0.95,
+                "construction": 0.6195652173913043
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.6295322733104229,
+                "availability": 1.0,
+                "cost": 0.6166666666666667,
+                "safety": 0.33333333333333337,
+                "sustainability": 0.7699534853527551,
+                "efficiency": 0.95,
+                "construction": 0.6195652173913043
+              }
+            }
+          }
+        },
+        {
+          "target": "gabapentin",
+          "solved_candidates": 5,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.5016903945803642,
+                "availability": 1.0,
+                "cost": 0.7916666666666666,
+                "safety": 1.0,
+                "sustainability": 1.0,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.5016903945803642,
+                "availability": 1.0,
+                "cost": 0.7916666666666666,
+                "safety": 1.0,
+                "sustainability": 1.0,
+                "efficiency": 0.95,
+                "construction": 0.0
+              }
+            }
+          }
+        },
+        {
+          "target": "pregabalin",
+          "solved_candidates": 2,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.0005300899897702038,
+                "availability": 1.0,
+                "cost": 0.6083333333333334,
+                "safety": 0.2466666666666667,
+                "sustainability": 0.9041395205080154,
+                "efficiency": 0.6499999999999999,
+                "construction": 0.0
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.0005300899897702038,
+                "availability": 1.0,
+                "cost": 0.6083333333333334,
+                "safety": 0.2466666666666667,
+                "sustainability": 0.9041395205080154,
+                "efficiency": 0.6499999999999999,
+                "construction": 0.0
+              }
+            }
+          }
+        },
+        {
+          "target": "metformin",
+          "solved_candidates": 9,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.015884100928902627,
+                "availability": 1.0,
+                "cost": 0.7416666666666667,
+                "safety": 0.2166666666666667,
+                "sustainability": 1.0,
+                "efficiency": 0.95,
+                "construction": 0.861111111111111
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.015884100928902627,
+                "availability": 1.0,
+                "cost": 0.7416666666666667,
+                "safety": 0.2166666666666667,
+                "sustainability": 1.0,
+                "efficiency": 0.95,
+                "construction": 0.861111111111111
+              }
+            }
+          }
+        },
+        {
+          "target": "atenolol",
+          "solved_candidates": 9,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.0004992500237131026,
+                "availability": 1.0,
+                "cost": 0.6916666666666667,
+                "safety": 1.0,
+                "sustainability": 0.9999999999999998,
+                "efficiency": 0.95,
+                "construction": 0.8026315789473684
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.0004992500237131026,
+                "availability": 1.0,
+                "cost": 0.6916666666666667,
+                "safety": 1.0,
+                "sustainability": 0.9999999999999998,
+                "efficiency": 0.95,
+                "construction": 0.8026315789473684
+              }
+            }
+          }
+        },
+        {
+          "target": "indomethacin",
+          "solved_candidates": 9,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                2
+              ],
+              "scores": {
+                "feasibility": 0.6122107313871383,
+                "availability": 1.0,
+                "cost": 0.5333333333333333,
+                "safety": 0.16,
+                "sustainability": 0.8971837504739066,
+                "efficiency": 0.7999999999999999,
+                "construction": 1.0
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                1
+              ],
+              "scores": {
+                "feasibility": 0.00039999998989515007,
+                "availability": 1.0,
+                "cost": 0.65,
+                "safety": 1.0,
+                "sustainability": 0.9520632876362398,
+                "efficiency": 0.95,
+                "construction": 0.65
+              }
+            }
+          }
+        }
+      ]
+    },
+    "hard": {
+      "targets": 24,
+      "solved_targets": 20,
+      "unsolved_targets": [
+        "sertraline",
+        "ketamine",
+        "citalopram",
+        "ondansetron"
+      ],
+      "changed_score_vectors": 1,
+      "mean_scores_over_solved_targets": {
+        "balanced": {
+          "feasibility": 0.1695988000944084,
+          "availability": 1.0,
+          "cost": 0.49375,
+          "safety": 0.4164583333333334,
+          "construction": 0.7827990111528441,
+          "sustainability": 0.8992441945165378,
+          "efficiency": 0.735
+        },
+        "source": {
+          "feasibility": 0.13721380049160817,
+          "availability": 1.0,
+          "cost": 0.49625,
+          "safety": 0.4237916666666667,
+          "construction": 0.7827990111528441,
+          "sustainability": 0.9034407191241097,
+          "efficiency": 0.735
+        }
+      },
+      "per_target": [
+        {
+          "target": "fluoxetine",
+          "solved_candidates": 6,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.07002793062403798,
+                "availability": 1.0,
+                "cost": 0.625,
+                "safety": 1.0,
+                "sustainability": 0.9758025701417221,
+                "efficiency": 0.7999999999999999,
+                "construction": 0.8863636363636365
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.07002793062403798,
+                "availability": 1.0,
+                "cost": 0.625,
+                "safety": 1.0,
+                "sustainability": 0.9758025701417221,
+                "efficiency": 0.7999999999999999,
+                "construction": 0.8863636363636365
+              }
+            }
+          }
+        },
+        {
+          "target": "sertraline",
+          "solved_candidates": 0,
+          "modes": {}
+        },
+        {
+          "target": "diazepam",
+          "solved_candidates": 5,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.057999998331069946,
+                "availability": 1.0,
+                "cost": 0.6333333333333333,
+                "safety": 0.43333333333333335,
+                "sustainability": 0.7800725977672763,
+                "efficiency": 0.95,
+                "construction": 0.37500000000000006
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.057999998331069946,
+                "availability": 1.0,
+                "cost": 0.6333333333333333,
+                "safety": 0.43333333333333335,
+                "sustainability": 0.7800725977672763,
+                "efficiency": 0.95,
+                "construction": 0.37500000000000006
+              }
+            }
+          }
+        },
+        {
+          "target": "warfarin",
+          "solved_candidates": 12,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.6157423803806306,
+                "availability": 1.0,
+                "cost": 0.5666666666666667,
+                "safety": 0.3933333333333333,
+                "sustainability": 0.9723990954441273,
+                "efficiency": 0.7999999999999999,
+                "construction": 0.9456521739130436
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.6157423803806306,
+                "availability": 1.0,
+                "cost": 0.5666666666666667,
+                "safety": 0.3933333333333333,
+                "sustainability": 0.9723990954441273,
+                "efficiency": 0.7999999999999999,
+                "construction": 0.9456521739130436
+              }
+            }
+          }
+        },
+        {
+          "target": "celecoxib",
+          "solved_candidates": 5,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.828499972820282,
+                "availability": 1.0,
+                "cost": 0.6166666666666667,
+                "safety": 0.2666666666666667,
+                "sustainability": 0.9136817845326768,
+                "efficiency": 0.95,
+                "construction": 0.7115384615384615
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.828499972820282,
+                "availability": 1.0,
+                "cost": 0.6166666666666667,
+                "safety": 0.2666666666666667,
+                "sustainability": 0.9136817845326768,
+                "efficiency": 0.95,
+                "construction": 0.7115384615384615
+              }
+            }
+          }
+        },
+        {
+          "target": "sumatriptan",
+          "solved_candidates": 6,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                1
+              ],
+              "scores": {
+                "feasibility": 0.013904640090465546,
+                "availability": 1.0,
+                "cost": 0.6083333333333334,
+                "safety": 0.1375,
+                "sustainability": 0.9454871256311321,
+                "efficiency": 0.7999999999999999,
+                "construction": 0.5000000000000001
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                1
+              ],
+              "scores": {
+                "feasibility": 0.013904640090465546,
+                "availability": 1.0,
+                "cost": 0.6083333333333334,
+                "safety": 0.1375,
+                "sustainability": 0.9454871256311321,
+                "efficiency": 0.7999999999999999,
+                "construction": 0.5000000000000001
+              }
+            }
+          }
+        },
+        {
+          "target": "chlorpromazine",
+          "solved_candidates": 13,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.00013429000036558136,
+                "availability": 1.0,
+                "cost": 0.5,
+                "safety": 0.4083333333333333,
+                "sustainability": 0.8508828781917764,
+                "efficiency": 0.6499999999999999,
+                "construction": 1.0
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.00013429000036558136,
+                "availability": 1.0,
+                "cost": 0.5,
+                "safety": 0.4083333333333333,
+                "sustainability": 0.8508828781917764,
+                "efficiency": 0.6499999999999999,
+                "construction": 1.0
+              }
+            }
+          }
+        },
+        {
+          "target": "venlafaxine",
+          "solved_candidates": 1,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.0005294900014414452,
+                "availability": 1.0,
+                "cost": 0.21666666666666667,
+                "safety": 0.3066666666666667,
+                "sustainability": 0.8408314725497008,
+                "efficiency": 0.29999999999999993,
+                "construction": 0.5000000000000001
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.0005294900014414452,
+                "availability": 1.0,
+                "cost": 0.21666666666666667,
+                "safety": 0.3066666666666667,
+                "sustainability": 0.8408314725497008,
+                "efficiency": 0.29999999999999993,
+                "construction": 0.5000000000000001
+              }
+            }
+          }
+        },
+        {
+          "target": "propranolol",
+          "solved_candidates": 6,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.6110000014305115,
+                "availability": 1.0,
+                "cost": 0.7,
+                "safety": 1.0,
+                "sustainability": 1.0,
+                "efficiency": 0.95,
+                "construction": 0.8026315789473684
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.6110000014305115,
+                "availability": 1.0,
+                "cost": 0.7,
+                "safety": 1.0,
+                "sustainability": 1.0,
+                "efficiency": 0.95,
+                "construction": 0.8026315789473684
+              }
+            }
+          }
+        },
+        {
+          "target": "ketamine",
+          "solved_candidates": 0,
+          "modes": {}
+        },
+        {
+          "target": "bupropion",
+          "solved_candidates": 4,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.0020951699252938854,
+                "availability": 1.0,
+                "cost": 0.675,
+                "safety": 0.44583333333333336,
+                "sustainability": 1.0,
+                "efficiency": 0.7999999999999999,
+                "construction": 0.53125
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.0020951699252938854,
+                "availability": 1.0,
+                "cost": 0.675,
+                "safety": 0.44583333333333336,
+                "sustainability": 1.0,
+                "efficiency": 0.7999999999999999,
+                "construction": 0.53125
+              }
+            }
+          }
+        },
+        {
+          "target": "lamotrigine",
+          "solved_candidates": 2,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                1
+              ],
+              "scores": {
+                "feasibility": 0.014580589449219404,
+                "availability": 1.0,
+                "cost": 0.43333333333333335,
+                "safety": 0.4583333333333333,
+                "sustainability": 0.7947152631877477,
+                "efficiency": 0.6499999999999999,
+                "construction": 0.53125
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                1
+              ],
+              "scores": {
+                "feasibility": 0.014580589449219404,
+                "availability": 1.0,
+                "cost": 0.43333333333333335,
+                "safety": 0.4583333333333333,
+                "sustainability": 0.7947152631877477,
+                "efficiency": 0.6499999999999999,
+                "construction": 0.53125
+              }
+            }
+          }
+        },
+        {
+          "target": "tramadol",
+          "solved_candidates": 1,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.008349650230631233,
+                "availability": 1.0,
+                "cost": 0.30833333333333335,
+                "safety": 0.43833333333333335,
+                "sustainability": 0.8128821308228785,
+                "efficiency": 0.44999999999999996,
+                "construction": 1.0
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.008349650230631233,
+                "availability": 1.0,
+                "cost": 0.30833333333333335,
+                "safety": 0.43833333333333335,
+                "sustainability": 0.8128821308228785,
+                "efficiency": 0.44999999999999996,
+                "construction": 1.0
+              }
+            }
+          }
+        },
+        {
+          "target": "clopidogrel",
+          "solved_candidates": 8,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.0008999099845415912,
+                "availability": 1.0,
+                "cost": 0.6583333333333333,
+                "safety": 0.43333333333333335,
+                "sustainability": 0.9526415809228366,
+                "efficiency": 0.95,
+                "construction": 0.7023809523809523
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.0008999099845415912,
+                "availability": 1.0,
+                "cost": 0.6583333333333333,
+                "safety": 0.43333333333333335,
+                "sustainability": 0.9526415809228366,
+                "efficiency": 0.95,
+                "construction": 0.7023809523809523
+              }
+            }
+          }
+        },
+        {
+          "target": "omeprazole",
+          "solved_candidates": 6,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.6482999920845032,
+                "availability": 1.0,
+                "cost": 0.44999999999999996,
+                "safety": 0.2766666666666667,
+                "sustainability": 0.7942276629381715,
+                "efficiency": 0.7999999999999999,
+                "construction": 1.0
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                3,
+                4
+              ],
+              "scores": {
+                "feasibility": 0.0006000000284984708,
+                "availability": 1.0,
+                "cost": 0.5,
+                "safety": 0.42333333333333334,
+                "sustainability": 0.8781581550896107,
+                "efficiency": 0.7999999999999999,
+                "construction": 1.0
+              }
+            }
+          }
+        },
+        {
+          "target": "fluconazole",
+          "solved_candidates": 9,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                1
+              ],
+              "scores": {
+                "feasibility": 0.1574999988079071,
+                "availability": 1.0,
+                "cost": 0.4916666666666667,
+                "safety": 0.45333333333333337,
+                "sustainability": 0.9016556661440149,
+                "efficiency": 0.7999999999999999,
+                "construction": 0.4318181818181818
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                1
+              ],
+              "scores": {
+                "feasibility": 0.1574999988079071,
+                "availability": 1.0,
+                "cost": 0.4916666666666667,
+                "safety": 0.45333333333333337,
+                "sustainability": 0.9016556661440149,
+                "efficiency": 0.7999999999999999,
+                "construction": 0.4318181818181818
+              }
+            }
+          }
+        },
+        {
+          "target": "citalopram",
+          "solved_candidates": 0,
+          "modes": {}
+        },
+        {
+          "target": "ondansetron",
+          "solved_candidates": 0,
+          "modes": {}
+        },
+        {
+          "target": "ciprofloxacin",
+          "solved_candidates": 5,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.3416555981487036,
+                "availability": 1.0,
+                "cost": 0.31666666666666665,
+                "safety": 0.19375,
+                "sustainability": 0.8894510232464959,
+                "efficiency": 0.5,
+                "construction": 1.0
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.3416555981487036,
+                "availability": 1.0,
+                "cost": 0.31666666666666665,
+                "safety": 0.19375,
+                "sustainability": 0.8894510232464959,
+                "efficiency": 0.5,
+                "construction": 1.0
+              }
+            }
+          }
+        },
+        {
+          "target": "donepezil",
+          "solved_candidates": 11,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.015211079548299313,
+                "availability": 1.0,
+                "cost": 0.6083333333333334,
+                "safety": 0.43333333333333335,
+                "sustainability": 0.9595473060614572,
+                "efficiency": 0.95,
+                "construction": 0.9107142857142858
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.015211079548299313,
+                "availability": 1.0,
+                "cost": 0.6083333333333334,
+                "safety": 0.43333333333333335,
+                "sustainability": 0.9595473060614572,
+                "efficiency": 0.95,
+                "construction": 0.9107142857142858
+              }
+            }
+          }
+        },
+        {
+          "target": "ezetimibe",
+          "solved_candidates": 1,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 2.9150001384550705e-05,
+                "availability": 1.0,
+                "cost": 0.2833333333333333,
+                "safety": 0.4166666666666667,
+                "sustainability": 0.8917045066520267,
+                "efficiency": 0.5,
+                "construction": 0.9166666666666667
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 2.9150001384550705e-05,
+                "availability": 1.0,
+                "cost": 0.2833333333333333,
+                "safety": 0.4166666666666667,
+                "sustainability": 0.8917045066520267,
+                "efficiency": 0.5,
+                "construction": 0.9166666666666667
+              }
+            }
+          }
+        },
+        {
+          "target": "losartan",
+          "solved_candidates": 10,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.004269649976864457,
+                "availability": 1.0,
+                "cost": 0.43333333333333335,
+                "safety": 0.42333333333333334,
+                "sustainability": 0.7938816886542884,
+                "efficiency": 0.7999999999999999,
+                "construction": 1.0
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 0.004269649976864457,
+                "availability": 1.0,
+                "cost": 0.43333333333333335,
+                "safety": 0.42333333333333334,
+                "sustainability": 0.7938816886542884,
+                "efficiency": 0.7999999999999999,
+                "construction": 1.0
+              }
+            }
+          }
+        },
+        {
+          "target": "sildenafil",
+          "solved_candidates": 2,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 9.882999750334419e-05,
+                "availability": 1.0,
+                "cost": 0.33333333333333337,
+                "safety": 0.3104166666666667,
+                "sustainability": 0.9716217088477711,
+                "efficiency": 0.6499999999999999,
+                "construction": 1.0
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                0
+              ],
+              "scores": {
+                "feasibility": 9.882999750334419e-05,
+                "availability": 1.0,
+                "cost": 0.33333333333333337,
+                "safety": 0.3104166666666667,
+                "sustainability": 0.9716217088477711,
+                "efficiency": 0.6499999999999999,
+                "construction": 1.0
+              }
+            }
+          }
+        },
+        {
+          "target": "amlodipine",
+          "solved_candidates": 5,
+          "modes": {
+            "balanced": {
+              "candidate_indices": [
+                1
+              ],
+              "scores": {
+                "feasibility": 0.001147680054511875,
+                "availability": 1.0,
+                "cost": 0.41666666666666663,
+                "safety": 0.1,
+                "sustainability": 0.9433978285946557,
+                "efficiency": 0.6499999999999999,
+                "construction": 0.9107142857142858
+              }
+            },
+            "source": {
+              "candidate_indices": [
+                1
+              ],
+              "scores": {
+                "feasibility": 0.001147680054511875,
+                "availability": 1.0,
+                "cost": 0.41666666666666663,
+                "safety": 0.1,
+                "sustainability": 0.9433978285946557,
+                "efficiency": 0.6499999999999999,
+                "construction": 0.9107142857142858
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
