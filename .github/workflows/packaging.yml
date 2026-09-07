@@ -159,12 +159,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: rugbedbugg/ResonanceID-cli
-          ref: 91a4522399a153adfeaf5fd3419f8c6d4423afec
+          ref: 5652f4c90497bb8e4128b6797aff805a84e2b80e
           path: resonanceid-cli
       - uses: actions/checkout@v4
         with:
           repository: rugbedbugg/Retro-Tetris
-          ref: b05f4c0635cab61b000bb04b90184e6e9ea3b184
+          ref: 350d4c69d827293158e99bd51eddddb12fd7b1d7
           path: retro-tetris
       - name: Check key availability
         shell: pwsh
