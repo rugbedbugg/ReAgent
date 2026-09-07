@@ -1,0 +1,3 @@
+include docs/EVALUATION.md
+recursive-include docs/measurements *.py *.json *.log
+recursive-include SUBMISSIONS *.sh *.cmd

@@ -84,6 +84,19 @@ feed holds the `python311` dependency, which `-s .` alone cannot resolve.
 The `Packaging` workflow runs exactly this on a Windows runner whenever
 `SUBMISSIONS/` changes, so the package is no longer untested.
 
+### Publishing it
+
+Not yet on the community feed. Publishing needs a Windows machine, since `choco`
+runs nowhere else, and an API key from a chocolatey.org account. The workflow
+does both:
+
+1. Add the key as a repository secret named `CHOCOLATEY_API_KEY`
+2. Run the `Packaging` workflow manually, ticking the `publish` input
+
+The install test must pass before the push job runs, and the push is opt-in on
+every run rather than riding on a tag, because a push to the community feed is
+public and cannot be withdrawn. Moderation review follows and can take days.
+
 ## winget
 
 Not submitted, deliberately.
@@ -101,6 +114,12 @@ it can plan anything, which is not what the store front-end implies.
 Revisit if a bundled Windows build ever becomes worth maintaining.
 
 ## Updating for a new release
+
+The AUR launcher defaults to `${XDG_DATA_HOME:-$HOME/.local/share}/reagent`;
+the Chocolatey launcher defaults to `%LOCALAPPDATA%\reagent`. Both preserve an
+explicit `REAGENT_DATA` value. Download stock and models into that directory.
+These defaults are set by the packaged launchers at runtime, so they also work
+with the existing release wheel and do not capture the installer's home folder.
 
 Both packages carry the version in three places, and all three must move
 together:

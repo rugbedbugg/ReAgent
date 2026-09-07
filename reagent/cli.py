@@ -108,7 +108,7 @@ def build_catalogue(catalogue: str, output: str | None, max_heavy_atoms: int | N
 
     if merge_with:
         merged = merge_caches([written, *merge_with], destination)
-        click.echo(f"Merged with {len(merge_with)} cache(s) -> {merged} "
+        click.echo(f"Merged with {len(merge_with)} cache(s) to give {merged} "
                    f"({np.load(merged).size:,} unique keys).")
 
 
@@ -139,8 +139,13 @@ def build_catalogue(catalogue: str, output: str | None, max_heavy_atoms: int | N
 @click.option("--steer", default=None,
               help="Let an objective steer the Retro* search instead of only ranking\nits results: 'hazard' or 'accessibility', optionally with a weight ('hazard:2.0').\nRequires --algorithm retrostar.")
 @click.option("--algorithm", default="mcts",
-              type=click.Choice(["mcts", "retrostar", "dfpn", "breadth-first"]),
-              help="Tree search over the same single-step model (default mcts).")
+              help="Tree search over the same single-step model (default mcts): "
+                   "mcts, retrostar, dfpn or breadth-first. Comma-separate to pool "
+                   "several ('mcts,retrostar'): each runs in turn and the union of "
+                   "their routes is ranked, deduplicated on route identity. Run time "
+                   "is the sum, so this buys candidate diversity with wall clock. "
+                   "Raise --max-routes with it: pooling returned up to 33 routes on "
+                   "one hard target, so the usual cap of 15 discards most of them.")
 @click.option("--cutoff-number", type=int, default=None,
               help="Templates each expansion may offer (default 50, which is what "
                    "binds today). Higher widens the disconnection space, at a cost in "
@@ -193,7 +198,7 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
         iterations=iterations,
         time_limit=time_limit,
         expansion=[k.strip() for k in expansion.split(",") if k.strip()],
-        algorithm=algorithm,
+        algorithm=[a.strip() for a in algorithm.split(',') if a.strip()],
         cutoff_number=cutoff_number,
         molecule_cost=_steer_config(steer),
         max_leaf_fraction=cap,
@@ -234,8 +239,8 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
         if local_model:
             from reagent.agents.llm.ollama_client import OllamaClient
 
-            mode = " (hybrid)" if hybrid else ""
-            click.echo(f"Scoring with local model: {local_model}{mode}")
+            scoring_label = " (hybrid)" if hybrid else ""
+            click.echo(f"Scoring with local model: {local_model}{scoring_label}")
             orchestrator = Orchestrator(
                 client=OllamaClient(model=local_model), retriever=retriever, hybrid=hybrid
             )
@@ -400,7 +405,7 @@ def feedback(smiles: str, prefer: int) -> None:
     click.echo(f"Recorded preference for Route {prefer} on {target}.")
     click.echo("Updated objective weights:")
     for objective in sorted(new, key=new.get, reverse=True):
-        click.echo(f"  {objective:14s} {old.get(objective, 0):.3f} -> {new[objective]:.3f}")
+        click.echo(f"  {objective:14s} {old.get(objective, 0):.3f} to {new[objective]:.3f}")
 
 
 @main.command()
@@ -425,8 +430,13 @@ def feedback(smiles: str, prefer: int) -> None:
 @click.option("--steer", default=None,
               help="Let an objective steer the Retro* search instead of only ranking\nits results: 'hazard' or 'accessibility', optionally with a weight ('hazard:2.0').\nRequires --algorithm retrostar.")
 @click.option("--algorithm", default="mcts",
-              type=click.Choice(["mcts", "retrostar", "dfpn", "breadth-first"]),
-              help="Tree search over the same single-step model (default mcts).")
+              help="Tree search over the same single-step model (default mcts): "
+                   "mcts, retrostar, dfpn or breadth-first. Comma-separate to pool "
+                   "several ('mcts,retrostar'): each runs in turn and the union of "
+                   "their routes is ranked, deduplicated on route identity. Run time "
+                   "is the sum, so this buys candidate diversity with wall clock. "
+                   "Raise --max-routes with it: pooling returned up to 33 routes on "
+                   "one hard target, so the usual cap of 15 discards most of them.")
 @click.option("--cutoff-number", type=int, default=None,
               help="Templates each expansion may offer (default 50, which is what "
                    "binds today). Higher widens the disconnection space, at a cost in "
@@ -441,14 +451,19 @@ def feedback(smiles: str, prefer: int) -> None:
                    "and buys it 0.24 in honest solve-rate; on the hard set it costs "
                    "0.04 and buys little, so large targets can take a looser cap.")
 @click.option("--mode", type=click.Choice(["balanced", "build", "source"]), default="balanced",
-              help="'build' rejects leaves larger than 60% of the target, which is what "
-                   "makes solve-rate mean 'solved by building' rather than 'solved, "
-                   "possibly by buying the answer'.")
+              help="Select the search constraint: 'build' rejects leaves larger than "
+                   "60% of the target; 'balanced' and 'source' both buy freely. "
+                   "Every evaluation reports all weight profiles, including source-led, "
+                   "so balanced and source need only one planning run.")
+@click.option("--checkpoint", type=click.Path(file_okay=False, path_type=Path), default=None,
+              help="Save full routes after each target in this directory. Repeat the "
+                   "command to resume; completed targets are reused. Use a separate "
+                   "directory for each search configuration and one writer at a time.")
 def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
              hashed_stock: bool, stock_cache: str | None, iterations: int | None,
              time_limit: int | None, expansion: str, steer: str | None, algorithm: str,
              cutoff_number: int | None, hard: bool, jobs: int, mode: str,
-             max_leaf_fraction: float | None) -> None:
+             max_leaf_fraction: float | None, checkpoint: Path | None) -> None:
     """Measure solve-rate and baseline-vs-REAGENT route quality."""
     from reagent.eval.harness import WEIGHT_PROFILES
     from reagent.eval.harness import evaluate as run_eval
@@ -469,7 +484,7 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
         iterations=iterations,
         time_limit=time_limit,
         expansion=[k.strip() for k in expansion.split(",") if k.strip()],
-        algorithm=algorithm,
+        algorithm=[a.strip() for a in algorithm.split(',') if a.strip()],
         cutoff_number=cutoff_number,
         molecule_cost=_steer_config(steer),
         max_leaf_fraction=(
@@ -483,6 +498,30 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
     cache: dict[str, list] = {}
     time_capped = 0
     canonical_targets = [(name, canonical(smiles) or smiles) for name, smiles in targets]
+    saved = None
+    pending = canonical_targets
+    if checkpoint is not None:
+        from reagent.eval.checkpoint import Checkpoint, search_identity
+
+        click.echo("Checking checkpoint search settings and data fingerprints...")
+        try:
+            saved = Checkpoint(
+                checkpoint, search_identity(aizynth_config(), backend_kwargs, max_routes),
+            )
+            pending = []
+            for name, canon in canonical_targets:
+                result = saved.load(canon)
+                if result is None:
+                    pending.append((name, canon))
+                else:
+                    time_capped += int(result.time_capped)
+        except (OSError, ValueError) as exc:
+            raise click.ClickException(str(exc)) from exc
+        click.echo(f"Reusing {len(targets) - len(pending)}/{len(targets)} completed targets.")
+
+    def record(smiles, routes, capped):
+        if saved is not None:
+            saved.save(smiles, routes, capped)
 
     workers = safe_job_count(jobs)
     if workers < jobs:
@@ -491,11 +530,11 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
             f"{available_memory_gb():.1f} GB is available and each needs ~{WORKER_RSS_GB} GB."
         )
 
-    if workers > 1:
+    if pending and workers > 1:
         # The parent must not hold a planner of its own while workers hold
         # theirs -- that is 1.6 GB spent to do nothing, and the difference
         # between fitting in memory and being OOM-killed.
-        click.echo(f"Planning {len(targets)} targets across {workers} workers...")
+        click.echo(f"Planning {len(pending)} targets across {workers} workers...")
         done = 0
 
         # A live bar on a terminal, plain counted lines when redirected. The
@@ -504,7 +543,7 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
         # interactively but are exactly what a log wants.
         interactive = sys.stdout.isatty()
         bar = (
-            click.progressbar(length=len(canonical_targets), label="  planning", show_eta=True)
+            click.progressbar(length=len(pending), label="  planning", show_eta=True)
             if interactive
             else None
         )
@@ -517,30 +556,45 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
             if bar is not None:
                 bar.update(1)
             else:
-                click.echo(f"  planned {name}  ({done}/{len(canonical_targets)})")
+                click.echo(f"  planned {name}  ({done}/{len(pending)})")
 
         try:
-            cache, time_capped = plan_targets(
-                canonical_targets,
+            cache, newly_capped = plan_targets(
+                pending,
                 max_routes=max_routes,
                 backend_kwargs=backend_kwargs,
                 jobs=workers,
                 on_done=report,
+                on_result=record,
+                retain_results=saved is None,
             )
+            time_capped += newly_capped
         finally:
             if bar is not None:
                 bar.render_finish()
-    else:
+    elif pending:
         click.echo("Loading search backend...")
         backend = AiZynthBackend(aizynth_config(), **backend_kwargs)
-        for i, (name, canon) in enumerate(canonical_targets, start=1):
-            click.echo(f"  planning {name} ... ({i}/{len(canonical_targets)})")
-            cache[canon] = backend.plan(canon, max_routes=max_routes)
+        for i, (name, canon) in enumerate(pending, start=1):
+            click.echo(f"  planning {name} ... ({i}/{len(pending)})")
+            routes = backend.plan(canon, max_routes=max_routes)
+            record(canon, routes, backend.search_hit_time_limit)
+            if saved is None:
+                cache[canon] = routes
+            else:
+                click.echo(f"  saved {name}")
             if backend.search_hit_time_limit:
                 time_capped += 1
+        del backend
 
     def planner(smiles: str):
-        return cache[canonical(smiles) or smiles]
+        canon = canonical(smiles) or smiles
+        if saved is not None:
+            result = saved.load(canon)
+            if result is None:
+                raise click.ClickException(f"Missing checkpoint result for {canon}")
+            return result.routes
+        return cache[canon]
 
     if time_capped:
         click.echo(
@@ -583,11 +637,14 @@ def evaluate(max_targets: int, max_routes: int, permissive_stock: int | None,
               help="Cached objective vectors (JSON: name -> list of score dicts). "
                    "Without it the eval targets are planned first, which is slow.")
 @click.option("--max-targets", default=20, help="How many targets to learn from.")
+@click.option("--dump-vectors", type=click.Path(dir_okay=False), default=None,
+              help="Write the planned objective vectors to this file, so a sweep over "
+                   "--lr can reuse one planning pass instead of repeating it.")
 @click.option("--lr", default=0.5, help="Learning rate of the preference update.")
 @click.option("--hard", is_flag=True, help="Use the harder multi-step target set.")
 @click.option("--jobs", type=int, default=1, help="Plan this many targets at once.")
 def check_adaptive(vectors: str | None, max_targets: int, lr: float,
-                   hard: bool, jobs: int) -> None:
+                   hard: bool, jobs: int, dump_vectors: str | None) -> None:
     """Measure whether the feedback loop actually learns a preference.
 
     Simulates a user with a fixed hidden preference, feeds back the route that
@@ -618,6 +675,14 @@ def check_adaptive(vectors: str | None, max_targets: int, lr: float,
             for _, smiles in targets
         ]
 
+        if dump_vectors:
+            # Planning is the whole cost here; the learning simulation is a pure
+            # function over these vectors. Saving them turns a sweep over --lr
+            # from hours into seconds.
+            named = {name: vecs for (name, _), vecs in zip(targets, per_target)}
+            Path(dump_vectors).write_text(json.dumps(named, indent=1), encoding="utf-8")
+            click.echo(f"Wrote vectors for {len(named)} target(s) to {dump_vectors}")
+
     per_target = per_target[:max_targets]
 
     # Two opposed preferences, so a loop that merely drifts toward one objective
@@ -629,6 +694,17 @@ def check_adaptive(vectors: str | None, max_targets: int, lr: float,
                         "safety": 0.10, "construction": 0.10},
     }
 
+    if lr >= 1.0:
+        # Measured on 49 targets: at lr >= 1.0 the safety-loving arm gets worse
+        # as it sees more feedback, regret rising 0.058 to 0.097 across the
+        # halves, because each step overshoots and the next corrects past it.
+        # Below 0.75 the loop is flat to within the noise between data splits.
+        click.echo(
+            f"NOTE: lr={lr} is past where the loop was measured to stay stable. "
+            "At 1.0 and above regret rises rather than falls on a safety-led "
+            "preference. 0.1 to 0.75 all behave alike."
+        )
+
     for name, hidden in profiles.items():
         result = simulate(per_target, hidden=hidden, lr=lr)
         click.echo(f"\n=== hidden preference: {name} ===")
@@ -637,8 +713,8 @@ def check_adaptive(vectors: str | None, max_targets: int, lr: float,
             continue
         click.echo(
             f"  rounds {result['rounds']}   "
-            f"regret {result['regret_first_half']:.3f} -> {result['regret_second_half']:.3f}   "
-            f"agreement {result['agreement_first_half']:.0%} -> "
+            f"regret {result['regret_first_half']:.3f} to {result['regret_second_half']:.3f}   "
+            f"agreement {result['agreement_first_half']:.0%} to "
             f"{result['agreement_second_half']:.0%}"
         )
         moved = sorted(
@@ -664,16 +740,36 @@ def check_adaptive(vectors: str | None, max_targets: int, lr: float,
                    "Run 'reagent build-stock-cache' once first.")
 @click.option("--hybrid", is_flag=True,
               help="Score objectives deterministically; the LLM only writes the rationale.")
+@click.option("--checkpoint", type=click.Path(exists=True, file_okay=False, path_type=Path),
+              default=None,
+              help="Score full routes saved by evaluate. Reads completed targets without "
+                   "loading the search backend or requiring its model/stock files. "
+                   "All requested targets must already be saved.")
 def check_agents(max_targets: int, routes_per: int, max_routes: int, local_model: str | None,
-                 rag: bool, hard: bool, permissive_stock: int | None, hybrid: bool) -> None:
+                 rag: bool, hard: bool, permissive_stock: int | None, hybrid: bool,
+                 hashed_stock: bool, checkpoint: Path | None) -> None:
     """Measure how well the LLM agent scores match the deterministic reference."""
     from reagent.agents.orchestrator import Orchestrator
     from reagent.eval.agent_check import check_agents as run_check
     from reagent.eval.targets import HARD_TARGETS, TARGETS
     from reagent.singlestep.aizynth import AiZynthBackend
 
-    click.echo("Loading search backend...")
-    backend = AiZynthBackend(aizynth_config(), permissive_stock=permissive_stock)
+    targets = (HARD_TARGETS if hard else TARGETS)[:max_targets]
+    saved = None
+    if checkpoint is not None:
+        from reagent.eval.checkpoint import Checkpoint
+
+        if hashed_stock or permissive_stock is not None or max_routes != 15:
+            raise click.UsageError("Search options cannot be combined with --checkpoint.")
+        try:
+            saved = Checkpoint.open_readonly(checkpoint)
+            # Fail before any agent calls if the requested evidence is incomplete.
+            for name, smiles in targets:
+                if saved.load(canonical(smiles) or smiles) is None:
+                    raise ValueError(f"Checkpoint is missing {name}; finish its evaluation first.")
+        except (OSError, ValueError) as exc:
+            raise click.ClickException(str(exc)) from exc
+        click.echo(f"Using saved routes for {len(targets)} targets from {checkpoint}.")
 
     retriever = None
     if rag:
@@ -698,11 +794,21 @@ def check_agents(max_targets: int, routes_per: int, max_routes: int, local_model
             raise click.ClickException("Set ANTHROPIC_API_KEY or use --local.")
         orchestrator = Orchestrator(retriever=retriever, hybrid=hybrid)
 
-    targets = (HARD_TARGETS if hard else TARGETS)[:max_targets]
+    backend = None
+    if saved is None:
+        click.echo("Loading search backend...")
+        backend = AiZynthBackend(
+            aizynth_config(), permissive_stock=permissive_stock, hashed_stock=hashed_stock,
+        )
 
     def planner(smiles: str):
         canon = canonical(smiles) or smiles
         click.echo(f"  scoring {canon} ...")
+        if saved is not None:
+            result = saved.load(canon)
+            if result is None:
+                raise click.ClickException(f"Checkpoint result disappeared for {canon}")
+            return result.routes
         return backend.plan(canon, max_routes=max_routes)
 
     result = run_check(targets, planner, orchestrator, routes_per=routes_per)

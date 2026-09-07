@@ -1,0 +1,2849 @@
+{
+ "aspirin": [
+  {
+   "feasibility": 0.726054744553566,
+   "availability": 1.0,
+   "cost": 0.7166666666666667,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.7500031222550173,
+   "efficiency": 0.95,
+   "construction": 0.32692307692307687
+  },
+  {
+   "feasibility": 0.09151772353798152,
+   "availability": 1.0,
+   "cost": 0.7416666666666667,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.8316822084756715,
+   "efficiency": 0.95,
+   "construction": 0.32692307692307687
+  },
+  {
+   "feasibility": 0.008966699614003301,
+   "availability": 1.0,
+   "cost": 0.75,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.9090950376941475,
+   "efficiency": 0.95,
+   "construction": 0.32692307692307687
+  },
+  {
+   "feasibility": 0.0011720799582079053,
+   "availability": 1.0,
+   "cost": 0.75,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.9000524567232033,
+   "efficiency": 0.95,
+   "construction": 0.32692307692307687
+  },
+  {
+   "feasibility": 0.009627300162333995,
+   "availability": 1.0,
+   "cost": 0.6,
+   "safety": 0.37083333333333335,
+   "sustainability": 0.7423818887025628,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.009542850305791944,
+   "availability": 1.0,
+   "cost": 0.6333333333333333,
+   "safety": 0.37083333333333335,
+   "sustainability": 0.7738451179345005,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0034624500169884416,
+   "availability": 1.0,
+   "cost": 0.6416666666666666,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8020336147874367,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.002065300034824759,
+   "availability": 1.0,
+   "cost": 0.6166666666666667,
+   "safety": 0.2166666666666667,
+   "sustainability": 0.6615646607924046,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.001290750011219643,
+   "availability": 1.0,
+   "cost": 0.65,
+   "safety": 0.2541666666666667,
+   "sustainability": 0.8144164657888731,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.001290750011219643,
+   "availability": 1.0,
+   "cost": 0.625,
+   "safety": 0.37083333333333335,
+   "sustainability": 0.779931468612383,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.001290750011219643,
+   "availability": 1.0,
+   "cost": 0.6666666666666667,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8458381839746947,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.001290750011219643,
+   "availability": 1.0,
+   "cost": 0.65,
+   "safety": 0.37083333333333335,
+   "sustainability": 0.8144164657888731,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  }
+ ],
+ "paracetamol": [
+  {
+   "feasibility": 0.46680661103725435,
+   "availability": 1.0,
+   "cost": 0.725,
+   "safety": 0.2166666666666667,
+   "sustainability": 0.7156857639299867,
+   "efficiency": 0.95,
+   "construction": 0.4318181818181818
+  },
+  {
+   "feasibility": 0.0215812009871006,
+   "availability": 1.0,
+   "cost": 0.7083333333333333,
+   "safety": 0.2166666666666667,
+   "sustainability": 0.6267231622021651,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0045695999383926385,
+   "availability": 1.0,
+   "cost": 0.8166666666666667,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.9150866870066346,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.07219278028607369,
+   "availability": 1.0,
+   "cost": 0.75,
+   "safety": 0.2166666666666667,
+   "sustainability": 0.8056719218018825,
+   "efficiency": 0.95,
+   "construction": 0.4318181818181818
+  },
+  {
+   "feasibility": 0.03905312922075391,
+   "availability": 1.0,
+   "cost": 0.7916666666666666,
+   "safety": 0.33333333333333337,
+   "sustainability": 0.7824194366517946,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.008498279739171267,
+   "availability": 1.0,
+   "cost": 0.7583333333333333,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.626486800116043,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.003381980040110648,
+   "availability": 1.0,
+   "cost": 0.75,
+   "safety": 0.2666666666666667,
+   "sustainability": 0.7590052319217522,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.003100000089034438,
+   "availability": 1.0,
+   "cost": 0.7666666666666666,
+   "safety": 0.2666666666666667,
+   "sustainability": 0.8935157820073294,
+   "efficiency": 0.95,
+   "construction": 0.4318181818181818
+  },
+  {
+   "feasibility": 0.001279650011123158,
+   "availability": 1.0,
+   "cost": 0.7833333333333333,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.7293038649510549,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0014836500128963962,
+   "availability": 1.0,
+   "cost": 0.7583333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.6513570926890644,
+   "efficiency": 0.95,
+   "construction": 0.4318181818181818
+  },
+  {
+   "feasibility": 0.000588510001602117,
+   "availability": 1.0,
+   "cost": 0.7333333333333334,
+   "safety": 0.2166666666666667,
+   "sustainability": 0.6946665563766038,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0005726400271989405,
+   "availability": 1.0,
+   "cost": 0.8083333333333333,
+   "safety": 0.33333333333333337,
+   "sustainability": 0.9263923616218072,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 9.203999767487403e-05,
+   "availability": 1.0,
+   "cost": 0.7083333333333333,
+   "safety": 0.2666666666666667,
+   "sustainability": 0.6894829505026364,
+   "efficiency": 0.95,
+   "construction": 0.4318181818181818
+  },
+  {
+   "feasibility": 6.735000319895335e-05,
+   "availability": 1.0,
+   "cost": 0.7833333333333333,
+   "safety": 0.33333333333333337,
+   "sustainability": 0.7225825880373421,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.00047047998811467547,
+   "availability": 1.0,
+   "cost": 0.8,
+   "safety": 0.33333333333333337,
+   "sustainability": 0.6570648654052621,
+   "efficiency": 0.95,
+   "construction": 0.0
+  }
+ ],
+ "ibuprofen": [],
+ "benzocaine": [
+  {
+   "feasibility": 0.23696639871597291,
+   "availability": 1.0,
+   "cost": 0.7916666666666666,
+   "safety": 0.2166666666666667,
+   "sustainability": 0.8463832272741246,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.001104480041563511,
+   "availability": 1.0,
+   "cost": 0.7833333333333333,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.7971471174401266,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.018693449829518795,
+   "availability": 1.0,
+   "cost": 0.7,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8344102030686757,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.16666666666666663
+  },
+  {
+   "feasibility": 0.0017647799458354713,
+   "availability": 1.0,
+   "cost": 0.6916666666666667,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.7617793743354787,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.16666666666666663
+  },
+  {
+   "feasibility": 0.0018365400476381183,
+   "availability": 1.0,
+   "cost": 0.6916666666666667,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8341293634181336,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.16666666666666663
+  },
+  {
+   "feasibility": 0.0005438399970531464,
+   "availability": 1.0,
+   "cost": 0.6916666666666667,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8219514640052941,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.16666666666666663
+  },
+  {
+   "feasibility": 0.0013715799510944635,
+   "availability": 1.0,
+   "cost": 0.6916666666666667,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8341293634181336,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.16666666666666663
+  },
+  {
+   "feasibility": 0.000531180001446046,
+   "availability": 1.0,
+   "cost": 0.6916666666666667,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8023475122713597,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.00022828000062145292,
+   "availability": 1.0,
+   "cost": 0.6833333333333333,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.7297166835381628,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0008842600024072454,
+   "availability": 1.0,
+   "cost": 0.6833333333333333,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8020666726208177,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.00032136000087484715,
+   "availability": 1.0,
+   "cost": 0.6833333333333333,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.789888773207978,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.001195599957369268,
+   "availability": 1.0,
+   "cost": 0.6833333333333333,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8020666726208177,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0009787000464857557,
+   "availability": 1.0,
+   "cost": 0.6,
+   "safety": 0.37083333333333335,
+   "sustainability": 0.652149193358307,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.00013271999526768923,
+   "availability": 1.0,
+   "cost": 0.6333333333333333,
+   "safety": 0.2916666666666667,
+   "sustainability": 0.7759399450766055,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.00013271999526768923,
+   "availability": 1.0,
+   "cost": 0.625,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.6695434250023362,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  }
+ ],
+ "phenacetin": [
+  {
+   "feasibility": 0.3230000138282776,
+   "availability": 1.0,
+   "cost": 0.7166666666666667,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.7490209845739768,
+   "efficiency": 0.95,
+   "construction": 0.32692307692307687
+  },
+  {
+   "feasibility": 0.03610000014305115,
+   "availability": 1.0,
+   "cost": 0.7416666666666667,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.8309486275964391,
+   "efficiency": 0.95,
+   "construction": 0.32692307692307687
+  },
+  {
+   "feasibility": 0.0278841595210135,
+   "availability": 1.0,
+   "cost": 0.6916666666666667,
+   "safety": 0.2666666666666667,
+   "sustainability": 0.665615610596725,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.003198719919193536,
+   "availability": 1.0,
+   "cost": 0.75,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.9086617925915411,
+   "efficiency": 0.95,
+   "construction": 0.32692307692307687
+  },
+  {
+   "feasibility": 0.0023971201138570904,
+   "availability": 1.0,
+   "cost": 0.675,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.5869259084597448,
+   "efficiency": 0.95,
+   "construction": 0.1346153846153847
+  },
+  {
+   "feasibility": 0.0018817600317299365,
+   "availability": 1.0,
+   "cost": 0.6583333333333333,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.5099793981059917,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0012100199568551033,
+   "availability": 1.0,
+   "cost": 0.75,
+   "safety": 1.0,
+   "sustainability": 0.688956717961335,
+   "efficiency": 0.95,
+   "construction": 0.32692307692307687
+  },
+  {
+   "feasibility": 0.0004048799897718709,
+   "availability": 1.0,
+   "cost": 0.7333333333333334,
+   "safety": 0.3166666666666667,
+   "sustainability": 0.7887604746144637,
+   "efficiency": 0.95,
+   "construction": 0.0
+  }
+ ],
+ "salicylamide": [
+  {
+   "feasibility": 0.004376560007035733,
+   "availability": 1.0,
+   "cost": 0.8,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.765385796009488,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0007911600133404136,
+   "availability": 1.0,
+   "cost": 0.7416666666666667,
+   "safety": 1.0,
+   "sustainability": 0.6919940659407199,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0004311000037472695,
+   "availability": 1.0,
+   "cost": 0.8083333333333333,
+   "safety": 1.0,
+   "sustainability": 0.6347982262051344,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0021971399880945683,
+   "availability": 1.0,
+   "cost": 0.8083333333333333,
+   "safety": 1.0,
+   "sustainability": 0.8955249221285516,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0005505000047851354,
+   "availability": 1.0,
+   "cost": 0.8083333333333333,
+   "safety": 1.0,
+   "sustainability": 0.6347982262051343,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0002448599986732006,
+   "availability": 1.0,
+   "cost": 0.8083333333333333,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8955249221285516,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0021909799881279467,
+   "availability": 1.0,
+   "cost": 0.8083333333333333,
+   "safety": 1.0,
+   "sustainability": 0.8955249221285516,
+   "efficiency": 0.95,
+   "construction": 0.0
+  }
+ ],
+ "procaine": [
+  {
+   "feasibility": 0.37248589013814926,
+   "availability": 1.0,
+   "cost": 0.7083333333333333,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.9291668304958126,
+   "efficiency": 0.95,
+   "construction": 0.7794117647058824
+  },
+  {
+   "feasibility": 0.13202299287319183,
+   "availability": 1.0,
+   "cost": 0.7083333333333333,
+   "safety": 0.33333333333333337,
+   "sustainability": 0.8663335484060181,
+   "efficiency": 0.95,
+   "construction": 0.7794117647058824
+  },
+  {
+   "feasibility": 0.03723850014060736,
+   "availability": 1.0,
+   "cost": 0.7,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.8805993508647062,
+   "efficiency": 0.95,
+   "construction": 0.6323529411764706
+  },
+  {
+   "feasibility": 0.022577400723472238,
+   "availability": 1.0,
+   "cost": 0.7,
+   "safety": 0.33333333333333337,
+   "sustainability": 0.7449397434644592,
+   "efficiency": 0.95,
+   "construction": 0.7794117647058824
+  },
+  {
+   "feasibility": 0.0007849599801702425,
+   "availability": 1.0,
+   "cost": 0.7,
+   "safety": 0.2166666666666667,
+   "sustainability": 0.6488124164326093,
+   "efficiency": 0.95,
+   "construction": 0.7794117647058824
+  },
+  {
+   "feasibility": 4.979999874194618e-05,
+   "availability": 1.0,
+   "cost": 0.675,
+   "safety": 0.33333333333333337,
+   "sustainability": 0.710888569348599,
+   "efficiency": 0.95,
+   "construction": 0.48529411764705876
+  }
+ ],
+ "lidocaine": [
+  {
+   "feasibility": 0.4162999987602234,
+   "availability": 1.0,
+   "cost": 0.7,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.8653601867032984,
+   "efficiency": 0.95,
+   "construction": 0.33823529411764724
+  },
+  {
+   "feasibility": 0.06177527932673693,
+   "availability": 1.0,
+   "cost": 0.6333333333333333,
+   "safety": 0.2916666666666667,
+   "sustainability": 0.7626739133972305,
+   "efficiency": 0.95,
+   "construction": 0.9264705882352942
+  },
+  {
+   "feasibility": 0.003058410090208054,
+   "availability": 1.0,
+   "cost": 0.6916666666666667,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.8357095987332924,
+   "efficiency": 0.95,
+   "construction": 0.6323529411764706
+  },
+  {
+   "feasibility": 0.0030916201115585864,
+   "availability": 1.0,
+   "cost": 0.75,
+   "safety": 1.0,
+   "sustainability": 0.9436909546322173,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0010998899940401316,
+   "availability": 1.0,
+   "cost": 0.7,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.7433442768552442,
+   "efficiency": 0.95,
+   "construction": 0.33823529411764724
+  }
+ ],
+ "naproxen": [
+  {
+   "feasibility": 0.0022997700510313736,
+   "availability": 1.0,
+   "cost": 0.7583333333333333,
+   "safety": 0.4083333333333333,
+   "sustainability": 1.0,
+   "efficiency": 0.95,
+   "construction": 0.0
+  }
+ ],
+ "ketoprofen": [
+  {
+   "feasibility": 0.006094509882386774,
+   "availability": 1.0,
+   "cost": 0.6,
+   "safety": 0.45333333333333337,
+   "sustainability": 0.8180440721931364,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.9342105263157896
+  },
+  {
+   "feasibility": 0.006094509882386774,
+   "availability": 1.0,
+   "cost": 0.5916666666666667,
+   "safety": 0.45333333333333337,
+   "sustainability": 0.7261000754714648,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.9342105263157896
+  },
+  {
+   "feasibility": 0.005906019886024296,
+   "availability": 1.0,
+   "cost": 0.5916666666666667,
+   "safety": 0.45333333333333337,
+   "sustainability": 0.7261000754714648,
+   "efficiency": 0.7999999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0007004799962043762,
+   "availability": 1.0,
+   "cost": 0.5166666666666666,
+   "safety": 0.4583333333333333,
+   "sustainability": 0.8403406787519699,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.9342105263157896
+  },
+  {
+   "feasibility": 0.0008979400119045749,
+   "availability": 1.0,
+   "cost": 0.44999999999999996,
+   "safety": 0.125,
+   "sustainability": 0.8864236334031569,
+   "efficiency": 0.5,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0005076200067298486,
+   "availability": 1.0,
+   "cost": 0.4833333333333333,
+   "safety": 0.125,
+   "sustainability": 0.9049636381128626,
+   "efficiency": 0.5,
+   "construction": 0.4078947368421054
+  }
+ ],
+ "acetanilide": [
+  {
+   "feasibility": 0.5724999904632568,
+   "availability": 1.0,
+   "cost": 0.7416666666666667,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.6923849235213965,
+   "efficiency": 0.95,
+   "construction": 0.5000000000000001
+  },
+  {
+   "feasibility": 0.22849999368190765,
+   "availability": 1.0,
+   "cost": 0.7666666666666666,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.7875567364109375,
+   "efficiency": 0.95,
+   "construction": 0.5000000000000001
+  },
+  {
+   "feasibility": 0.026644519256055356,
+   "availability": 1.0,
+   "cost": 0.725,
+   "safety": 0.2666666666666667,
+   "sustainability": 0.6002042628774422,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.015799999237060547,
+   "availability": 1.0,
+   "cost": 0.775,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.8823940305912612,
+   "efficiency": 0.95,
+   "construction": 0.5000000000000001
+  },
+  {
+   "feasibility": 0.0010789200279861689,
+   "availability": 1.0,
+   "cost": 0.8166666666666667,
+   "safety": 1.0,
+   "sustainability": 0.631433883641188,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0005009399913949892,
+   "availability": 1.0,
+   "cost": 0.8166666666666667,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.7969176527465787,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0016981300225132146,
+   "availability": 1.0,
+   "cost": 0.7583333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.7458051700830413,
+   "efficiency": 0.95,
+   "construction": 0.5000000000000001
+  },
+  {
+   "feasibility": 0.0013851199650089256,
+   "availability": 1.0,
+   "cost": 0.75,
+   "safety": 0.2666666666666667,
+   "sustainability": 0.6704363396475355,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0003862800183473155,
+   "availability": 1.0,
+   "cost": 0.8166666666666667,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.9000206417589439,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0007867000373662449,
+   "availability": 1.0,
+   "cost": 0.8166666666666667,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8941620084014155,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.00027498001306084914,
+   "availability": 1.0,
+   "cost": 0.7583333333333333,
+   "safety": 0.3166666666666667,
+   "sustainability": 0.7379547179288394,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.000498700023686979,
+   "availability": 1.0,
+   "cost": 0.775,
+   "safety": 1.0,
+   "sustainability": 0.6255426281250288,
+   "efficiency": 0.95,
+   "construction": 0.5000000000000001
+  },
+  {
+   "feasibility": 7.965000378317199e-05,
+   "availability": 1.0,
+   "cost": 0.725,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.6650397303746709,
+   "efficiency": 0.95,
+   "construction": 0.24999999999999994
+  },
+  {
+   "feasibility": 0.00021222000550478697,
+   "availability": 1.0,
+   "cost": 0.8166666666666667,
+   "safety": 1.0,
+   "sustainability": 0.631433883641188,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.001281599967624061,
+   "availability": 1.0,
+   "cost": 0.825,
+   "safety": 1.0,
+   "sustainability": 0.7969176527465788,
+   "efficiency": 0.95,
+   "construction": 0.0
+  }
+ ],
+ "methyl salicylate": [
+  {
+   "feasibility": 0.0016125899425009267,
+   "availability": 1.0,
+   "cost": 0.8,
+   "safety": 1.0,
+   "sustainability": 0.6585253954857279,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.00016507000218844042,
+   "availability": 1.0,
+   "cost": 0.7333333333333334,
+   "safety": 1.0,
+   "sustainability": 0.716855520742538,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.00018480000160634518,
+   "availability": 1.0,
+   "cost": 0.7916666666666666,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.783521984077122,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0006693299885024317,
+   "availability": 1.0,
+   "cost": 0.8,
+   "safety": 1.0,
+   "sustainability": 0.9048516782834168,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.00038239999033976344,
+   "availability": 1.0,
+   "cost": 0.675,
+   "safety": 0.2,
+   "sustainability": 0.6029380295308822,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0008917199846822768,
+   "availability": 1.0,
+   "cost": 0.8,
+   "safety": 1.0,
+   "sustainability": 0.9048516782834168,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0006215399893233553,
+   "availability": 1.0,
+   "cost": 0.8,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.9048516782834168,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.00012041999793145806,
+   "availability": 1.0,
+   "cost": 0.8,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.9048516782834168,
+   "efficiency": 0.95,
+   "construction": 0.0
+  }
+ ],
+ "caffeine": [
+  {
+   "feasibility": 0.010761120200157166,
+   "availability": 1.0,
+   "cost": 0.6583333333333333,
+   "safety": 1.0,
+   "sustainability": 0.6339993470453804,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0016695000021718443,
+   "availability": 1.0,
+   "cost": 0.6833333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.766771169776753,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.004665990168368444,
+   "availability": 1.0,
+   "cost": 0.6333333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.5842160522982783,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0019930000946624207,
+   "availability": 1.0,
+   "cost": 0.6583333333333333,
+   "safety": 1.0,
+   "sustainability": 0.6339993470453804,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0007340399873908609,
+   "availability": 1.0,
+   "cost": 0.7666666666666666,
+   "safety": 1.0,
+   "sustainability": 0.8493476615975402,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.00021329999633599073,
+   "availability": 1.0,
+   "cost": 0.7583333333333333,
+   "safety": 1.0,
+   "sustainability": 0.8081718604341457,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0008487600403139368,
+   "availability": 1.0,
+   "cost": 0.7583333333333333,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.858274293846487,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.011958210222423077,
+   "availability": 1.0,
+   "cost": 0.6583333333333333,
+   "safety": 1.0,
+   "sustainability": 0.6339993470453804,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0029263500038068744,
+   "availability": 1.0,
+   "cost": 0.675,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.766771169776753,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.00544635000708513,
+   "availability": 1.0,
+   "cost": 0.6833333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.766771169776753,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0036100000608712433,
+   "availability": 1.0,
+   "cost": 0.7666666666666666,
+   "safety": 1.0,
+   "sustainability": 0.9326340762939376,
+   "efficiency": 0.95,
+   "construction": 0.0
+  }
+ ],
+ "theophylline": [
+  {
+   "feasibility": 0.016063459457084536,
+   "availability": 1.0,
+   "cost": 0.75,
+   "safety": 1.0,
+   "sustainability": 0.7562193857635142,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.014399999752640724,
+   "availability": 1.0,
+   "cost": 0.6416666666666666,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.5658973408632613,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.004582499933894723,
+   "availability": 1.0,
+   "cost": 0.7583333333333333,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8180782084347415,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0029756001010537146,
+   "availability": 1.0,
+   "cost": 0.7666666666666666,
+   "safety": 1.0,
+   "sustainability": 0.796279517901892,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.001148979959031567,
+   "availability": 1.0,
+   "cost": 0.775,
+   "safety": 1.0,
+   "sustainability": 0.8395010530632023,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.001388519950490445,
+   "availability": 1.0,
+   "cost": 0.7666666666666666,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8489073381267844,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0010976899940520525,
+   "availability": 1.0,
+   "cost": 0.7583333333333333,
+   "safety": 1.0,
+   "sustainability": 0.8035277852109535,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0007982399798347615,
+   "availability": 1.0,
+   "cost": 0.7666666666666666,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8489073381267844,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.000699859975045547,
+   "availability": 1.0,
+   "cost": 0.7666666666666666,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.9090987072488925,
+   "efficiency": 0.95,
+   "construction": 0.0
+  }
+ ],
+ "vanillin": [
+  {
+   "feasibility": 0.030448470541834832,
+   "availability": 1.0,
+   "cost": 0.8083333333333333,
+   "safety": 0.33333333333333337,
+   "sustainability": 0.9155894954746775,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0065799701083451515,
+   "availability": 1.0,
+   "cost": 0.8166666666666667,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.9869231018713714,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.021199999749660494,
+   "availability": 1.0,
+   "cost": 0.7833333333333333,
+   "safety": 0.2166666666666667,
+   "sustainability": 0.783521984077122,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.014004240527004004,
+   "availability": 1.0,
+   "cost": 0.725,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.6363457661711934,
+   "efficiency": 0.95,
+   "construction": 0.20454545454545447
+  },
+  {
+   "feasibility": 0.011224440494924784,
+   "availability": 1.0,
+   "cost": 0.7333333333333334,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.7714136507904316,
+   "efficiency": 0.95,
+   "construction": 0.20454545454545447
+  },
+  {
+   "feasibility": 0.005426190076209605,
+   "availability": 1.0,
+   "cost": 0.8083333333333333,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.9048516782834168,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.004524799838662148,
+   "availability": 1.0,
+   "cost": 0.7166666666666667,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.5510049614312098,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0048876598563976584,
+   "availability": 1.0,
+   "cost": 0.7833333333333333,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.7754711980509882,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0012559399552177638,
+   "availability": 1.0,
+   "cost": 0.75,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.7674138261492368,
+   "efficiency": 0.95,
+   "construction": 0.20454545454545447
+  },
+  {
+   "feasibility": 0.00010345999631099402,
+   "availability": 1.0,
+   "cost": 0.7583333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.8260392744488059,
+   "efficiency": 0.95,
+   "construction": 0.20454545454545447
+  }
+ ],
+ "diphenhydramine": [
+  {
+   "feasibility": 0.9053999781608582,
+   "availability": 1.0,
+   "cost": 0.6833333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.8750573980028923,
+   "efficiency": 0.95,
+   "construction": 0.4078947368421054
+  },
+  {
+   "feasibility": 0.004699999932199717,
+   "availability": 1.0,
+   "cost": 0.6916666666666667,
+   "safety": 1.0,
+   "sustainability": 0.9341017499707365,
+   "efficiency": 0.95,
+   "construction": 0.4078947368421054
+  },
+  {
+   "feasibility": 0.000699999975040555,
+   "availability": 1.0,
+   "cost": 0.6833333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.759385975085719,
+   "efficiency": 0.95,
+   "construction": 0.4078947368421054
+  },
+  {
+   "feasibility": 0.003344399856030941,
+   "availability": 1.0,
+   "cost": 0.625,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.9144277012153063,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.4078947368421054
+  },
+  {
+   "feasibility": 0.0003000000142492354,
+   "availability": 1.0,
+   "cost": 0.525,
+   "safety": 0.45333333333333337,
+   "sustainability": 0.7717591003734325,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.4078947368421054
+  },
+  {
+   "feasibility": 0.00025698001220589506,
+   "availability": 1.0,
+   "cost": 0.5416666666666667,
+   "safety": 0.42333333333333334,
+   "sustainability": 0.7713121623235373,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.4078947368421054
+  },
+  {
+   "feasibility": 0.0002078700098732952,
+   "availability": 1.0,
+   "cost": 0.6166666666666667,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.9426966805592296,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.4078947368421054
+  },
+  {
+   "feasibility": 7.611000361503102e-05,
+   "availability": 1.0,
+   "cost": 0.5,
+   "safety": 0.4583333333333333,
+   "sustainability": 0.8747446202225907,
+   "efficiency": 0.7499999999999999,
+   "construction": 0.4078947368421054
+  }
+ ],
+ "diclofenac": [
+  {
+   "feasibility": 0.8360000252723694,
+   "availability": 1.0,
+   "cost": 0.6916666666666667,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.7854163075331841,
+   "efficiency": 0.95,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 0.0025997400070773436,
+   "availability": 1.0,
+   "cost": 0.6916666666666667,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.9367217128090614,
+   "efficiency": 0.95,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 0.00019999999494757503,
+   "availability": 1.0,
+   "cost": 0.675,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.8653827047939643,
+   "efficiency": 0.95,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 0.011300000362098217,
+   "availability": 1.0,
+   "cost": 0.6916666666666667,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.8903804409916602,
+   "efficiency": 0.95,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 0.0025784200070193036,
+   "availability": 1.0,
+   "cost": 0.6916666666666667,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.9367217128090615,
+   "efficiency": 0.95,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 0.00019999999494757503,
+   "availability": 1.0,
+   "cost": 0.675,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.8653827047939644,
+   "efficiency": 0.95,
+   "construction": 0.5394736842105263
+  }
+ ],
+ "flurbiprofen": [
+  {
+   "feasibility": 0.0017335200823377819,
+   "availability": 1.0,
+   "cost": 0.44999999999999996,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.7866455866444882,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.5833333333333335
+  },
+  {
+   "feasibility": 0.0034790001073852182,
+   "availability": 1.0,
+   "cost": 0.42500000000000004,
+   "safety": 0.14285714285714285,
+   "sustainability": 0.8564236356611378,
+   "efficiency": 0.5,
+   "construction": 0.5833333333333335
+  }
+ ],
+ "mefenamic acid": [
+  {
+   "feasibility": 0.17724894498288632,
+   "availability": 1.0,
+   "cost": 0.7083333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.8687277453546524,
+   "efficiency": 0.95,
+   "construction": 0.861111111111111
+  },
+  {
+   "feasibility": 0.1884693132981658,
+   "availability": 1.0,
+   "cost": 0.7,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.6535446720223619,
+   "efficiency": 0.95,
+   "construction": 0.861111111111111
+  },
+  {
+   "feasibility": 0.06764628181010485,
+   "availability": 1.0,
+   "cost": 0.7083333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.7488780330351769,
+   "efficiency": 0.95,
+   "construction": 0.861111111111111
+  },
+  {
+   "feasibility": 0.02740604923479259,
+   "availability": 1.0,
+   "cost": 0.7,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.7488780330351767,
+   "efficiency": 0.95,
+   "construction": 0.861111111111111
+  },
+  {
+   "feasibility": 0.024787970310635864,
+   "availability": 1.0,
+   "cost": 0.7083333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.9234354907843979,
+   "efficiency": 0.95,
+   "construction": 0.861111111111111
+  },
+  {
+   "feasibility": 0.010070310193765909,
+   "availability": 1.0,
+   "cost": 0.7,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.6535446720223618,
+   "efficiency": 0.95,
+   "construction": 0.861111111111111
+  },
+  {
+   "feasibility": 0.027301829372160136,
+   "availability": 1.0,
+   "cost": 0.7083333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.8687277453546524,
+   "efficiency": 0.95,
+   "construction": 0.861111111111111
+  },
+  {
+   "feasibility": 0.005358649970963598,
+   "availability": 1.0,
+   "cost": 0.7083333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.9234354907843979,
+   "efficiency": 0.95,
+   "construction": 0.861111111111111
+  }
+ ],
+ "phenylbutazone": [
+  {
+   "feasibility": 0.6295322733104229,
+   "availability": 1.0,
+   "cost": 0.6166666666666667,
+   "safety": 0.33333333333333337,
+   "sustainability": 0.7699534853527551,
+   "efficiency": 0.95,
+   "construction": 0.6195652173913043
+  },
+  {
+   "feasibility": 0.0054140899154357615,
+   "availability": 1.0,
+   "cost": 0.4,
+   "safety": 0.2166666666666667,
+   "sustainability": 0.7544670417659562,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.5108695652173914
+  }
+ ],
+ "gabapentin": [
+  {
+   "feasibility": 0.5016903945803642,
+   "availability": 1.0,
+   "cost": 0.7916666666666666,
+   "safety": 1.0,
+   "sustainability": 1.0,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.07867656086087227,
+   "availability": 1.0,
+   "cost": 0.775,
+   "safety": 1.0,
+   "sustainability": 0.8592330928176463,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.04387480008527637,
+   "availability": 1.0,
+   "cost": 0.7833333333333333,
+   "safety": 1.0,
+   "sustainability": 0.924287649716355,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0015763199601788074,
+   "availability": 1.0,
+   "cost": 0.7666666666666666,
+   "safety": 1.0,
+   "sustainability": 0.8028995156533522,
+   "efficiency": 0.95,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.00029919001421076246,
+   "availability": 1.0,
+   "cost": 0.7583333333333333,
+   "safety": 1.0,
+   "sustainability": 0.7468727647028035,
+   "efficiency": 0.95,
+   "construction": 0.0
+  }
+ ],
+ "pregabalin": [
+  {
+   "feasibility": 0.0005300899897702038,
+   "availability": 1.0,
+   "cost": 0.6083333333333334,
+   "safety": 0.2466666666666667,
+   "sustainability": 0.9041395205080154,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 3.4759999121888546e-05,
+   "availability": 1.0,
+   "cost": 0.32499999999999996,
+   "safety": 0.1375,
+   "sustainability": 0.8405440327692413,
+   "efficiency": 0.35,
+   "construction": 0.0
+  }
+ ],
+ "metformin": [
+  {
+   "feasibility": 0.015884100928902627,
+   "availability": 1.0,
+   "cost": 0.7416666666666667,
+   "safety": 0.2166666666666667,
+   "sustainability": 1.0,
+   "efficiency": 0.95,
+   "construction": 0.861111111111111
+  },
+  {
+   "feasibility": 0.00016296000774018466,
+   "availability": 1.0,
+   "cost": 0.675,
+   "safety": 0.1,
+   "sustainability": 0.9448941212129562,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.861111111111111
+  },
+  {
+   "feasibility": 0.00026377999857068064,
+   "availability": 1.0,
+   "cost": 0.5666666666666667,
+   "safety": 0.2166666666666667,
+   "sustainability": 0.6228613190268163,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.00030843999832868576,
+   "availability": 1.0,
+   "cost": 0.65,
+   "safety": 0.2166666666666667,
+   "sustainability": 0.8000297319018661,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.002227170080365613,
+   "availability": 1.0,
+   "cost": 0.3666666666666667,
+   "safety": 0.2166666666666667,
+   "sustainability": 0.4483846967603123,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.0018778100637719035,
+   "availability": 1.0,
+   "cost": 0.3666666666666667,
+   "safety": 0.2166666666666667,
+   "sustainability": 0.4483846967603123,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.00016296000774018466,
+   "availability": 1.0,
+   "cost": 0.6333333333333333,
+   "safety": 0.1,
+   "sustainability": 0.8399384962025493,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.5833333333333335
+  },
+  {
+   "feasibility": 0.007262099687382578,
+   "availability": 1.0,
+   "cost": 0.5916666666666667,
+   "safety": 0.2166666666666667,
+   "sustainability": 0.7007819084046156,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.0
+  },
+  {
+   "feasibility": 0.000816119985980913,
+   "availability": 1.0,
+   "cost": 0.6166666666666667,
+   "safety": 0.2166666666666667,
+   "sustainability": 0.7371927870932128,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.3055555555555556
+  }
+ ],
+ "atenolol": [
+  {
+   "feasibility": 0.0004992500237131026,
+   "availability": 1.0,
+   "cost": 0.6916666666666667,
+   "safety": 1.0,
+   "sustainability": 0.9999999999999998,
+   "efficiency": 0.95,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 0.00044720002124086023,
+   "availability": 1.0,
+   "cost": 0.44166666666666665,
+   "safety": 0.2916666666666667,
+   "sustainability": 0.6255177967607152,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 0.00010690000507747754,
+   "availability": 1.0,
+   "cost": 0.5583333333333333,
+   "safety": 0.3066666666666667,
+   "sustainability": 0.7984569464622706,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 0.3432707199573517,
+   "availability": 1.0,
+   "cost": 0.3916666666666667,
+   "safety": 0.280952380952381,
+   "sustainability": 0.7406090641836065,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 0.04364115075990558,
+   "availability": 1.0,
+   "cost": 0.3833333333333333,
+   "safety": 0.280952380952381,
+   "sustainability": 0.7286071820721008,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 0.00433350011240691,
+   "availability": 1.0,
+   "cost": 0.3916666666666667,
+   "safety": 0.280952380952381,
+   "sustainability": 0.7503451978404768,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 0.001961400093161501,
+   "availability": 1.0,
+   "cost": 0.3833333333333333,
+   "safety": 0.280952380952381,
+   "sustainability": 0.6846658162153989,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 0.0006772499883663841,
+   "availability": 1.0,
+   "cost": 0.3833333333333333,
+   "safety": 0.280952380952381,
+   "sustainability": 0.7445408686312774,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 0.0004941500234708655,
+   "availability": 1.0,
+   "cost": 0.275,
+   "safety": 0.2916666666666667,
+   "sustainability": 0.5600148653593856,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.8026315789473684
+  }
+ ],
+ "indomethacin": [
+  {
+   "feasibility": 0.013100000098347664,
+   "availability": 1.0,
+   "cost": 0.6416666666666666,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.9075190105870834,
+   "efficiency": 0.95,
+   "construction": 0.65
+  },
+  {
+   "feasibility": 0.00039999998989515007,
+   "availability": 1.0,
+   "cost": 0.65,
+   "safety": 1.0,
+   "sustainability": 0.9520632876362398,
+   "efficiency": 0.95,
+   "construction": 0.65
+  },
+  {
+   "feasibility": 0.6122107313871383,
+   "availability": 1.0,
+   "cost": 0.5333333333333333,
+   "safety": 0.16,
+   "sustainability": 0.8971837504739066,
+   "efficiency": 0.7999999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.12071248103380204,
+   "availability": 1.0,
+   "cost": 0.5833333333333333,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.9364855331260694,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.5499999999999999
+  },
+  {
+   "feasibility": 0.0063795198388397695,
+   "availability": 1.0,
+   "cost": 0.5916666666666667,
+   "safety": 1.0,
+   "sustainability": 0.958031448869646,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.5499999999999999
+  },
+  {
+   "feasibility": 0.048895681404322384,
+   "availability": 1.0,
+   "cost": 0.575,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.920477482167906,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.4500000000000001
+  },
+  {
+   "feasibility": 0.001182960056187585,
+   "availability": 1.0,
+   "cost": 0.5833333333333333,
+   "safety": 1.0,
+   "sustainability": 0.9413428015286771,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.4500000000000001
+  },
+  {
+   "feasibility": 0.00019039999519009142,
+   "availability": 1.0,
+   "cost": 0.5083333333333333,
+   "safety": 0.45333333333333337,
+   "sustainability": 0.8976978864820073,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.7500000000000001
+  },
+  {
+   "feasibility": 0.00012684000602457672,
+   "availability": 1.0,
+   "cost": 0.5166666666666666,
+   "safety": 0.45333333333333337,
+   "sustainability": 0.8999536431087786,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.7500000000000001
+  }
+ ],
+ "fluoxetine": [
+  {
+   "feasibility": 0.07002793062403798,
+   "availability": 1.0,
+   "cost": 0.625,
+   "safety": 1.0,
+   "sustainability": 0.9758025701417221,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.8863636363636365
+  },
+  {
+   "feasibility": 0.0010990099940449,
+   "availability": 1.0,
+   "cost": 0.6333333333333333,
+   "safety": 1.0,
+   "sustainability": 1.0,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.8863636363636365
+  },
+  {
+   "feasibility": 0.0012210000003688038,
+   "availability": 1.0,
+   "cost": 0.41666666666666663,
+   "safety": 0.3023809523809524,
+   "sustainability": 0.8287046963842133,
+   "efficiency": 0.6,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0012210000003688038,
+   "availability": 1.0,
+   "cost": 0.41666666666666663,
+   "safety": 0.280952380952381,
+   "sustainability": 0.8477821103304163,
+   "efficiency": 0.6,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.006012769883964211,
+   "availability": 1.0,
+   "cost": 0.5666666666666667,
+   "safety": 1.0,
+   "sustainability": 0.9699100315996374,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.7727272727272727
+  },
+  {
+   "feasibility": 0.00018149999901652337,
+   "availability": 1.0,
+   "cost": 0.42500000000000004,
+   "safety": 0.3023809523809524,
+   "sustainability": 0.8422724955701649,
+   "efficiency": 0.6,
+   "construction": 1.0
+  }
+ ],
+ "sertraline": [],
+ "diazepam": [
+  {
+   "feasibility": 0.057999998331069946,
+   "availability": 1.0,
+   "cost": 0.6333333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.7800725977672763,
+   "efficiency": 0.95,
+   "construction": 0.37500000000000006
+  },
+  {
+   "feasibility": 0.00039999998989515007,
+   "availability": 1.0,
+   "cost": 0.5833333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.6367720625890321,
+   "efficiency": 0.95,
+   "construction": 0.37500000000000006
+  },
+  {
+   "feasibility": 0.004750200066715479,
+   "availability": 1.0,
+   "cost": 0.4916666666666667,
+   "safety": 0.45333333333333337,
+   "sustainability": 0.7630518681201168,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.24999999999999994
+  },
+  {
+   "feasibility": 0.0001633800077601336,
+   "availability": 1.0,
+   "cost": 0.575,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.8654888756869461,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.37500000000000006
+  },
+  {
+   "feasibility": 4.7280002245679494e-05,
+   "availability": 1.0,
+   "cost": 0.575,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.8654888756869461,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.37500000000000006
+  }
+ ],
+ "warfarin": [
+  {
+   "feasibility": 0.6157423803806306,
+   "availability": 1.0,
+   "cost": 0.5666666666666667,
+   "safety": 0.3933333333333333,
+   "sustainability": 0.9723990954441273,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.9456521739130436
+  },
+  {
+   "feasibility": 0.001783830052614212,
+   "availability": 1.0,
+   "cost": 0.6083333333333334,
+   "safety": 0.37083333333333335,
+   "sustainability": 0.9786141051859085,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.9456521739130436
+  },
+  {
+   "feasibility": 0.004890999890677631,
+   "availability": 1.0,
+   "cost": 0.5416666666666667,
+   "safety": 0.36333333333333334,
+   "sustainability": 0.8101284249381627,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.9456521739130436
+  },
+  {
+   "feasibility": 0.000695970011735335,
+   "availability": 1.0,
+   "cost": 0.3833333333333333,
+   "safety": 0.3547619047619048,
+   "sustainability": 0.8017988445810545,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.9456521739130436
+  },
+  {
+   "feasibility": 0.00028951998967677355,
+   "availability": 1.0,
+   "cost": 0.5,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.923800632978706,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.9456521739130436
+  },
+  {
+   "feasibility": 0.0006653099795803427,
+   "availability": 1.0,
+   "cost": 0.5083333333333333,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.9678532059838834,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.8369565217391306
+  },
+  {
+   "feasibility": 0.00014925000708899462,
+   "availability": 1.0,
+   "cost": 0.35,
+   "safety": 0.37083333333333335,
+   "sustainability": 0.8912240599298725,
+   "efficiency": 0.6,
+   "construction": 0.8369565217391306
+  },
+  {
+   "feasibility": 0.0001494999966584146,
+   "availability": 1.0,
+   "cost": 0.4833333333333333,
+   "safety": 0.35833333333333334,
+   "sustainability": 0.912117156585887,
+   "efficiency": 0.6499999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.002299999948590994,
+   "availability": 1.0,
+   "cost": 0.45833333333333337,
+   "safety": 0.35833333333333334,
+   "sustainability": 0.8867143379564161,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.8369565217391306
+  },
+  {
+   "feasibility": 0.000557119985925965,
+   "availability": 1.0,
+   "cost": 0.3666666666666667,
+   "safety": 0.2541666666666667,
+   "sustainability": 0.9190233256903881,
+   "efficiency": 0.6,
+   "construction": 0.9456521739130436
+  },
+  {
+   "feasibility": 0.0013240800628904253,
+   "availability": 1.0,
+   "cost": 0.5,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.9498601808207553,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.9456521739130436
+  },
+  {
+   "feasibility": 0.00021084001001436264,
+   "availability": 1.0,
+   "cost": 0.5,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.9172667434520984,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.9456521739130436
+  }
+ ],
+ "celecoxib": [
+  {
+   "feasibility": 0.828499972820282,
+   "availability": 1.0,
+   "cost": 0.6166666666666667,
+   "safety": 0.2666666666666667,
+   "sustainability": 0.9136817845326768,
+   "efficiency": 0.95,
+   "construction": 0.7115384615384615
+  },
+  {
+   "feasibility": 0.01759999990463257,
+   "availability": 1.0,
+   "cost": 0.6166666666666667,
+   "safety": 0.2666666666666667,
+   "sustainability": 0.9136817845326768,
+   "efficiency": 0.95,
+   "construction": 0.7115384615384615
+  },
+  {
+   "feasibility": 0.007600000128149986,
+   "availability": 1.0,
+   "cost": 0.5583333333333333,
+   "safety": 0.3291666666666667,
+   "sustainability": 0.8228632211237645,
+   "efficiency": 0.95,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0020989499251591044,
+   "availability": 1.0,
+   "cost": 0.6333333333333333,
+   "safety": 1.0,
+   "sustainability": 0.9501575793813921,
+   "efficiency": 0.95,
+   "construction": 0.7115384615384615
+  },
+  {
+   "feasibility": 0.0020000000949949026,
+   "availability": 1.0,
+   "cost": 0.625,
+   "safety": 1.0,
+   "sustainability": 0.8249760432281834,
+   "efficiency": 0.95,
+   "construction": 0.7115384615384615
+  }
+ ],
+ "sumatriptan": [
+  {
+   "feasibility": 0.013359440065547824,
+   "availability": 1.0,
+   "cost": 0.4666666666666667,
+   "safety": 0.15000000000000002,
+   "sustainability": 0.8481703991117199,
+   "efficiency": 0.7499999999999999,
+   "construction": 0.5000000000000001
+  },
+  {
+   "feasibility": 0.013904640090465546,
+   "availability": 1.0,
+   "cost": 0.6083333333333334,
+   "safety": 0.1375,
+   "sustainability": 0.9454871256311321,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.5000000000000001
+  },
+  {
+   "feasibility": 0.0011404399593360722,
+   "availability": 1.0,
+   "cost": 0.41666666666666663,
+   "safety": 0.14285714285714285,
+   "sustainability": 0.8870708792512992,
+   "efficiency": 0.6,
+   "construction": 0.5000000000000001
+  },
+  {
+   "feasibility": 0.00069241000917973,
+   "availability": 1.0,
+   "cost": 0.4083333333333333,
+   "safety": 0.14285714285714285,
+   "sustainability": 0.863470052971743,
+   "efficiency": 0.6,
+   "construction": 0.5000000000000001
+  },
+  {
+   "feasibility": 7.755999723449349e-05,
+   "availability": 1.0,
+   "cost": 0.29166666666666663,
+   "safety": 0.11875,
+   "sustainability": 0.7656811565699079,
+   "efficiency": 0.44999999999999996,
+   "construction": 0.37500000000000006
+  },
+  {
+   "feasibility": 4.626999835018069e-05,
+   "availability": 1.0,
+   "cost": 0.3583333333333333,
+   "safety": 0.14285714285714285,
+   "sustainability": 0.721774729024471,
+   "efficiency": 0.5,
+   "construction": 0.625
+  }
+ ],
+ "chlorpromazine": [
+  {
+   "feasibility": 0.00013429000036558136,
+   "availability": 1.0,
+   "cost": 0.5,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8508828781917764,
+   "efficiency": 0.6499999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0007854399801581166,
+   "availability": 1.0,
+   "cost": 0.4916666666666667,
+   "safety": 0.2416666666666667,
+   "sustainability": 0.8418860474970211,
+   "efficiency": 0.6499999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.001096699994057417,
+   "availability": 1.0,
+   "cost": 0.4833333333333333,
+   "safety": 0.2416666666666667,
+   "sustainability": 0.8160588421273959,
+   "efficiency": 0.6499999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0012246000033337623,
+   "availability": 1.0,
+   "cost": 0.43333333333333335,
+   "safety": 0.12142857142857144,
+   "sustainability": 0.9180686071371567,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0012767300034756772,
+   "availability": 1.0,
+   "cost": 0.43333333333333335,
+   "safety": 0.23809523809523814,
+   "sustainability": 0.9180686071371567,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0012246000033337623,
+   "availability": 1.0,
+   "cost": 0.43333333333333335,
+   "safety": 0.12142857142857144,
+   "sustainability": 0.8941680388101095,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0012678900034516119,
+   "availability": 1.0,
+   "cost": 0.42500000000000004,
+   "safety": 0.23809523809523814,
+   "sustainability": 0.8941680388101095,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0010190399944782257,
+   "availability": 1.0,
+   "cost": 0.42500000000000004,
+   "safety": 0.23809523809523814,
+   "sustainability": 0.8930409160804864,
+   "efficiency": 0.5,
+   "construction": 0.9404761904761905
+  },
+  {
+   "feasibility": 0.0007131199819850736,
+   "availability": 1.0,
+   "cost": 0.43333333333333335,
+   "safety": 0.23809523809523814,
+   "sustainability": 0.8990326459629617,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0011758500032010488,
+   "availability": 1.0,
+   "cost": 0.43333333333333335,
+   "safety": 0.23809523809523814,
+   "sustainability": 0.9180686071371567,
+   "efficiency": 0.5,
+   "construction": 0.9404761904761905
+  },
+  {
+   "feasibility": 0.0010673299942165614,
+   "availability": 1.0,
+   "cost": 0.42500000000000004,
+   "safety": 0.23809523809523814,
+   "sustainability": 0.8930409160804864,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0010673299942165614,
+   "availability": 1.0,
+   "cost": 0.43333333333333335,
+   "safety": 0.12142857142857144,
+   "sustainability": 0.8930409160804864,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.00042647998922620904,
+   "availability": 1.0,
+   "cost": 0.43333333333333335,
+   "safety": 0.23809523809523814,
+   "sustainability": 0.8990326459629617,
+   "efficiency": 0.5,
+   "construction": 0.9404761904761905
+  }
+ ],
+ "venlafaxine": [
+  {
+   "feasibility": 0.0005294900014414452,
+   "availability": 1.0,
+   "cost": 0.21666666666666667,
+   "safety": 0.3066666666666667,
+   "sustainability": 0.8408314725497008,
+   "efficiency": 0.29999999999999993,
+   "construction": 0.5000000000000001
+  }
+ ],
+ "propranolol": [
+  {
+   "feasibility": 0.6110000014305115,
+   "availability": 1.0,
+   "cost": 0.7,
+   "safety": 1.0,
+   "sustainability": 1.0,
+   "efficiency": 0.95,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 7.804999721702189e-05,
+   "availability": 1.0,
+   "cost": 0.5666666666666667,
+   "safety": 0.42333333333333334,
+   "sustainability": 0.871631395752555,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 4.651999882480595e-05,
+   "availability": 1.0,
+   "cost": 0.5583333333333333,
+   "safety": 0.42333333333333334,
+   "sustainability": 0.7693649583255795,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 8.943999774055555e-05,
+   "availability": 1.0,
+   "cost": 0.44166666666666665,
+   "safety": 0.2916666666666667,
+   "sustainability": 0.6240947197302645,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 2.137999945989577e-05,
+   "availability": 1.0,
+   "cost": 0.5666666666666667,
+   "safety": 0.3066666666666667,
+   "sustainability": 0.79703386943182,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.8026315789473684
+  },
+  {
+   "feasibility": 9.574999758115155e-05,
+   "availability": 1.0,
+   "cost": 0.4833333333333333,
+   "safety": 0.3166666666666667,
+   "sustainability": 0.7337250514334716,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.8026315789473684
+  }
+ ],
+ "ketamine": [],
+ "bupropion": [
+  {
+   "feasibility": 0.0020951699252938854,
+   "availability": 1.0,
+   "cost": 0.675,
+   "safety": 0.44583333333333336,
+   "sustainability": 1.0,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.53125
+  },
+  {
+   "feasibility": 0.0012964900035294703,
+   "availability": 1.0,
+   "cost": 0.5333333333333333,
+   "safety": 0.3066666666666667,
+   "sustainability": 0.7308934110161838,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.53125
+  },
+  {
+   "feasibility": 0.0005513400261872449,
+   "availability": 1.0,
+   "cost": 0.5416666666666667,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.9281748477173363,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.84375
+  },
+  {
+   "feasibility": 6.657999831804772e-05,
+   "availability": 1.0,
+   "cost": 0.4083333333333333,
+   "safety": 0.3238095238095238,
+   "sustainability": 0.6617593352352449,
+   "efficiency": 0.6499999999999999,
+   "construction": 1.0
+  }
+ ],
+ "lamotrigine": [
+  {
+   "feasibility": 0.014580589449219404,
+   "availability": 1.0,
+   "cost": 0.43333333333333335,
+   "safety": 0.4583333333333333,
+   "sustainability": 0.7888956986492355,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.53125
+  },
+  {
+   "feasibility": 0.014580589449219404,
+   "availability": 1.0,
+   "cost": 0.43333333333333335,
+   "safety": 0.4583333333333333,
+   "sustainability": 0.7947152631877477,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.53125
+  }
+ ],
+ "tramadol": [
+  {
+   "feasibility": 0.008349650230631233,
+   "availability": 1.0,
+   "cost": 0.30833333333333335,
+   "safety": 0.43833333333333335,
+   "sustainability": 0.8128821308228785,
+   "efficiency": 0.44999999999999996,
+   "construction": 1.0
+  }
+ ],
+ "clopidogrel": [
+  {
+   "feasibility": 0.0008999099845415912,
+   "availability": 1.0,
+   "cost": 0.6583333333333333,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.9526415809228366,
+   "efficiency": 0.95,
+   "construction": 0.7023809523809523
+  },
+  {
+   "feasibility": 0.003036479923292063,
+   "availability": 1.0,
+   "cost": 0.42500000000000004,
+   "safety": 0.3166666666666667,
+   "sustainability": 0.8228035554510584,
+   "efficiency": 0.7999999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0017548199698561803,
+   "availability": 1.0,
+   "cost": 0.6,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.9563823208366043,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.5833333333333335
+  },
+  {
+   "feasibility": 0.001398879950121045,
+   "availability": 1.0,
+   "cost": 0.4833333333333333,
+   "safety": 0.3066666666666667,
+   "sustainability": 0.7629141928399887,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.8214285714285715
+  },
+  {
+   "feasibility": 0.0011962600032566115,
+   "availability": 1.0,
+   "cost": 0.42500000000000004,
+   "safety": 0.2916666666666667,
+   "sustainability": 0.8388213594621103,
+   "efficiency": 0.7999999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0006720699760364369,
+   "availability": 1.0,
+   "cost": 0.6083333333333334,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.97857059283301,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.7023809523809523
+  },
+  {
+   "feasibility": 0.0004997500237368513,
+   "availability": 1.0,
+   "cost": 0.4,
+   "safety": 0.3166666666666667,
+   "sustainability": 0.787185657376792,
+   "efficiency": 0.7999999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.00029742001412669196,
+   "availability": 1.0,
+   "cost": 0.375,
+   "safety": 0.175,
+   "sustainability": 0.7976498707636369,
+   "efficiency": 0.7999999999999999,
+   "construction": 1.0
+  }
+ ],
+ "omeprazole": [
+  {
+   "feasibility": 0.6482999920845032,
+   "availability": 1.0,
+   "cost": 0.44999999999999996,
+   "safety": 0.2766666666666667,
+   "sustainability": 0.7942276629381715,
+   "efficiency": 0.7999999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.024299999698996544,
+   "availability": 1.0,
+   "cost": 0.44999999999999996,
+   "safety": 0.2766666666666667,
+   "sustainability": 0.7942276629381713,
+   "efficiency": 0.7999999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0034000000450760126,
+   "availability": 1.0,
+   "cost": 0.44166666666666665,
+   "safety": 0.2766666666666667,
+   "sustainability": 0.7454611588780118,
+   "efficiency": 0.7999999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0006000000284984708,
+   "availability": 1.0,
+   "cost": 0.5,
+   "safety": 0.42333333333333334,
+   "sustainability": 0.8781581550896107,
+   "efficiency": 0.7999999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0006000000284984708,
+   "availability": 1.0,
+   "cost": 0.5,
+   "safety": 0.42333333333333334,
+   "sustainability": 0.8781581550896107,
+   "efficiency": 0.7999999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0006000000284984708,
+   "availability": 1.0,
+   "cost": 0.4916666666666667,
+   "safety": 0.42333333333333334,
+   "sustainability": 0.8293916510294512,
+   "efficiency": 0.7999999999999999,
+   "construction": 1.0
+  }
+ ],
+ "fluconazole": [
+  {
+   "feasibility": 0.1574999988079071,
+   "availability": 1.0,
+   "cost": 0.4833333333333333,
+   "safety": 0.45333333333333337,
+   "sustainability": 0.8936190337118926,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.4318181818181818
+  },
+  {
+   "feasibility": 0.1574999988079071,
+   "availability": 1.0,
+   "cost": 0.4916666666666667,
+   "safety": 0.45333333333333337,
+   "sustainability": 0.9016556661440149,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.4318181818181818
+  },
+  {
+   "feasibility": 0.08669999986886978,
+   "availability": 1.0,
+   "cost": 0.44166666666666665,
+   "safety": 0.42333333333333334,
+   "sustainability": 0.8749118864053764,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.4318181818181818
+  },
+  {
+   "feasibility": 0.01178684042096138,
+   "availability": 1.0,
+   "cost": 0.3583333333333333,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.827950399262691,
+   "efficiency": 0.6499999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.03734780071862042,
+   "availability": 1.0,
+   "cost": 0.3583333333333333,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8165698309572481,
+   "efficiency": 0.6499999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0069997998856008055,
+   "availability": 1.0,
+   "cost": 0.35,
+   "safety": 0.2916666666666667,
+   "sustainability": 0.8673078179257468,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.8863636363636365
+  },
+  {
+   "feasibility": 0.004154720092192293,
+   "availability": 1.0,
+   "cost": 0.35,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.7984305070003092,
+   "efficiency": 0.6499999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.00435120020667091,
+   "availability": 1.0,
+   "cost": 0.35,
+   "safety": 0.2916666666666667,
+   "sustainability": 0.7877442389674999,
+   "efficiency": 0.6499999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0019036499321227892,
+   "availability": 1.0,
+   "cost": 0.375,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.8848475527715717,
+   "efficiency": 0.6499999999999999,
+   "construction": 1.0
+  }
+ ],
+ "citalopram": [],
+ "ondansetron": [],
+ "ciprofloxacin": [
+  {
+   "feasibility": 0.3416555981487036,
+   "availability": 1.0,
+   "cost": 0.31666666666666665,
+   "safety": 0.19375,
+   "sustainability": 0.8894510232464959,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.06419250255078077,
+   "availability": 1.0,
+   "cost": 0.31666666666666665,
+   "safety": 0.19375,
+   "sustainability": 0.8977884310639003,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.005819200276397169,
+   "availability": 1.0,
+   "cost": 0.2416666666666667,
+   "safety": 0.18333333333333335,
+   "sustainability": 0.8569807557780524,
+   "efficiency": 0.5,
+   "construction": 0.8958333333333335
+  },
+  {
+   "feasibility": 0.001908310042344965,
+   "availability": 1.0,
+   "cost": 0.29166666666666663,
+   "safety": 0.19375,
+   "sustainability": 0.8750788164390938,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.009158600203227252,
+   "availability": 1.0,
+   "cost": 0.31666666666666665,
+   "safety": 0.19375,
+   "sustainability": 0.8949040711072418,
+   "efficiency": 0.5,
+   "construction": 1.0
+  }
+ ],
+ "donepezil": [
+  {
+   "feasibility": 0.015211079548299313,
+   "availability": 1.0,
+   "cost": 0.6083333333333334,
+   "safety": 0.43333333333333335,
+   "sustainability": 0.9595473060614572,
+   "efficiency": 0.95,
+   "construction": 0.9107142857142858
+  },
+  {
+   "feasibility": 0.0033926399417221545,
+   "availability": 1.0,
+   "cost": 0.44999999999999996,
+   "safety": 0.42333333333333334,
+   "sustainability": 0.8187915709058697,
+   "efficiency": 0.7999999999999999,
+   "construction": 0.9107142857142858
+  },
+  {
+   "feasibility": 0.0027759199010208247,
+   "availability": 1.0,
+   "cost": 0.41666666666666663,
+   "safety": 0.44047619047619047,
+   "sustainability": 0.9807521361252959,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.00031733999454881996,
+   "availability": 1.0,
+   "cost": 0.23333333333333328,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.8271316842286048,
+   "efficiency": 0.5,
+   "construction": 0.9107142857142858
+  },
+  {
+   "feasibility": 0.00014651999748311936,
+   "availability": 1.0,
+   "cost": 0.22499999999999998,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8541916103624293,
+   "efficiency": 0.5,
+   "construction": 0.9107142857142858
+  },
+  {
+   "feasibility": 0.00023885999589692803,
+   "availability": 1.0,
+   "cost": 0.21666666666666667,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.8459363359122982,
+   "efficiency": 0.5,
+   "construction": 0.9107142857142858
+  },
+  {
+   "feasibility": 9.16199984261766e-05,
+   "availability": 1.0,
+   "cost": 0.2416666666666667,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8714629817349033,
+   "efficiency": 0.5,
+   "construction": 0.9107142857142858
+  },
+  {
+   "feasibility": 0.0010884499941021205,
+   "availability": 1.0,
+   "cost": 0.3916666666666667,
+   "safety": 0.44047619047619047,
+   "sustainability": 0.9655353871447367,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.00031733999454881996,
+   "availability": 1.0,
+   "cost": 0.23333333333333328,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.8271316842286047,
+   "efficiency": 0.5,
+   "construction": 0.9107142857142858
+  },
+  {
+   "feasibility": 9.539999836124479e-05,
+   "availability": 1.0,
+   "cost": 0.22499999999999998,
+   "safety": 0.4083333333333333,
+   "sustainability": 0.8541916103624293,
+   "efficiency": 0.5,
+   "construction": 0.9107142857142858
+  },
+  {
+   "feasibility": 0.00023885999589692803,
+   "availability": 1.0,
+   "cost": 0.21666666666666667,
+   "safety": 0.44583333333333336,
+   "sustainability": 0.8459363359122982,
+   "efficiency": 0.5,
+   "construction": 0.9107142857142858
+  }
+ ],
+ "ezetimibe": [
+  {
+   "feasibility": 2.9150001384550705e-05,
+   "availability": 1.0,
+   "cost": 0.2833333333333333,
+   "safety": 0.4166666666666667,
+   "sustainability": 0.8917045066520267,
+   "efficiency": 0.5,
+   "construction": 0.9166666666666667
+  }
+ ],
+ "losartan": [
+  {
+   "feasibility": 0.004269649976864457,
+   "availability": 1.0,
+   "cost": 0.43333333333333335,
+   "safety": 0.42333333333333334,
+   "sustainability": 0.7938816886542884,
+   "efficiency": 0.7999999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.006198719966411591,
+   "availability": 1.0,
+   "cost": 0.3416666666666667,
+   "safety": 0.2666666666666667,
+   "sustainability": 0.8681192831124606,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.7500000000000001
+  },
+  {
+   "feasibility": 0.004474249975755811,
+   "availability": 1.0,
+   "cost": 0.3833333333333333,
+   "safety": 0.38333333333333336,
+   "sustainability": 0.8641932572481726,
+   "efficiency": 0.6499999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.0027059999853372573,
+   "availability": 1.0,
+   "cost": 0.375,
+   "safety": 0.2666666666666667,
+   "sustainability": 0.859002587038697,
+   "efficiency": 0.6499999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.029697029839083552,
+   "availability": 1.0,
+   "cost": 0.08333333333333337,
+   "safety": 0.18333333333333335,
+   "sustainability": 0.7218189966284272,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.029697029839083552,
+   "availability": 1.0,
+   "cost": 0.07499999999999996,
+   "safety": 0.18333333333333335,
+   "sustainability": 0.7218189966284272,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.018198180747963488,
+   "availability": 1.0,
+   "cost": 0.09999999999999998,
+   "safety": 0.18333333333333335,
+   "sustainability": 0.7548601126895957,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.018198180747963488,
+   "availability": 1.0,
+   "cost": 0.09166666666666667,
+   "safety": 0.18333333333333335,
+   "sustainability": 0.7548601126895957,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.00535149997100234,
+   "availability": 1.0,
+   "cost": 0.20833333333333337,
+   "safety": 0.2729166666666667,
+   "sustainability": 0.8400943799785001,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.001751399969914928,
+   "availability": 1.0,
+   "cost": 0.20833333333333337,
+   "safety": 0.2729166666666667,
+   "sustainability": 0.8430509674143049,
+   "efficiency": 0.5,
+   "construction": 1.0
+  }
+ ],
+ "sildenafil": [
+  {
+   "feasibility": 9.882999750334419e-05,
+   "availability": 1.0,
+   "cost": 0.33333333333333337,
+   "safety": 0.3104166666666667,
+   "sustainability": 0.9716217088477711,
+   "efficiency": 0.6499999999999999,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.00019513999507034897,
+   "availability": 1.0,
+   "cost": 0.19999999999999996,
+   "safety": 0.45,
+   "sustainability": 0.8662634050772805,
+   "efficiency": 0.5,
+   "construction": 1.0
+  }
+ ],
+ "amlodipine": [
+  {
+   "feasibility": 0.0009928800471592696,
+   "availability": 1.0,
+   "cost": 0.41666666666666663,
+   "safety": 0.1,
+   "sustainability": 0.9274564332615448,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.9107142857142858
+  },
+  {
+   "feasibility": 0.001147680054511875,
+   "availability": 1.0,
+   "cost": 0.41666666666666663,
+   "safety": 0.1,
+   "sustainability": 0.9433978285946557,
+   "efficiency": 0.6499999999999999,
+   "construction": 0.9107142857142858
+  },
+  {
+   "feasibility": 0.0002738400130067021,
+   "availability": 1.0,
+   "cost": 0.275,
+   "safety": 0.11875,
+   "sustainability": 0.8916753697692752,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.00010620000504422932,
+   "availability": 1.0,
+   "cost": 0.275,
+   "safety": 0.11875,
+   "sustainability": 0.890226674708825,
+   "efficiency": 0.5,
+   "construction": 1.0
+  },
+  {
+   "feasibility": 0.001143720054323785,
+   "availability": 1.0,
+   "cost": 0.25,
+   "safety": 0.1,
+   "sustainability": 0.880426604967338,
+   "efficiency": 0.5,
+   "construction": 1.0
+  }
+ ]
+}

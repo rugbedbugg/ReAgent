@@ -184,12 +184,17 @@ def plan_targets(
     backend_kwargs: dict,
     jobs: int,
     on_done=None,
+    on_result=None,
+    retain_results: bool = True,
 ) -> tuple[dict[str, list], int]:
     """Plan every target, in parallel when memory allows.
 
     Returns the routes keyed by the SMILES passed in, and how many searches hit
     their time limit. ``on_done`` is called with each target's name as it
     finishes, for progress reporting; results arrive out of order.
+    ``on_result(smiles, routes, capped)`` runs before progress is reported, so
+    callers can persist each result immediately. With ``retain_results=False``
+    the returned cache is empty and the parent does not accumulate routes.
     """
     import multiprocessing
 
@@ -201,7 +206,10 @@ def plan_targets(
         jobs, initializer=_init_worker, initargs=(backend_kwargs,)
     ) as pool:
         for name, smiles, routes, capped in pool.imap_unordered(_plan_one, jobs_list):
-            cache[smiles] = routes
+            if on_result:
+                on_result(smiles, routes, capped)
+            if retain_results:
+                cache[smiles] = routes
             time_capped += int(capped)
             if on_done:
                 on_done(name)

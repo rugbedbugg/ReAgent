@@ -1,0 +1,1112 @@
+{
+  "weights": {
+    "feasibility-led": {
+      "feasibility": 0.3,
+      "availability": 0.1,
+      "cost": 0.15,
+      "safety": 0.15,
+      "construction": 0.15,
+      "sustainability": 0.08,
+      "efficiency": 0.07
+    },
+    "safety-tilted": {
+      "feasibility": 0.2,
+      "availability": 0.05,
+      "cost": 0.15,
+      "safety": 0.28,
+      "construction": 0.1,
+      "sustainability": 0.14,
+      "efficiency": 0.08
+    },
+    "build-it-yourself": {
+      "feasibility": 0.2,
+      "availability": 0.05,
+      "cost": 0.1,
+      "safety": 0.1,
+      "construction": 0.3,
+      "sustainability": 0.15,
+      "efficiency": 0.1
+    },
+    "source-led": {
+      "feasibility": 0.25,
+      "availability": 0.1,
+      "cost": 0.3,
+      "safety": 0.1,
+      "construction": 0.02,
+      "sustainability": 0.05,
+      "efficiency": 0.18
+    }
+  },
+  "manifest": {
+    "schema": 1,
+    "parameters": {
+      "permissive_stock": null,
+      "hashed_stock": true,
+      "stock_cache": "/home/rugbedbugg/Projects/Python/ReAgent/data/catalogues/zinc_plus_emol14.hashes.npy",
+      "iterations": 500,
+      "time_limit": 1800,
+      "expansion": [
+        "uspto"
+      ],
+      "algorithm": [
+        "retrostar"
+      ],
+      "cutoff_number": null,
+      "molecule_cost": null,
+      "max_leaf_fraction": null
+    },
+    "max_routes": 15,
+    "assets": {
+      "/home/rugbedbugg/Projects/Python/ReAgent/data/config.yml": "ceb6fd362048a7e5217425a2d4dd757cc26bebfb7c75b532552494690de0006f",
+      "/home/rugbedbugg/Projects/Python/ReAgent/data/uspto_model.onnx": "bd0a3cb74cd7068de474c8fb789a00a66bc42c75636d66510ccac585ebe928f8",
+      "/home/rugbedbugg/Projects/Python/ReAgent/data/uspto_templates.csv.gz": "a4f1945e90cfa195538320833d68aed38f14e2fcc2f8afb5d958bc920edcafbe",
+      "/home/rugbedbugg/Projects/Python/ReAgent/data/uspto_filter_model.onnx": "ad29aa32bdfcbe37065045546493806cf04899c55386c438905d83fb14bb6320",
+      "/home/rugbedbugg/Projects/Python/ReAgent/data/catalogues/zinc_plus_emol14.hashes.npy": "b44529b88fb796d21894e1ca32d68cce8149222846568367e62803b934a2f358"
+    },
+    "implementation": {
+      "core/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "core/chem.py": "10f6fd09092ef7c4ffd63bb1779b9c77f8aea57a0e924f635e605f13cae497f4",
+      "core/config.py": "fd610680c4e3679019cba65083ef8f5f5794aba90996cd2e78fe080d96c55fc9",
+      "core/models.py": "7b266e5ede89c513b5806dc8cc8c5502fb58616225462f78aafb360f06af41c5",
+      "singlestep/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "singlestep/aizynth.py": "57aee4f105490d1a7aa4a142870d29ce9539f33bde80e7795d7e40a97f0c7163",
+      "singlestep/stock.py": "ff7ba81edf768164d4269c4a6bf4efcf9e78d10a0ad61164cd04f5b34df93497",
+      "search/__init__.py": "a3decc437b3ece62db10ea7ee1588471834c41a73732fa8fc5b61d3d7d54403f",
+      "search/cost.py": "3a75288156e8c9b504a4531776c29c574ad0ebb6dedbe3ffb08deaf3bdefe7bc"
+    },
+    "dependencies": {
+      "aizynthfinder": "4.4.1",
+      "rdkit": "2023.9.6",
+      "numpy": "1.26.4",
+      "onnxruntime": "1.29.0",
+      "reaction-utils": "1.9.3"
+    }
+  },
+  "record_sha256": {
+    "CNCCC(Oc1ccc(C(F)(F)F)cc1)c1ccccc1": "389c34399f7aa3cb73db4cca18d4b46ae3e28b24580910b2a588b9aca89ac246",
+    "CNC1CCC(c2ccc(Cl)c(Cl)c2)c2ccccc21": "52f841996650af24ddcf9a0bb0f9f25e5414118641c1071bfb0118c6dfb370b4",
+    "CN1C(=O)CN=C(c2ccccc2)c2cc(Cl)ccc21": "a0362e6c83f47e8153a6da4c2851d095808dc67ebee0ee9b05db9680b4d12499",
+    "CC(=O)CC(c1ccccc1)c1c(O)c2ccccc2oc1=O": "8a47fdfbd0dc74f5762825c8b9137317a5151fa90ef293d5ba03d422928a7d00",
+    "Cc1ccc(-c2cc(C(F)(F)F)nn2-c2ccc(S(N)(=O)=O)cc2)cc1": "ddec464cb2bb6f37eb87945b465d2621670fa02d5d4e6e04756c3bacb41689e9",
+    "CNS(=O)(=O)Cc1ccc2[nH]cc(CCN(C)C)c2c1": "b250cf36a6c03ed8eaf69c95e8e39c654d538450b1c132d6e146f137be9204d0",
+    "CN(C)CCCN1c2ccccc2Sc2ccc(Cl)cc21": "b0244c06d74241ac65355f34926a30f647acc89cf613b24bbd91804a1cc1dfb8",
+    "COc1ccc(C(CN(C)C)C2(O)CCCCC2)cc1": "84591fc4386f138149c1574b47027c0ba4a0c81dc40387bed1f8e91e26c0af7f",
+    "CC(C)NCC(O)COc1cccc2ccccc12": "505abe8a51582f749911294d530d632fed17a5809d83c899416d456ce91d2859",
+    "CNC1(c2ccccc2Cl)CCCCC1=O": "6425450ffb33ffa584729aecc51c8e5e240a0c37683788f3195d437b6953f0ac",
+    "CC(NC(C)(C)C)C(=O)c1cccc(Cl)c1": "6deeff643fab60066967ce86af02ab0dd5af79f31738edce79736ce6a7795701",
+    "Nc1nnc(-c2cccc(Cl)c2Cl)c(N)n1": "0b9af020c192d2ea977c379b4bdf374d5d0deb4aa16e5340b605b540c1b8592b",
+    "COc1cccc(C2(O)CCCCC2CN(C)C)c1": "3a59d93bf30f7a2f41f6f6c1e75b83c5d57136c5b27ac0992ffcf69c25848709",
+    "COC(=O)C(c1ccccc1Cl)N1CCc2sccc2C1": "05a3caa0b80ebdeeb0379f62ca0d49977c781e8892e5eeff63aaab001e95105e",
+    "COc1ccc2[nH]c(S(=O)Cc3ncc(C)c(OC)c3C)nc2c1": "3a041bd954df844707fc7a094d1954b1bd7ca0ce255b9f9a5ccb5a11b54669b4",
+    "OC(Cn1cncn1)(Cn1cncn1)c1ccc(F)cc1F": "4bb28f3805e7fd7885bc22d341676af7e211a131e784dd4305538a804fa3211b",
+    "CN(C)CCCC1(c2ccc(F)cc2)OCc2cc(C#N)ccc21": "6ba96b99d856a7b4aa1ceafb2f4e7ad2c54e0399981e9174b8cdf31a4bc496b8",
+    "Cc1nccn1CC1CCc2c(c3ccccc3n2C)C1=O": "6ac5d5673389ab95b8501e15386c7478aa844c620a0fce328084845f0ef51a0e",
+    "O=C(O)c1cn(C2CC2)c2cc(N3CCNCC3)c(F)cc2c1=O": "1bb1f50de4058c9d017b7cafe307ec26503dc7eaffb1c7dec428ae3583b290a7",
+    "COc1cc2c(cc1OC)C(=O)C(CC1CCN(Cc3ccccc3)CC1)C2": "acdc345163db0020a0d6cd4b6ec3ba0b72c37e179bcc811144ffdd7a87d49575",
+    "O=C1C(CCC(O)c2ccc(F)cc2)C(c2ccc(O)cc2)N1c1ccc(F)cc1": "0e39a3850afbb356fff46257833d9553ffd3573a28aa9f642d44229ead27febc",
+    "CCCCc1nc(Cl)c(CO)n1Cc1ccc(-c2ccccc2-c2nnn[nH]2)cc1": "5d431cfbced3de72a9d6c006f82e0f6dc07b056966b584966c3ee2ae34a48503",
+    "CCCc1nn(C)c2c(=O)[nH]c(-c3cc(S(=O)(=O)N4CCN(C)CC4)ccc3OCC)nc12": "e9162168e56a73a327205997c124a013b219b29e7a633f5cdffd8e16048b6569",
+    "CCOC(=O)C1=C(COCCN)NC(C)=C(C(=O)OC)C1c1ccccc1Cl": "2d47abdd8a9cc12754b36039594f69d76105fa0255f18add92dc7a502dd18d90"
+  },
+  "time_capped_targets": 0,
+  "candidate_counts": {
+    "fluoxetine": 15,
+    "sertraline": 6,
+    "diazepam": 11,
+    "warfarin": 6,
+    "celecoxib": 6,
+    "sumatriptan": 8,
+    "chlorpromazine": 15,
+    "venlafaxine": 9,
+    "propranolol": 15,
+    "ketamine": 7,
+    "bupropion": 15,
+    "lamotrigine": 9,
+    "tramadol": 15,
+    "clopidogrel": 15,
+    "omeprazole": 15,
+    "fluconazole": 15,
+    "citalopram": 10,
+    "ondansetron": 15,
+    "ciprofloxacin": 15,
+    "donepezil": 15,
+    "ezetimibe": 6,
+    "losartan": 15,
+    "sildenafil": 15,
+    "amlodipine": 5
+  },
+  "profiles": {
+    "feasibility-led": {
+      "n_targets": 24,
+      "solve_rate": 1.0,
+      "build_solve_rate": 0.9583333333333334,
+      "avg_route_length": 2,
+      "avg_largest_leaf_fraction": 0.5950914086390345,
+      "advanced_intermediate_routes": 1,
+      "baseline_quality": {
+        "safety": 0.4836061507936508,
+        "sustainability": 0.8697456182271505,
+        "cost": 0.49756944444444445
+      },
+      "compromise_quality": {
+        "safety": 0.38128472222222226,
+        "sustainability": 0.8216486044434033,
+        "cost": 0.434375
+      },
+      "compromise_largest_leaf_fraction": 0.6162773784663087,
+      "compromise_agrees_with_weighted": 1,
+      "reagent_quality": {
+        "safety": 0.5963318452380952,
+        "sustainability": 0.8968931069668392,
+        "cost": 0.5423611111111111
+      },
+      "per_target": [
+        {
+          "name": "fluoxetine",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "sertraline",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.33333333333333337,
+          "reagent_safety": 0.46190476190476193,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6
+        },
+        {
+          "name": "diazepam",
+          "solved": true,
+          "candidates": 11,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.75
+        },
+        {
+          "name": "warfarin",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.38333333333333336,
+          "reagent_safety": 0.38333333333333336,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5217391304347826
+        },
+        {
+          "name": "celecoxib",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.2666666666666667,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6153846153846154
+        },
+        {
+          "name": "sumatriptan",
+          "solved": true,
+          "candidates": 8,
+          "baseline_safety": 0.16,
+          "reagent_safety": 0.2916666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.7
+        },
+        {
+          "name": "chlorpromazine",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.42333333333333334,
+          "reagent_safety": 0.37083333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6666666666666666
+        },
+        {
+          "name": "venlafaxine",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.55
+        },
+        {
+          "name": "propranolol",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5789473684210527
+        },
+        {
+          "name": "ketamine",
+          "solved": true,
+          "candidates": 7,
+          "baseline_safety": 0.2916666666666667,
+          "reagent_safety": 0.3416666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.875
+        },
+        {
+          "name": "bupropion",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.75
+        },
+        {
+          "name": "lamotrigine",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.6875
+        },
+        {
+          "name": "tramadol",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5789473684210527
+        },
+        {
+          "name": "clopidogrel",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.45333333333333337,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6190476190476191
+        },
+        {
+          "name": "omeprazole",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.2766666666666667,
+          "reagent_safety": 0.45333333333333337,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5
+        },
+        {
+          "name": "fluconazole",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6363636363636364
+        },
+        {
+          "name": "citalopram",
+          "solved": true,
+          "candidates": 10,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.4583333333333333
+        },
+        {
+          "name": "ondansetron",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.35000000000000003,
+          "reagent_safety": 0.3452380952380953,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6818181818181818
+        },
+        {
+          "name": "ciprofloxacin",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.19375,
+          "reagent_safety": 0.46190476190476193,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5416666666666666
+        },
+        {
+          "name": "donepezil",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.4583333333333333,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5357142857142857
+        },
+        {
+          "name": "ezetimibe",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.42708333333333337,
+          "reagent_safety": 0.42708333333333337,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.36666666666666664
+        },
+        {
+          "name": "losartan",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.3066666666666667,
+          "reagent_safety": 0.45333333333333337,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4666666666666667
+        },
+        {
+          "name": "sildenafil",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.41904761904761906,
+          "reagent_safety": 0.4583333333333333,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.48484848484848486
+        },
+        {
+          "name": "amlodipine",
+          "solved": true,
+          "candidates": 5,
+          "baseline_safety": 0.13,
+          "reagent_safety": 0.13,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5714285714285714
+        }
+      ]
+    },
+    "safety-tilted": {
+      "n_targets": 24,
+      "solve_rate": 1.0,
+      "build_solve_rate": 0.9583333333333334,
+      "avg_route_length": 2,
+      "avg_largest_leaf_fraction": 0.586162837210463,
+      "advanced_intermediate_routes": 1,
+      "baseline_quality": {
+        "safety": 0.4836061507936508,
+        "sustainability": 0.8697456182271505,
+        "cost": 0.49756944444444445
+      },
+      "compromise_quality": {
+        "safety": 0.38128472222222226,
+        "sustainability": 0.8216486044434033,
+        "cost": 0.434375
+      },
+      "compromise_largest_leaf_fraction": 0.6162773784663087,
+      "compromise_agrees_with_weighted": 1,
+      "reagent_quality": {
+        "safety": 0.5999429563492064,
+        "sustainability": 0.889758864797265,
+        "cost": 0.5427083333333333
+      },
+      "per_target": [
+        {
+          "name": "fluoxetine",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "sertraline",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.33333333333333337,
+          "reagent_safety": 0.46190476190476193,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6
+        },
+        {
+          "name": "diazepam",
+          "solved": true,
+          "candidates": 11,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.75
+        },
+        {
+          "name": "warfarin",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.38333333333333336,
+          "reagent_safety": 0.38333333333333336,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5217391304347826
+        },
+        {
+          "name": "celecoxib",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.2666666666666667,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6153846153846154
+        },
+        {
+          "name": "sumatriptan",
+          "solved": true,
+          "candidates": 8,
+          "baseline_safety": 0.16,
+          "reagent_safety": 0.2916666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.7
+        },
+        {
+          "name": "chlorpromazine",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.42333333333333334,
+          "reagent_safety": 0.37083333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6666666666666666
+        },
+        {
+          "name": "venlafaxine",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.55
+        },
+        {
+          "name": "propranolol",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5789473684210527
+        },
+        {
+          "name": "ketamine",
+          "solved": true,
+          "candidates": 7,
+          "baseline_safety": 0.2916666666666667,
+          "reagent_safety": 0.3416666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.875
+        },
+        {
+          "name": "bupropion",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.75
+        },
+        {
+          "name": "lamotrigine",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.6875
+        },
+        {
+          "name": "tramadol",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5789473684210527
+        },
+        {
+          "name": "clopidogrel",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.45333333333333337,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6190476190476191
+        },
+        {
+          "name": "omeprazole",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.2766666666666667,
+          "reagent_safety": 0.45333333333333337,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5
+        },
+        {
+          "name": "fluconazole",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6363636363636364
+        },
+        {
+          "name": "citalopram",
+          "solved": true,
+          "candidates": 10,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.4583333333333333
+        },
+        {
+          "name": "ondansetron",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.35000000000000003,
+          "reagent_safety": 0.3452380952380953,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6818181818181818
+        },
+        {
+          "name": "ciprofloxacin",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.19375,
+          "reagent_safety": 0.46190476190476193,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5416666666666666
+        },
+        {
+          "name": "donepezil",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.4583333333333333,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5357142857142857
+        },
+        {
+          "name": "ezetimibe",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.42708333333333337,
+          "reagent_safety": 0.42708333333333337,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.36666666666666664
+        },
+        {
+          "name": "losartan",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.3066666666666667,
+          "reagent_safety": 0.45333333333333337,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4666666666666667
+        },
+        {
+          "name": "sildenafil",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.41904761904761906,
+          "reagent_safety": 0.4583333333333333,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.48484848484848486
+        },
+        {
+          "name": "amlodipine",
+          "solved": true,
+          "candidates": 5,
+          "baseline_safety": 0.13,
+          "reagent_safety": 0.2166666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.35714285714285715
+        }
+      ]
+    },
+    "build-it-yourself": {
+      "n_targets": 24,
+      "solve_rate": 1.0,
+      "build_solve_rate": 0.9583333333333334,
+      "avg_route_length": 2,
+      "avg_largest_leaf_fraction": 0.5717847445428967,
+      "advanced_intermediate_routes": 1,
+      "baseline_quality": {
+        "safety": 0.4836061507936508,
+        "sustainability": 0.8697456182271505,
+        "cost": 0.49756944444444445
+      },
+      "compromise_quality": {
+        "safety": 0.38128472222222226,
+        "sustainability": 0.8216486044434033,
+        "cost": 0.434375
+      },
+      "compromise_largest_leaf_fraction": 0.6162773784663087,
+      "compromise_agrees_with_weighted": 2,
+      "reagent_quality": {
+        "safety": 0.5629265873015873,
+        "sustainability": 0.8929057040882964,
+        "cost": 0.5336805555555556
+      },
+      "per_target": [
+        {
+          "name": "fluoxetine",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "sertraline",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.33333333333333337,
+          "reagent_safety": 0.46190476190476193,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6
+        },
+        {
+          "name": "diazepam",
+          "solved": true,
+          "candidates": 11,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.75
+        },
+        {
+          "name": "warfarin",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.38333333333333336,
+          "reagent_safety": 0.38333333333333336,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5217391304347826
+        },
+        {
+          "name": "celecoxib",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.2666666666666667,
+          "reagent_safety": 0.3291666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.46153846153846156
+        },
+        {
+          "name": "sumatriptan",
+          "solved": true,
+          "candidates": 8,
+          "baseline_safety": 0.16,
+          "reagent_safety": 0.2916666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.7
+        },
+        {
+          "name": "chlorpromazine",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.42333333333333334,
+          "reagent_safety": 0.37083333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6666666666666666
+        },
+        {
+          "name": "venlafaxine",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.55
+        },
+        {
+          "name": "propranolol",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5263157894736842
+        },
+        {
+          "name": "ketamine",
+          "solved": true,
+          "candidates": 7,
+          "baseline_safety": 0.2916666666666667,
+          "reagent_safety": 0.2916666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.875
+        },
+        {
+          "name": "bupropion",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.75
+        },
+        {
+          "name": "lamotrigine",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.6875
+        },
+        {
+          "name": "tramadol",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.47368421052631576
+        },
+        {
+          "name": "clopidogrel",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.45333333333333337,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6190476190476191
+        },
+        {
+          "name": "omeprazole",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.2766666666666667,
+          "reagent_safety": 0.45333333333333337,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5
+        },
+        {
+          "name": "fluconazole",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6363636363636364
+        },
+        {
+          "name": "citalopram",
+          "solved": true,
+          "candidates": 10,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.4583333333333333
+        },
+        {
+          "name": "ondansetron",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.35000000000000003,
+          "reagent_safety": 0.3452380952380953,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6818181818181818
+        },
+        {
+          "name": "ciprofloxacin",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.19375,
+          "reagent_safety": 0.46190476190476193,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5416666666666666
+        },
+        {
+          "name": "donepezil",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.4583333333333333,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5357142857142857
+        },
+        {
+          "name": "ezetimibe",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.42708333333333337,
+          "reagent_safety": 0.25952380952380955,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.3333333333333333
+        },
+        {
+          "name": "losartan",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.3066666666666667,
+          "reagent_safety": 0.45333333333333337,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4666666666666667
+        },
+        {
+          "name": "sildenafil",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.41904761904761906,
+          "reagent_safety": 0.4583333333333333,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.48484848484848486
+        },
+        {
+          "name": "amlodipine",
+          "solved": true,
+          "candidates": 5,
+          "baseline_safety": 0.13,
+          "reagent_safety": 0.2166666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.35714285714285715
+        }
+      ]
+    },
+    "source-led": {
+      "n_targets": 24,
+      "solve_rate": 1.0,
+      "build_solve_rate": 0.9583333333333334,
+      "avg_route_length": 1.9583333333333333,
+      "avg_largest_leaf_fraction": 0.6023830753057011,
+      "advanced_intermediate_routes": 1,
+      "baseline_quality": {
+        "safety": 0.4836061507936508,
+        "sustainability": 0.8697456182271505,
+        "cost": 0.49756944444444445
+      },
+      "compromise_quality": {
+        "safety": 0.38128472222222226,
+        "sustainability": 0.8216486044434033,
+        "cost": 0.434375
+      },
+      "compromise_largest_leaf_fraction": 0.6162773784663087,
+      "compromise_agrees_with_weighted": 1,
+      "reagent_quality": {
+        "safety": 0.5893501984126984,
+        "sustainability": 0.8967441073362282,
+        "cost": 0.5458333333333334
+      },
+      "per_target": [
+        {
+          "name": "fluoxetine",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "sertraline",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.33333333333333337,
+          "reagent_safety": 0.46190476190476193,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6
+        },
+        {
+          "name": "diazepam",
+          "solved": true,
+          "candidates": 11,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.75
+        },
+        {
+          "name": "warfarin",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.38333333333333336,
+          "reagent_safety": 0.38333333333333336,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5217391304347826
+        },
+        {
+          "name": "celecoxib",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.2666666666666667,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6153846153846154
+        },
+        {
+          "name": "sumatriptan",
+          "solved": true,
+          "candidates": 8,
+          "baseline_safety": 0.16,
+          "reagent_safety": 0.2916666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.7
+        },
+        {
+          "name": "chlorpromazine",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.42333333333333334,
+          "reagent_safety": 0.37083333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6666666666666666
+        },
+        {
+          "name": "venlafaxine",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.55
+        },
+        {
+          "name": "propranolol",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5789473684210527
+        },
+        {
+          "name": "ketamine",
+          "solved": true,
+          "candidates": 7,
+          "baseline_safety": 0.2916666666666667,
+          "reagent_safety": 0.3416666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.875
+        },
+        {
+          "name": "bupropion",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.75
+        },
+        {
+          "name": "lamotrigine",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.6875
+        },
+        {
+          "name": "tramadol",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5789473684210527
+        },
+        {
+          "name": "clopidogrel",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.45333333333333337,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6190476190476191
+        },
+        {
+          "name": "omeprazole",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.2766666666666667,
+          "reagent_safety": 0.45333333333333337,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5
+        },
+        {
+          "name": "fluconazole",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6363636363636364
+        },
+        {
+          "name": "citalopram",
+          "solved": true,
+          "candidates": 10,
+          "baseline_safety": 1.0,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6666666666666666
+        },
+        {
+          "name": "ondansetron",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.35000000000000003,
+          "reagent_safety": 0.3452380952380953,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6818181818181818
+        },
+        {
+          "name": "ciprofloxacin",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.19375,
+          "reagent_safety": 0.46190476190476193,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5416666666666666
+        },
+        {
+          "name": "donepezil",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.4583333333333333,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5357142857142857
+        },
+        {
+          "name": "ezetimibe",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.42708333333333337,
+          "reagent_safety": 0.25952380952380955,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.3333333333333333
+        },
+        {
+          "name": "losartan",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.3066666666666667,
+          "reagent_safety": 0.45333333333333337,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4666666666666667
+        },
+        {
+          "name": "sildenafil",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.41904761904761906,
+          "reagent_safety": 0.4583333333333333,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.48484848484848486
+        },
+        {
+          "name": "amlodipine",
+          "solved": true,
+          "candidates": 5,
+          "baseline_safety": 0.13,
+          "reagent_safety": 0.13,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5714285714285714
+        }
+      ]
+    }
+  }
+}

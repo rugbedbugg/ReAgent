@@ -26,7 +26,8 @@ on top.
 
 - Two modes over one engine: `build` refuses to buy the answer, `source` buys freely
 - Seven scored objectives: feasibility, precursor availability, cost, safety, sustainability, efficiency, and buy-versus-build
-- Four tree searches over the same single-step model: MCTS, Retro\*, DFPN, breadth-first
+- Four tree searches over the same single-step model, poolable: `--algorithm mcts,retrostar`
+  returns 13 distinct routes on naproxen where the best single search returns 9
 - Real vendor catalogues: turn an eMolecules or Enamine dump into usable stock
 - Runs on 8 GB of RAM: hashed stock lookup cuts a planning run from 4.91 GB to 0.63 GB
 - Offline scoring with a local Ollama model, or the Anthropic API, or neither
@@ -196,7 +197,7 @@ reagent check-agents [options]     # do LLM scores match the deterministic ones?
 | Flag | Default | Description |
 |---|---|---|
 | `--max-routes` | `5` plan, `25` evaluate | Candidate routes to consider. |
-| `--algorithm` | `mcts` | Tree search: `mcts`, `retrostar`, `dfpn`, `breadth-first`. |
+| `--algorithm` | `mcts` | Tree search: `mcts`, `retrostar`, `dfpn`, `breadth-first`. Comma-separate to pool several. |
 | `--iterations` | `100` | Search budget. Run time is roughly linear in it. |
 | `--time-limit` | `120` | Wall-clock seconds for the search. |
 | `--hashed-stock` | off | Look stock up via hashed keys (~140 MB instead of ~2.3 GB). |
@@ -249,6 +250,37 @@ the rubric reliably; smaller models are less consistent.
 | `--max-targets` | `10` | Targets from the eval set to run. |
 | `--hard` | off | Use the harder multi-step target set. |
 | `--jobs` | `1` | Plan this many targets at once. Capped by free memory, not cores. |
+
+Evaluation reports all four weight profiles, including `source-led`, from one
+planning pass. `--mode build` constrains the search; `--mode balanced` and
+`--mode source` use the same unconstrained search and produce the same report.
+
+For long runs, add `--checkpoint data/evaluations/hard-retrostar`. Full routes
+and timeout status are saved atomically after each completed target, including
+targets with no routes. Repeat the command to resume; a fully completed run
+recomputes all profile reports without loading a search backend. The checkpoint
+checks search settings, model and stock contents, and search code and dependency
+versions before reusing results. Use a new directory when these change, and
+run only one writer per directory. You can increase `--max-targets` to extend a
+run or change `--jobs` without invalidating its completed targets.
+
+Checkpointed runs load routes one target at a time for scoring. This reduces
+the accumulated route cache, but each search still needs enough memory for its
+own backend. If interrupted, only the unfinished targets need another search.
+
+Agent benchmarks can reuse those routes too:
+
+```sh
+reagent check-agents --hard --max-targets 24 --routes-per 2 \
+  --checkpoint data/evaluations/hard-retrostar --local
+```
+
+Point `--checkpoint` at an existing evaluation checkpoint directory. Every
+requested target must be saved before any model calls begin. This reads routes
+without loading a search backend or requiring its model and stock files; it
+still needs the selected local model server or Anthropic credentials. Omit
+search options such as `--hashed-stock` when using saved routes. Numeric score
+agreement does not establish that a model's rationale is factually correct.
 
 ### Config
 
@@ -383,6 +415,25 @@ and every pull request. `release.yml` runs on a `v*` tag: it repeats the matrix,
 checks the tag against the version in `pyproject.toml`, builds the sdist and
 wheel, runs `twine check`, and publishes with them attached.
 
+### CI and releases
+
+Run `mise run install`, `mise run lint`, and `mise run test` locally. mise selects
+Python from the existing project pin and uses uv to create the environment and
+install dependencies. CI runs the same tasks on Linux and Windows with Python
+3.10 and 3.11, then builds distributions with `mise run build`, checks metadata
+with `mise run check-dist`, and smoke-tests the wheel in an isolated environment.
+
+Pull requests, pushes to `main` or `ci/**`, and manual CI runs perform validation.
+A release requires a `v` tag matching the package version and reuses the same CI
+workflow. Publication uploads the validated artifacts and verifies their downloaded
+checksums. Manual release runs must select a version tag. Publishing jobs have
+write permission; validation jobs have read-only access.
+
+Chocolatey publishing remains a manual operation in the `chocolatey` environment.
+Manual packaging runs are serialized across branches, and release runs for the
+same tag do not cancel an active publication. The packaging workflow retains its
+installer checks and metadata-correction support.
+
 ## Notes / Gotchas
 
 - **Route generation is the ceiling for route quality.** ReAgent reuses
@@ -417,23 +468,3 @@ Apache-2.0, see [LICENSE](LICENSE).
 - **Evaluation:** [docs/EVALUATION.md](docs/EVALUATION.md)
 - **Issues:** https://github.com/rugbedbugg/ReAgent/issues
 - **Releases:** https://github.com/rugbedbugg/ReAgent/releases
-
-
-### CI and releases
-
-Run `mise run install`, `mise run lint`, and `mise run test` locally. mise selects
-Python from the existing project pin and uses uv to create the environment and
-install dependencies. CI runs the same tasks on Linux and Windows with Python
-3.10 and 3.11, then builds distributions with `mise run build`, checks metadata
-with `mise run check-dist`, and smoke-tests the wheel in an isolated environment.
-
-Pull requests, pushes to `main` or `ci/**`, and manual CI runs perform validation.
-A release requires a `v` tag matching the package version and reuses the same CI
-workflow. Publication uploads the validated artifacts and verifies their downloaded
-checksums. Manual release runs must select a version tag. Publishing jobs have
-write permission; validation jobs have read-only access.
-
-Chocolatey publishing remains a manual operation in the `chocolatey` environment.
-Manual packaging runs are serialized across branches, and release runs for the
-same tag do not cancel an active publication. The packaging workflow retains its
-installer checks and metadata-correction support.

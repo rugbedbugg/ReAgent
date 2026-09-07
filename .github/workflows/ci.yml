@@ -57,6 +57,13 @@ jobs:
       - run: mise run install
       - run: mise run build
       - run: mise run check-dist
+      - name: Test the source distribution
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/sdist"
+          tar -xzf dist/*.tar.gz -C "$RUNNER_TEMP/sdist" --strip-components=1
+          cd "$RUNNER_TEMP/sdist"
+          "$GITHUB_WORKSPACE/.venv/bin/python" -m pytest -q
       - name: Smoke-test the built wheel in an isolated environment
         shell: bash
         run: |

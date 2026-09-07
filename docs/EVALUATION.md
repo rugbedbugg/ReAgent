@@ -462,6 +462,190 @@ Two unrelated methods agreeing that feasibility's nominal 0.30 buys little is
 stronger evidence than either on its own.
 
 
+## Pooling several searches
+
+Combining expansion *policies* was measured and did nothing. Combining search
+*algorithms* is a different experiment, and it is the one that works. Naproxen,
+500 iterations, 600 s, hashed ZINC:
+
+| `--algorithm` | distinct routes |
+|---|---|
+| `mcts` | 5 |
+| `dfpn` | 5 |
+| `retrostar` | 9 |
+| `mcts,retrostar` | **13** |
+| `mcts,retrostar,dfpn` | **17** |
+
+The searches barely overlap. MCTS finds 5 and Retro* finds 9, and pooling gives
+13 rather than the 14 they would sum to, so exactly one route is shared. Adding
+DFPN's 5 brings 4 more. Three searches over the same single-step model and the
+same stock return almost entirely different routes, which is the case for
+pooling: the selection layer can only choose among what it is handed, and this
+nearly doubles that against the best single search.
+
+Run time is the sum of the arms, so this buys candidate diversity with wall
+clock rather than with memory. Whether more candidates produce a *better
+selected* route is a separate question, measured on the full hard set below.
+
+**The first implementation of this was wrong, and silently.** Pooling
+`mcts,retrostar` returned 5 routes, MCTS's count, because `tree_search()` builds
+a tree only when there is not one already and the tree is what binds the
+algorithm. Every pass after the first re-ran the first search. Nothing raised,
+the run took the expected time, and the output looked plausible. Counting routes
+against the single-algorithm arms is what caught it: a union cannot be smaller
+than one of its members.
+
+## Source ranking on the saved vectors
+
+`evaluate --mode source` and `evaluate --mode balanced` use the same search
+configuration. Both report every weight profile, including `source-led`.
+Only build mode adds a search constraint. Repeating a balanced search solely
+to obtain source scores is unnecessary when its candidates have been saved.
+The older widened-set log predates the source profile, so it lacks that row.
+The source rows in the build-mode log use constrained candidates and cannot
+stand in for unconstrained source mode.
+
+The saved adaptive vectors permit a narrower comparison now: 306 solved-route
+vectors from 49 targets, generated on September 6 with
+`reagent check-adaptive --max-targets 49 --dump-vectors ...`. That command uses
+MCTS, hashed ZINC stock, up to 15 routes per target and the default search
+budget. It is a different candidate set from the Retro* 500-iteration runs
+with ZINC plus eMolecules above. Search timing and route identities were not
+saved with the vectors.
+
+Means below include solved targets only: 24 of 25 moderate targets and 20 of
+24 hard targets. Every score is higher-is-better; cost is a synthetic-accessibility
+proxy, not supplier prices.
+
+| set | profile | cost | safety | efficiency | construction | feasibility |
+|---|---|---|---|---|---|---|
+| moderate | balanced | 0.7035 | 0.5145 | 0.9125 | 0.4075 | 0.2838 |
+| moderate | source | 0.7181 | 0.5821 | 0.9188 | 0.3456 | 0.2155 |
+| hard | balanced | 0.4938 | 0.4165 | 0.7350 | 0.7828 | 0.1696 |
+| hard | source | 0.4963 | 0.4238 | 0.7350 | 0.7828 | 0.1372 |
+
+Source selects a different score vector on four moderate targets
+(paracetamol, acetanilide, vanillin, indomethacin) and one hard target
+(omeprazole). On the moderate set it trades construction and model feasibility
+for better cost, safety and efficiency scores. On the hard set the cost gain
+is small and efficiency does not change. This is evidence about ranking on
+these candidates, not a demonstrated reduction in purchase prices or a new
+end-to-end search benchmark.
+
+Reproduce the complete per-target output:
+
+```sh
+uv run --no-sync python docs/measurements/compare_source_vectors.py
+```
+
+The recorded output is `source-vectors-2026-09-07.json`, including the input
+SHA-256 and exact weights. Omeprazole has two tied source winners with identical
+vectors, so its scores are unambiguous but its route identity is not recoverable.
+The script rejects ties between different vectors instead of substituting array
+order for the production route-signature tiebreak. It does not reconstruct
+route lengths or leaf fractions from clipped scores.
+
+The interrupted September 6 source and pooling searches produced no complete
+aggregate results. A fresh hard-set catalogue result is recorded below;
+the moderate-set catalogue comparison and pooling measurements remain open.
+`evaluate --checkpoint DIRECTORY` now persists full routes per target so an
+interruption does not discard completed searches. Repeat the same search command
+and directory to resume. Each result includes whether the clock capped its
+search; resumed aggregate reports retain those warnings. The manifest rejects
+changed search settings, model/stock contents and search implementation.
+
+## Source mode on the hard catalogue set, September 7
+
+The resumed release work completed a fresh search over all 24 hard targets:
+Retro*, 500 iterations / 1,800 seconds, ZINC plus eMolecules capped at 14 heavy
+atoms, 15 candidates maximum, no target-relative purchasing constraint.
+All 24 targets were solved, with 278 returned candidates and no reported
+clock-limited searches. Full routes were checkpointed as each target finished.
+
+| profile | mean steps | safety | sustainability | cost |
+|---|---|---|---|---|
+| balanced (feasibility-led) | 2.000 | 0.5963 | 0.8969 | 0.5424 |
+| source-led | 1.958 | 0.5894 | 0.8967 | 0.5458 |
+
+On these same candidates, source weighting makes the selected route slightly
+shorter and improves the cost proxy slightly, at a small loss in safety score.
+Both profiles select one route buying an advanced intermediate. Cost remains
+a synthetic-accessibility proxy; this is not evidence of lower supplier prices.
+The `build-it-yourself` profile is also reported, but uses unconstrained
+candidates here and is not an evaluation of the full build mode.
+
+These fresh-search figures differ from the September 6 widened-set report.
+Do not interpret the cross-run difference as a scoring improvement: this
+comparison holds candidates fixed only within the September 7 run. Saved
+checkpoints make its ranking reproducible without assuming a repeated search
+will return the same candidates.
+
+Thirteen targets returned exactly 15 routes, so the earlier claim that this
+cap was harmless for a single search cannot be generalized to this run.
+Hitting the cap does not establish how many additional routes exist. The
+queued pooling comparisons use cap 40 for both the single-search and pooled
+arms to measure them under the same candidate limit.
+
+`measurements/source-hard-2026-09-07.json` records the exact profiles, per-target
+results, candidate counts, timeout count, search manifest and route-record
+digests. Regenerate it from the local full-route checkpoint:
+
+```sh
+uv run --no-sync python docs/measurements/summarize_checkpoint.py \
+  data/evaluations/hard-retrostar-emol14-2026-09-07/checkpoint --hard
+```
+
+The full route checkpoint remains under ignored `data/`; the tracked summary
+alone cannot reconstruct those routes. Scoring this checkpoint needs neither
+the original search models nor an LLM.
+
+## Pooling needs a higher `--max-routes`
+
+Pooling only helps if the candidates survive to the ranking layer. Distinct
+routes returned by `mcts,retrostar` on four hard targets, asked for up to 40:
+
+| target | pooled routes |
+|---|---|
+| propranolol | 33 |
+| fluoxetine | 21 |
+| lamotrigine | 12 |
+| warfarin | 6 |
+
+A cap of 15, which is what the evaluations here have used, binds on half of them
+and costs propranolol 18 of its 33 candidates. Retro* alone returned 9 on
+naproxen, but that observation does not establish that cap 15 is harmless for
+every single search: the September 7 hard-set run reaches it on 13 targets.
+The first pooled evaluation used a clipped candidate pool; the next comparisons
+raise the cap for both arms.
+
+Use `--max-routes 40` with a pooled search. The number is not a swept optimum,
+it is simply above the largest count observed.
+
+## Where a leaf-fraction threshold bites
+
+The 306 saved adaptive vectors are a useful diagnostic, but `construction`
+is clipped: 1.0 means a leaf fraction at or below 0.5, and 0.0 can mean a
+fraction at or above 0.9 (or no leaves). It does not encode the fraction exactly
+at those endpoints.
+
+**Correction to the earlier diagnostic:** the claim that 0.4 would reject
+100% of the saved routes was not justified. Fractions below 0.5 cannot be
+recovered from the clipped score. Likewise, a score of zero cannot distinguish
+exactly 0.9 from above 0.9, which matters because the stock constraint rejects
+fractions strictly greater than the chosen cap.
+
+More fundamentally, filtering existing candidates does not measure a constrained
+search. Removing purchased intermediates can make the search explore different
+routes. Rejection shares therefore neither establish a threshold as unusable nor
+guarantee that they overstate its effect on solve-rate. The saved adaptive run
+also uses a different search and stock configuration from the catalogue runs.
+
+The release queue prioritizes 0.5, 0.6 and 0.7 on both full target sets, with a
+small exploratory 0.4 arm. This is a compute allocation decision, not proof that
+other values are unhelpful. The 0.6 build controls are reused rather than rerun.
+The local queue definition records the exact order and controls; experiment
+plans and live execution state are kept under ignored `data/evaluations/`.
+
 ## Measured dead ends
 
 Four ideas were built, measured against a control, and did not pay. They are
@@ -539,6 +723,47 @@ steering it toward safety. It costs nothing either, solve-rate, route length,
 leaf fraction and degenerate-route count being identical across all three arms,
 so this is a dead end rather than a trade-off. Whether a route-level objective
 would fare better is untested; the hook only sees one molecule at a time.
+
+### Sweeping the adaptive learning rate
+
+`lr` had been fixed at 0.5 since the loop was written and never varied. Swept
+over nine values against cached score vectors from all 49 targets, 306 routes,
+which makes each point a pure function evaluation costing milliseconds rather
+than a re-plan.
+
+Final-half regret, lower being better:
+
+| lr | safety-loving | cost-loving |
+|---|---|---|
+| 0.05 | 0.0787 | 0.0114 |
+| 0.10 | 0.0787 | 0.0000 |
+| 0.25 | 0.0287 | 0.0000 |
+| 0.50 (default) | 0.0292 | 0.0000 |
+| 0.75 | 0.0676 | 0.0030 |
+| 1.00 | 0.0965 | 0.0030 |
+| 2.00 | 0.0965 | 0.0349 |
+
+On the full set 0.25 looked like a small improvement on the shipped 0.5. It is
+not, and the first reading of this table was wrong. Splitting the targets in
+half reverses the ordering by preference: on the first 25, `lr` 0.5 wins the
+safety arm (0.0058 against 0.0261) while 0.25 wins the cost arm (0.0000 against
+0.0285), and on the last 24 every value from 0.1 to 1.0 gives an identical
+0.1614 and 0.0000. A difference that swaps sign between splits is noise.
+
+**So the learning rate is not a lever.** Anywhere from 0.1 to 0.75 behaves the
+same once the variation between datasets is accounted for, and the default stays
+at 0.5. This is a dead end in the useful sense: it is cheap to check, it had
+never been checked, and it is now closed.
+
+One real finding did come out of it. At `lr` of 1.0 and above the safety-led arm
+**gets worse the more feedback it sees**, regret rising 0.058 to 0.097 across the
+halves, because each step overshoots and the next corrects past it. `--lr` is
+user-settable, so `check-adaptive` now says so when handed a value in that range.
+
+That is also the honest answer to a suggestion made earlier, that the update
+needed damping against oscillation. Instability is real, but only above 1.0, and
+the fix is a smaller step rather than anchoring weights to their defaults, which
+was measured to stop the loop learning at all.
 
 ### Weighting buy-versus-build
 

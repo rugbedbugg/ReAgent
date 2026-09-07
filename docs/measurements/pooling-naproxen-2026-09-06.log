@@ -1,0 +1,10 @@
+### naproxen, after the tree-reset fix
+2026-09-06T15:32:40+05:30
+--- retrostar
+    distinct routes: 9
+--- mcts,retrostar
+    distinct routes: 13
+--- mcts,retrostar,dfpn
+    distinct routes: 17
+### DONE
+2026-09-06T15:43:33+05:30
