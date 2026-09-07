@@ -1,5 +1,5 @@
 [tools]
-python = "3.11"
+python = "{{ env.REAGENT_PYTHON_VERSION | default(value='3.11') }}"
 uv = "latest"
 
 [settings]
@@ -10,7 +10,7 @@ _.python.venv = { path = ".venv", create = true }
 
 [tasks.install]
 description = "Install the package and dev extras into the project venv"
-run = "uv pip install -e '.[dev]'"
+run = 'uv pip install -e ".[dev]"'
 
 [tasks.test]
 description = "Run the test suite"

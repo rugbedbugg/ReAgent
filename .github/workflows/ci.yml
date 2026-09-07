@@ -25,7 +25,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         python-version: ['3.10', '3.11']
     env:
-      MISE_PYTHON_VERSION: ${{ matrix.python-version }}
+      REAGENT_PYTHON_VERSION: ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
@@ -39,6 +39,8 @@ jobs:
           key: uv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
       - name: Install package and dev extras
         run: mise run install
+      - name: Verify matrix interpreter
+        run: mise exec -- python -c "import os, sys; actual = '.'.join(map(str, sys.version_info[:2])); assert actual == os.environ['REAGENT_PYTHON_VERSION'], actual"
       - name: Lint
         run: mise run lint
       - name: Test
