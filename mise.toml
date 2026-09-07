@@ -27,3 +27,11 @@ run = "uv build"
 [tasks.check-dist]
 description = "Check distribution metadata"
 run = "uvx twine check dist/*"
+
+[tasks.prepare-packages]
+description = "Prepare package channels from a published release (pass --tag vX.Y.Z)"
+run = "uv run --no-project --python 3.11 scripts/packaging/prepare.py"
+
+[tasks.test-packaging]
+description = "Test channel generation and installer checksums"
+run = "uv run --no-project --python 3.11 -m unittest discover -s scripts/packaging -p test_*.py"
