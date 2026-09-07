@@ -24,9 +24,13 @@ on:
     paths:
       - "SUBMISSIONS/**"
 
+permissions:
+  contents: read
+
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # All manual publication operations share one group, including different refs.
+  group: packaging-${{ github.event_name == 'workflow_dispatch' && 'publication' || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
   chocolatey:

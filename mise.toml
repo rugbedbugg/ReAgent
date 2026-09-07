@@ -2,6 +2,9 @@
 python = "3.11"
 uv = "latest"
 
+[settings]
+python.uv_venv_auto = true
+
 [env]
 _.python.venv = { path = ".venv", create = true }
 
@@ -16,3 +19,11 @@ run = "pytest"
 [tasks.lint]
 description = "Run Ruff over the project"
 run = "ruff check ."
+
+[tasks.build]
+description = "Build wheel and source distribution"
+run = "uv build"
+
+[tasks.check-dist]
+description = "Check distribution metadata"
+run = "uvx twine check dist/*"

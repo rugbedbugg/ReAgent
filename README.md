@@ -5,7 +5,7 @@
 ![Stars](https://img.shields.io/github/stars/rugbedbugg/ReAgent?style=for-the-badge&labelColor=000000)
 ![License](https://img.shields.io/github/license/rugbedbugg/ReAgent?style=for-the-badge&labelColor=000000)
 ![AUR version](https://img.shields.io/aur/version/reagent?style=for-the-badge&labelColor=000000)
-![CI](https://img.shields.io/github/actions/workflow/status/rugbedbugg/ReAgent/ci.yml?branch=main&style=for-the-badge&labelColor=000000)
+[![CI](https://img.shields.io/github/actions/workflow/status/rugbedbugg/ReAgent/ci.yml?branch=main&style=for-the-badge&labelColor=000000)](https://github.com/rugbedbugg/ReAgent/actions/workflows/ci.yml)
 
 Plans retrosynthetic routes for a target molecule and scores every candidate on
 seven independent objectives, so the route you get is the one that best fits
@@ -417,3 +417,23 @@ Apache-2.0, see [LICENSE](LICENSE).
 - **Evaluation:** [docs/EVALUATION.md](docs/EVALUATION.md)
 - **Issues:** https://github.com/rugbedbugg/ReAgent/issues
 - **Releases:** https://github.com/rugbedbugg/ReAgent/releases
+
+
+### CI and releases
+
+Run `mise run install`, `mise run lint`, and `mise run test` locally. mise selects
+Python from the existing project pin and uses uv to create the environment and
+install dependencies. CI runs the same tasks on Linux and Windows with Python
+3.10 and 3.11, then builds distributions with `mise run build`, checks metadata
+with `mise run check-dist`, and smoke-tests the wheel in an isolated environment.
+
+Pull requests, pushes to `main` or `ci/**`, and manual CI runs perform validation.
+A release requires a `v` tag matching the package version and reuses the same CI
+workflow. Publication uploads the validated artifacts and verifies their downloaded
+checksums. Manual release runs must select a version tag. Publishing jobs have
+write permission; validation jobs have read-only access.
+
+Chocolatey publishing remains a manual operation in the `chocolatey` environment.
+Manual packaging runs are serialized across branches, and release runs for the
+same tag do not cancel an active publication. The packaging workflow retains its
+installer checks and metadata-correction support.
