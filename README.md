@@ -268,6 +268,20 @@ Checkpointed runs load routes one target at a time for scoring. This reduces
 the accumulated route cache, but each search still needs enough memory for its
 own backend. If interrupted, only the unfinished targets need another search.
 
+Agent benchmarks can reuse those routes too:
+
+```sh
+reagent check-agents --hard --max-targets 24 --routes-per 2 \
+  --checkpoint data/evaluations/hard-retrostar --local
+```
+
+Point `--checkpoint` at an existing evaluation checkpoint directory. Every
+requested target must be saved before any model calls begin. This reads routes
+without loading a search backend or requiring its model and stock files; it
+still needs the selected local model server or Anthropic credentials. Omit
+search options such as `--hashed-stock` when using saved routes. Numeric score
+agreement does not establish that a model's rationale is factually correct.
+
 ### Config
 
 The agent layer needs one of a local [Ollama](https://ollama.com) server

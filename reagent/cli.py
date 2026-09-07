@@ -740,16 +740,36 @@ def check_adaptive(vectors: str | None, max_targets: int, lr: float,
                    "Run 'reagent build-stock-cache' once first.")
 @click.option("--hybrid", is_flag=True,
               help="Score objectives deterministically; the LLM only writes the rationale.")
+@click.option("--checkpoint", type=click.Path(exists=True, file_okay=False, path_type=Path),
+              default=None,
+              help="Score full routes saved by evaluate. Reads completed targets without "
+                   "loading the search backend or requiring its model/stock files. "
+                   "All requested targets must already be saved.")
 def check_agents(max_targets: int, routes_per: int, max_routes: int, local_model: str | None,
-                 rag: bool, hard: bool, permissive_stock: int | None, hybrid: bool) -> None:
+                 rag: bool, hard: bool, permissive_stock: int | None, hybrid: bool,
+                 hashed_stock: bool, checkpoint: Path | None) -> None:
     """Measure how well the LLM agent scores match the deterministic reference."""
     from reagent.agents.orchestrator import Orchestrator
     from reagent.eval.agent_check import check_agents as run_check
     from reagent.eval.targets import HARD_TARGETS, TARGETS
     from reagent.singlestep.aizynth import AiZynthBackend
 
-    click.echo("Loading search backend...")
-    backend = AiZynthBackend(aizynth_config(), permissive_stock=permissive_stock)
+    targets = (HARD_TARGETS if hard else TARGETS)[:max_targets]
+    saved = None
+    if checkpoint is not None:
+        from reagent.eval.checkpoint import Checkpoint
+
+        if hashed_stock or permissive_stock is not None or max_routes != 15:
+            raise click.UsageError("Search options cannot be combined with --checkpoint.")
+        try:
+            saved = Checkpoint.open_readonly(checkpoint)
+            # Fail before any agent calls if the requested evidence is incomplete.
+            for name, smiles in targets:
+                if saved.load(canonical(smiles) or smiles) is None:
+                    raise ValueError(f"Checkpoint is missing {name}; finish its evaluation first.")
+        except (OSError, ValueError) as exc:
+            raise click.ClickException(str(exc)) from exc
+        click.echo(f"Using saved routes for {len(targets)} targets from {checkpoint}.")
 
     retriever = None
     if rag:
@@ -774,11 +794,21 @@ def check_agents(max_targets: int, routes_per: int, max_routes: int, local_model
             raise click.ClickException("Set ANTHROPIC_API_KEY or use --local.")
         orchestrator = Orchestrator(retriever=retriever, hybrid=hybrid)
 
-    targets = (HARD_TARGETS if hard else TARGETS)[:max_targets]
+    backend = None
+    if saved is None:
+        click.echo("Loading search backend...")
+        backend = AiZynthBackend(
+            aizynth_config(), permissive_stock=permissive_stock, hashed_stock=hashed_stock,
+        )
 
     def planner(smiles: str):
         canon = canonical(smiles) or smiles
         click.echo(f"  scoring {canon} ...")
+        if saved is not None:
+            result = saved.load(canon)
+            if result is None:
+                raise click.ClickException(f"Checkpoint result disappeared for {canon}")
+            return result.routes
         return backend.plan(canon, max_routes=max_routes)
 
     result = run_check(targets, planner, orchestrator, routes_per=routes_per)

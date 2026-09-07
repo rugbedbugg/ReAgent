@@ -108,8 +108,24 @@ class SearchResult(BaseModel):
 
 
 class Checkpoint:
+    @classmethod
+    def open_readonly(cls, directory: Path) -> Checkpoint:
+        """Read historical routes without requiring the original models or stock.
+
+        This is for scoring saved evidence, not resuming a search. Search
+        resumption must use the normal constructor and its identity check.
+        """
+        manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
+        if manifest.get("schema") != 1:
+            raise ValueError("Unsupported checkpoint schema")
+        instance = cls.__new__(cls)
+        instance.directory = directory
+        instance.readonly = True
+        return instance
+
     def __init__(self, directory: Path, identity: dict):
         self.directory = directory
+        self.readonly = False
         directory.mkdir(parents=True, exist_ok=True)
         manifest = directory / "manifest.json"
         if manifest.exists():
@@ -137,6 +153,8 @@ class Checkpoint:
         return result
 
     def save(self, target: str, routes: list[Route], time_capped: bool) -> None:
+        if self.readonly:
+            raise ValueError("Cannot write to a read-only checkpoint")
         result = SearchResult(target=target, routes=routes, time_capped=time_capped)
         if any(route.target != target for route in routes):
             raise ValueError("Cannot checkpoint routes for a different target")
