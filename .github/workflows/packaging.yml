@@ -6,6 +6,11 @@ name: Packaging
 # on every push. It runs when the packaging actually changes, and on demand.
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Also push to the Chocolatey community feed (public, irreversible)"
+        type: boolean
+        default: false
   pull_request:
     paths:
       - "SUBMISSIONS/**"
@@ -42,8 +47,35 @@ jobs:
           reagent plan --help
           reagent-download-data --help
 
+      - name: The installed launcher finds user data
+        shell: pwsh
+        run: |
+          # No models need downloading: a missing stock error must name the
+          # selected user directory, not the installed site-packages directory.
+          $ErrorActionPreference = 'Continue'
+          Remove-Item Env:REAGENT_DATA -ErrorAction SilentlyContinue
+          $expected = Join-Path $env:LOCALAPPDATA 'reagent'
+          $output = reagent build-stock-cache 2>&1 | Out-String
+          if ($LASTEXITCODE -eq 0 -or -not $output.Contains($expected)) {
+            throw "Default data discovery failed: $output"
+          }
+          $env:REAGENT_DATA = Join-Path $env:RUNNER_TEMP 'custom reagent data'
+          $output = reagent build-stock-cache 2>&1 | Out-String
+          if ($LASTEXITCODE -eq 0 -or -not $output.Contains($env:REAGENT_DATA)) {
+            throw "Explicit data override failed: $output"
+          }
+          Remove-Item Env:REAGENT_DATA
+          exit 0
+
       - name: Uninstall cleanly
         run: choco uninstall reagent -y
+
+      - name: Preserve the tested package
+        uses: actions/upload-artifact@v4
+        with:
+          name: reagent-chocolatey
+          path: SUBMISSIONS/chocolatey/reagent.*.nupkg
+          if-no-files-found: error
 
   aur:
     name: aur pkgbuild
@@ -77,3 +109,34 @@ jobs:
       - name: Source checksums resolve
         working-directory: SUBMISSIONS/aur
         run: su builder -c "makepkg --verifysource --skippgpcheck"
+
+  # Publishing needs a Windows runner (choco is Windows-only) and an API key
+  # that only the maintainer holds. Manual by design: a push to the community
+  # feed is public and cannot be undone, so it does not ride on a tag.
+  publish-chocolatey:
+    name: publish to the chocolatey community feed
+    runs-on: windows-latest
+    if: github.event_name == 'workflow_dispatch' && inputs.publish
+    needs: chocolatey
+    environment: chocolatey
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: reagent-chocolatey
+          path: package
+
+      - name: Refuse to publish without a key
+        shell: pwsh
+        run: |
+          if (-not "${{ secrets.CHOCOLATEY_API_KEY }}") {
+            throw "CHOCOLATEY_API_KEY is not set. Add it as a repository secret."
+          }
+
+      - name: Push
+        working-directory: package
+        shell: pwsh
+        run: |
+          choco apikey --key "${{ secrets.CHOCOLATEY_API_KEY }}" --source https://push.chocolatey.org/
+          $pkg = Get-ChildItem -Filter "reagent.*.nupkg" | Select-Object -First 1
+          Write-Host "Pushing $($pkg.Name)"
+          choco push $pkg.FullName --source https://push.chocolatey.org/

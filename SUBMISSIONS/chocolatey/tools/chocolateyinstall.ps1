@@ -62,14 +62,12 @@ if ($LASTEXITCODE -ne 0) { throw "Failed to install ReAgent's dependencies." }
 & $venvPython -m pip install --quiet --no-deps $wheelArgs.fileFullPath
 if ($LASTEXITCODE -ne 0) { throw "Failed to install the ReAgent wheel." }
 
-# Chocolatey shims every .exe it finds in the package directory. Only the two
-# entry points should end up on PATH; without these markers the venv's
-# python.exe and pip.exe would shadow the user's own.
+# All entry points are registered explicitly below. The reagent wrapper sets
+# the per-user data path at runtime, rather than capturing the installer's home.
 Get-ChildItem -Path (Join-Path $venvDir 'Scripts') -Filter '*.exe' | ForEach-Object {
-    if (@('reagent.exe', 'download_public_data.exe') -notcontains $_.Name) {
-        New-Item -Path "$($_.FullName).ignore" -ItemType File -Force | Out-Null
-    }
+    New-Item -Path "$($_.FullName).ignore" -ItemType File -Force | Out-Null
 }
+Install-BinFile -Name 'reagent' -Path (Join-Path $toolsDir 'reagent.cmd')
 
 # AiZynthFinder names its fetcher download_public_data, which is too generic to
 # put on a shared PATH. Shim it under the project's own prefix instead.
@@ -82,7 +80,8 @@ if (Test-Path $downloader) {
 Write-Host ""
 Write-Host "ReAgent is installed. Two one-time steps before the first plan:"
 Write-Host ""
-Write-Host "    reagent-download-data %LOCALAPPDATA%\reagent"
+Write-Host 'In Command Prompt:'
+Write-Host '    reagent-download-data "%LOCALAPPDATA%\reagent"'
 Write-Host "    reagent build-stock-cache"
 Write-Host ""
 Write-Host "The first pulls the pretrained USPTO policies and the ZINC stock, about 760 MB."

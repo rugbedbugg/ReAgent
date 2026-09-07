@@ -3,8 +3,8 @@ $ErrorActionPreference = 'Stop'
 $toolsDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $venvDir  = Join-Path $toolsDir 'venv'
 
-# Install-BinFile was called explicitly for this one, so it has to be removed
-# explicitly. The reagent.exe shim is auto-generated and auto-removed.
+# Both entry points are registered explicitly by the installer.
+Uninstall-BinFile -Name 'reagent' -Path (Join-Path $toolsDir 'reagent.cmd')
 $downloader = Join-Path $venvDir 'Scripts\download_public_data.exe'
 Uninstall-BinFile -Name 'reagent-download-data' -Path $downloader
 
