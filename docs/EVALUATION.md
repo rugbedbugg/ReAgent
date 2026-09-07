@@ -576,31 +576,27 @@ it is simply above the largest count observed.
 
 ## Where a leaf-fraction threshold bites
 
-Computed from the 306 route vectors in
-`adaptive-vectors-49-targets.json` rather than by re-running anything, since
-`construction` encodes the fraction directly.
+The 306 saved adaptive vectors are a useful diagnostic, but `construction`
+is clipped: 1.0 means a leaf fraction at or below 0.5, and 0.0 can mean a
+fraction at or above 0.9 (or no leaves). It does not encode the fraction exactly
+at those endpoints.
 
-| `--max-leaf-fraction` | routes it would reject |
-|---|---|
-| 0.4 | 100% |
-| 0.5 | 82% |
-| 0.6 (build default) | 58% |
-| 0.7 | 47% |
-| 0.8 | 35% |
-| 0.9 | 31% |
+**Correction to the earlier diagnostic:** the claim that 0.4 would reject
+100% of the saved routes was not justified. Fractions below 0.5 cannot be
+recovered from the clipped score. Likewise, a score of zero cannot distinguish
+exactly 0.9 from above 0.9, which matters because the stock constraint rejects
+fractions strictly greater than the chosen cap.
 
-Two values can be ruled out without running them. **0.4 rejects every route in
-the set**, so it cannot be a usable setting. And 0.8 or 0.9 reject barely more
-than the 31% of routes sitting at 0.9 or above, which are the outright
-degenerate ones, so they constrain almost nothing beyond what is indefensible
-anyway.
+More fundamentally, filtering existing candidates does not measure a constrained
+search. Removing purchased intermediates can make the search explore different
+routes. Rejection shares therefore neither establish a threshold as unusable nor
+guarantee that they overstate its effect on solve-rate. The saved adaptive run
+also uses a different search and stock configuration from the catalogue runs.
 
-That leaves 0.5, 0.6 and 0.7 as the only settings worth measuring.
-
-These shares come from unconstrained runs, so they overstate the real cost: under
-a constraint the search finds different routes rather than simply losing the
-rejected ones. Measured, 0.6 rejects 58% of these routes but costs the hard set
-only 0.08 of solve-rate and the moderate set 0.16.
+The release queue prioritizes 0.5, 0.6 and 0.7 on both full target sets, with a
+small exploratory 0.4 arm. This is a compute allocation decision, not proof that
+other values are unhelpful. The 0.6 build controls are reused rather than rerun.
+See [the experiment plan](experiments/V0.3.0.md) for the exact order and controls.
 
 ## Measured dead ends
 
