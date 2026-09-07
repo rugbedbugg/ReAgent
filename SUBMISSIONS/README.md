@@ -115,6 +115,12 @@ Revisit if a bundled Windows build ever becomes worth maintaining.
 
 ## Updating for a new release
 
+The AUR launcher defaults to `${XDG_DATA_HOME:-$HOME/.local/share}/reagent`;
+the Chocolatey launcher defaults to `%LOCALAPPDATA%\reagent`. Both preserve an
+explicit `REAGENT_DATA` value. Download stock and models into that directory.
+These defaults are set by the packaged launchers at runtime, so they also work
+with the existing release wheel and do not capture the installer's home folder.
+
 Both packages carry the version in three places, and all three must move
 together:
 

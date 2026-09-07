@@ -239,8 +239,8 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
         if local_model:
             from reagent.agents.llm.ollama_client import OllamaClient
 
-            mode = " (hybrid)" if hybrid else ""
-            click.echo(f"Scoring with local model: {local_model}{mode}")
+            scoring_label = " (hybrid)" if hybrid else ""
+            click.echo(f"Scoring with local model: {local_model}{scoring_label}")
             orchestrator = Orchestrator(
                 client=OllamaClient(model=local_model), retriever=retriever, hybrid=hybrid
             )

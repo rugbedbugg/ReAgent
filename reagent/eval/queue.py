@@ -54,9 +54,26 @@ def queue_lock(path):
 
 
 def existing_run_alive(metadata):
-    """Recognize the pre-queue Linux process by PID and argv, not PID alone."""
+    """Recognize a recorded process by PID and command, not PID alone."""
+    if sys.platform == "win32":
+        # Popen builds this exact Windows command line from our argument list.
+        # CIM also returns nothing for an exited process, allowing a clean
+        # restart without treating a stale PID as a surviving queue child.
+        pid = int(metadata["pid"])
+        script = (
+            "[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); "
+            "$ErrorActionPreference = 'Stop'; "
+            f"$p = Get-CimInstance Win32_Process -Filter 'ProcessId = {pid}'; "
+            "if ($p) { if ($null -eq $p.CommandLine) { throw 'Cannot read child command line' }; "
+            "[Console]::Write($p.CommandLine) }"
+        )
+        result = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
+            capture_output=True, encoding="utf-8", check=True, timeout=15,
+        )
+        return result.stdout.strip() == subprocess.list2cmdline(metadata["command"])
     if not sys.platform.startswith("linux"):
-        raise ValueError("--wait-for-run requires Linux process metadata")
+        raise ValueError("Process recovery is supported on Linux and Windows")
     try:
         raw = Path(f"/proc/{int(metadata['pid'])}/cmdline").read_bytes()
     except FileNotFoundError:

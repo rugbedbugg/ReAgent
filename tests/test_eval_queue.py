@@ -1,10 +1,37 @@
 """Queue failure and memory gates must preserve experiment ordering."""
 
 import json
+import subprocess
+import sys
 
 import pytest
 
 from reagent.eval import queue
+
+
+@pytest.mark.parametrize("alive", [True, False])
+def test_windows_recovery_handles_present_and_exited_children(monkeypatch, alive):
+    command = [r"C:\Program Files\Python\python.exe", "-m", "reagent.cli", "evaluate"]
+    monkeypatch.setattr(queue.sys, "platform", "win32")
+    monkeypatch.setattr(queue.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(
+        a[0], 0, stdout=subprocess.list2cmdline(command) if alive else "", stderr="",
+    ))
+    assert queue.existing_run_alive({"pid": 123, "command": command}) is alive
+
+
+@pytest.mark.skipif(sys.platform not in ("linux", "win32"), reason="supported process probes")
+def test_recovery_recognizes_a_real_child_and_its_exit():
+    command = [sys.executable, "-c", "import time; print('ready', flush=True); time.sleep(30)"]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
+    try:
+        assert process.stdout.readline() == "ready\n"
+        assert queue.existing_run_alive({"pid": process.pid, "command": command})
+        assert not queue.existing_run_alive({"pid": process.pid, "command": ["other"]})
+    finally:
+        process.terminate()
+        process.wait(timeout=10)
+        process.stdout.close()
+    assert not queue.existing_run_alive({"pid": process.pid, "command": command})
 
 
 def plan():

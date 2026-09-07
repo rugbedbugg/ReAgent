@@ -47,6 +47,26 @@ jobs:
           reagent plan --help
           reagent-download-data --help
 
+      - name: The installed launcher finds user data
+        shell: pwsh
+        run: |
+          # No models need downloading: a missing stock error must name the
+          # selected user directory, not the installed site-packages directory.
+          $ErrorActionPreference = 'Continue'
+          Remove-Item Env:REAGENT_DATA -ErrorAction SilentlyContinue
+          $expected = Join-Path $env:LOCALAPPDATA 'reagent'
+          $output = reagent build-stock-cache 2>&1 | Out-String
+          if ($LASTEXITCODE -eq 0 -or -not $output.Contains($expected)) {
+            throw "Default data discovery failed: $output"
+          }
+          $env:REAGENT_DATA = Join-Path $env:RUNNER_TEMP 'custom reagent data'
+          $output = reagent build-stock-cache 2>&1 | Out-String
+          if ($LASTEXITCODE -eq 0 -or -not $output.Contains($env:REAGENT_DATA)) {
+            throw "Explicit data override failed: $output"
+          }
+          Remove-Item Env:REAGENT_DATA
+          exit 0
+
       - name: Uninstall cleanly
         run: choco uninstall reagent -y
 

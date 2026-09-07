@@ -36,6 +36,15 @@ jobs:
       - name: Test
         run: mise run test
 
+      - name: Test the source distribution
+        run: |
+          uv build --sdist --out-dir "$RUNNER_TEMP/reagent-sdist"
+          mkdir -p "$RUNNER_TEMP/reagent-sdist-unpacked"
+          tar -xzf "$RUNNER_TEMP"/reagent-sdist/*.tar.gz \
+            -C "$RUNNER_TEMP/reagent-sdist-unpacked" --strip-components=1
+          cd "$RUNNER_TEMP/reagent-sdist-unpacked"
+          "$GITHUB_WORKSPACE/.venv/bin/python" -m pytest -q
+
   # The Chocolatey package installs on Windows, and until now nothing had ever
   # run this code there. mise is deliberately not used: setup-python is the
   # better-trodden path on Windows runners, and this job is about the package,
