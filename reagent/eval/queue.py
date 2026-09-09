@@ -151,6 +151,9 @@ def execute(plan, digest, output, wait_for=None):
     minimum_start_mb = int(
         os.environ.get("REAGENT_MINIMUM_START_MB", plan["minimum_start_mb"])
     )
+    minimum_running_mb = int(
+        os.environ.get("REAGENT_MINIMUM_RUNNING_MB", plan["minimum_running_mb"])
+    )
     with queue_lock(output / "queue.lock"):
         state_path = output / "state.json"
         state = json.loads(state_path.read_text()) if state_path.exists() else {
@@ -211,7 +214,7 @@ def execute(plan, digest, output, wait_for=None):
 
             try:
                 result = run_command(
-                    attempt["command"], log, plan["minimum_running_mb"], child_started,
+                    attempt["command"], log, minimum_running_mb, child_started,
                 )
             except BaseException:
                 previous["status"] = "interrupted"
