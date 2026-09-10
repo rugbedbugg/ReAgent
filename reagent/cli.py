@@ -159,6 +159,9 @@ def build_catalogue(catalogue: str, output: str | None, max_heavy_atoms: int | N
                    "leaf may be. Measured: 0.6 costs the moderate set 0.16 solve-rate "
                    "and buys it 0.24 in honest solve-rate; on the hard set it costs "
                    "0.04 and buys little, so large targets can take a looser cap.")
+@click.option("--json", "json_output", is_flag=True,
+              help="Emit one JSON document on stdout instead of formatted text. Progress "
+                   "and warnings go to stderr, so stdout stays parseable when piped.")
 @click.option("--mode", type=click.Choice(["balanced", "build", "source"]), default="balanced",
               help="What you are asking for. 'build' rejects leaves larger than 60% of "
                    "the target, so it never proposes buying the answer; 'source' favours "
@@ -169,12 +172,22 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
          stock_cache: str | None, iterations: int | None,
          time_limit: int | None, expansion: str, steer: str | None, algorithm: str,
          cutoff_number: int | None, hybrid: bool,
-         ghs: bool, mode: str, max_leaf_fraction: float | None) -> None:
+         ghs: bool, mode: str, max_leaf_fraction: float | None,
+         json_output: bool) -> None:
     """Plan retrosynthetic routes for a target SMILES."""
+    import json
+
     canon = canonical(smiles)
     if canon is None:
         raise click.ClickException(f"Invalid SMILES: {smiles!r}")
-    click.echo(f"Target: {canon}")
+
+    def status(message: str) -> None:
+        """Progress and warnings. Under --json these go to stderr, so a caller
+        can pipe stdout straight into a parser without stripping chatter."""
+        click.echo(message, err=json_output)
+
+    document: dict = {"schema": 1, "target": canon, "mode": mode, "routes": []}
+    status(f"Target: {canon}")
 
     from reagent.eval.harness import ADVANCED_LEAF, largest_leaf_fraction
     from reagent.optimize.aggregate import mode_leaf_fraction
@@ -182,14 +195,15 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
 
     cap = max_leaf_fraction if max_leaf_fraction is not None else mode_leaf_fraction(mode)
     if cap is not None:
-        click.echo(
+        status(
             f"Mode: {mode}. A leaf larger than {cap:.0%} of the target is not treated "
             "as purchasable, so a route that just buys the answer is never proposed."
         )
     else:
-        click.echo(f"Mode: {mode}. No constraint on what may be bought.")
+        status(f"Mode: {mode}. No constraint on what may be bought.")
+    document["max_leaf_fraction"] = cap
 
-    click.echo("Loading search backend...")
+    status("Loading search backend...")
     backend = AiZynthBackend(
         aizynth_config(),
         permissive_stock=permissive_stock,
@@ -205,15 +219,25 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
     )
 
     routes = backend.plan(canon, max_routes=max_routes)
+    # Best-effort: a caller can supply any object with .plan(), and this block
+    # is informational, so a partial backend must not fail the run.
+    document["search"] = {
+        "algorithms": getattr(backend, "algorithms", None),
+        "hit_time_limit": bool(backend.search_hit_time_limit),
+        "iterations": getattr(backend, "last_search_stats", {}).get("iterations"),
+        "iteration_limit": getattr(backend, "search_iteration_limit", None),
+    }
     if backend.search_hit_time_limit:
-        click.echo(
+        status(
             f"NOTE: the search stopped on the {backend.search_time_limit}s clock after "
             f"{backend.last_search_stats.get('iterations', 0)} of "
             f"{backend.search_iteration_limit} iterations. Raise --time-limit to "
             "actually spend the iteration budget."
         )
     if not routes:
-        click.echo("No routes found.")
+        status("No routes found.")
+        if json_output:
+            click.echo(json.dumps(document, indent=2))
         return
 
     from reagent.features.extract import compute_features
@@ -222,14 +246,14 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
     if ghs:
         from reagent.features.ghs import GHSClient
 
-        click.echo("Using PubChem GHS data for safety (cached)...")
+        status("Using PubChem GHS data for safety (cached)...")
         ghs_client = GHSClient()
 
     retriever = None
     if rag:
         from reagent.rag.retrieve import PrecedentRetriever
 
-        click.echo("Loading precedent index...")
+        status("Loading precedent index...")
         retriever = PrecedentRetriever()
 
     orchestrator = None
@@ -240,7 +264,7 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
             from reagent.agents.llm.ollama_client import OllamaClient
 
             scoring_label = " (hybrid)" if hybrid else ""
-            click.echo(f"Scoring with local model: {local_model}{scoring_label}")
+            status(f"Scoring with local model: {local_model}{scoring_label}")
             orchestrator = Orchestrator(
                 client=OllamaClient(model=local_model), retriever=retriever, hybrid=hybrid
             )
@@ -270,37 +294,87 @@ def plan(smiles: str, max_routes: int, show_features: bool, assess: bool, local_
         # larger than the target looked like any other one-step answer.
         leaf = largest_leaf_fraction(route)
         note = "  <- buys most of the target" if leaf >= ADVANCED_LEAF else ""
-        click.echo(
-            f"\n=== Route {i} ({flag}, {route.num_steps} steps, "
-            f"largest leaf {leaf:.0%} of target){note} ==="
-        )
-        for j, rxn in enumerate(route.reactions, 1):
-            click.echo(f"  [{j}] {' + '.join(rxn.precursors)}  ->  {rxn.product}")
-        leaves = ", ".join(f"{m.smiles}{'*' if m.in_stock else ''}" for m in route.leaves)
-        click.echo(f"  leaves (*=in stock): {leaves}")
+        entry: dict = {
+            "index": i,
+            "solved": route.solved,
+            "steps": route.num_steps,
+            "largest_leaf_fraction": leaf,
+            "buys_most_of_target": leaf >= ADVANCED_LEAF,
+            "reactions": [
+                {
+                    "step": j,
+                    "precursors": list(rxn.precursors),
+                    "product": rxn.product,
+                    "rsmi": rxn.rsmi,
+                }
+                for j, rxn in enumerate(route.reactions, 1)
+            ],
+            "leaves": [{"smiles": m.smiles, "in_stock": m.in_stock} for m in route.leaves],
+        }
+        if not json_output:
+            click.echo(
+                f"\n=== Route {i} ({flag}, {route.num_steps} steps, "
+                f"largest leaf {leaf:.0%} of target){note} ==="
+            )
+            for j, rxn in enumerate(route.reactions, 1):
+                click.echo(f"  [{j}] {' + '.join(rxn.precursors)}  ->  {rxn.product}")
+            leaves = ", ".join(f"{m.smiles}{'*' if m.in_stock else ''}" for m in route.leaves)
+            click.echo(f"  leaves (*=in stock): {leaves}")
         if retriever is not None and orchestrator is None:
             retriever.ground_route(route)
-            for j, rxn in enumerate(route.reactions, 1):
-                for p in rxn.metadata.get("precedents", []):
-                    click.echo(
-                        f"  precedent[step {j}]: template {p['template_hash'][:10]} "
-                        f"(occurrence {p['library_occurence']}, similarity {p['similarity']})"
-                    )
+            entry["precedents"] = {
+                str(j): list(rxn.metadata.get("precedents", []))
+                for j, rxn in enumerate(route.reactions, 1)
+            }
+            if not json_output:
+                for j, rxn in enumerate(route.reactions, 1):
+                    for precedent in rxn.metadata.get("precedents", []):
+                        click.echo(
+                            f"  precedent[step {j}]: "
+                            f"template {precedent['template_hash'][:10]} "
+                            f"(occurrence {precedent['library_occurence']}, "
+                            f"similarity {precedent['similarity']})"
+                        )
         if show_features:
-            for objective, facts in route.features.items():
-                click.echo(f"  [{objective}] {facts}")
+            entry["features"] = route.features
+            if not json_output:
+                for objective, facts in route.features.items():
+                    click.echo(f"  [{objective}] {facts}")
         if orchestrator is not None:
             orchestrator.assess(route)
-            for a in route.assessments:
-                click.echo(f"  <{a.objective}> {a.score:.2f}  {a.rationale}")
-                for ev in a.evidence:
-                    click.echo(f"      evidence: {ev}")
+            entry["assessments"] = [
+                {
+                    "objective": a.objective,
+                    "score": a.score,
+                    "rationale": a.rationale,
+                    "evidence": list(a.evidence),
+                }
+                for a in route.assessments
+            ]
+            if not json_output:
+                for a in route.assessments:
+                    click.echo(f"  <{a.objective}> {a.score:.2f}  {a.rationale}")
+                    for ev in a.evidence:
+                        click.echo(f"      evidence: {ev}")
+        document["routes"].append(entry)
 
     if orchestrator is not None:
-        _rank_report(canon, routes, mode)
+        ranking = _rank_data(canon, routes, mode)
+        document["ranking"] = ranking
+        if not json_output:
+            _print_rank_report(ranking)
+
+    if json_output:
+        click.echo(json.dumps(document, indent=2, default=str))
 
 
-def _rank_report(target: str, routes: list, mode: str = "balanced") -> None:
+def _rank_data(target: str, routes: list, mode: str = "balanced") -> dict:
+    """Rank the candidates and record the episode, returning the result as data.
+
+    Split from the printing so the text and --json paths share one computation
+    rather than drifting apart. Recording the episode lives here because it is a
+    consequence of having planned, not of having printed.
+    """
     from reagent.adaptive.memory import Episode, EpisodicMemory
     from reagent.adaptive.weights import load_weights
     from reagent.agents.rationale import build_rationale
@@ -318,45 +392,56 @@ def _rank_report(target: str, routes: list, mode: str = "balanced") -> None:
     front_ids = {id(r) for r in pareto_front(routes)}
 
     memory = EpisodicMemory()
-    similar = memory.find_similar(target, k=3)
-    if similar:
-        click.echo("\n=== Similar past targets ===")
-        for episode, sim in similar:
-            pref = f", you preferred Route {episode.feedback}" if episode.feedback else ""
-            click.echo(f"  {sim:.2f}  {episode.target}{pref}")
-
-    click.echo("\n=== Ranking (score is relative to these candidates; abs is absolute) ===")
+    entries = []
     for rank, route in enumerate(ranked, 1):
-        tag = " [Pareto]" if id(route) in front_ids else ""
-        conf, prob = route_confidence(route)
-        leaf = largest_leaf_fraction(route)
-        click.echo(
-            f"  {rank}. Route {numbers[id(route)]}  "
-            f"score={route.scores['weighted']:.3f} (abs {route.scores['weighted_raw']:.3f})  "
-            f"({route.num_steps} steps)  "
-            f"buys {leaf:.0%} of the target  "
-            f"confidence={conf} ({prob:.2f}){tag}"
-        )
-    click.echo(f"Pareto front: {len(front_ids)} non-dominated route(s) of {len(routes)}.")
+        confidence, probability = route_confidence(route)
+        entries.append({
+            "rank": rank,
+            "route": numbers[id(route)],
+            "score": route.scores["weighted"],
+            "score_absolute": route.scores["weighted_raw"],
+            "steps": route.num_steps,
+            "largest_leaf_fraction": largest_leaf_fraction(route),
+            "confidence": confidence,
+            "weakest_step_probability": probability,
+            "pareto": id(route) in front_ids,
+        })
 
     top_leaf = largest_leaf_fraction(ranked[0])
+    best_confidence, best_probability = route_confidence(ranked[0])
+    data = {
+        "weights": weights,
+        "similar_past_targets": [
+            {"target": episode.target, "similarity": similarity, "preferred": episode.feedback}
+            for episode, similarity in memory.find_similar(target, k=3)
+        ],
+        "ranking": entries,
+        "pareto_front_size": len(front_ids),
+        "candidates": len(routes),
+        "recommended": numbers[id(ranked[0])],
+        "rationale": build_rationale(ranked, numbers),
+        "warnings": [],
+    }
     if top_leaf >= ADVANCED_LEAF:
-        click.echo(
-            f"\nWARNING: the recommended route buys a fragment that is {top_leaf:.0%} of "
-            "your target, so it is closer to purchasing the compound than making it. "
-            "Use --mode build if you meant to synthesise it."
-        )
-
-    best_conf, best_prob = route_confidence(ranked[0])
-    if best_prob < 0.2:
-        click.echo(
-            f"\nWARNING: the recommended route's confidence is {best_conf} "
-            f"(weakest step {best_prob:.2f}). The base model distrusts these "
-            "disconnections; treat the recommendation as unreliable."
-        )
-
-    click.echo("\n=== Rationale ===")
-    click.echo(build_rationale(ranked, numbers))
+        data["warnings"].append({
+            "kind": "buys_most_of_target",
+            "largest_leaf_fraction": top_leaf,
+            "message": (
+                f"the recommended route buys a fragment that is {top_leaf:.0%} of your "
+                "target, so it is closer to purchasing the compound than making it. "
+                "Use --mode build if you meant to synthesise it."
+            ),
+        })
+    if best_probability < 0.2:
+        data["warnings"].append({
+            "kind": "low_confidence",
+            "weakest_step_probability": best_probability,
+            "message": (
+                f"the recommended route's confidence is {best_confidence} (weakest step "
+                f"{best_probability:.2f}). The base model distrusts these disconnections; "
+                "treat the recommendation as unreliable."
+            ),
+        })
 
     memory.append(
         Episode(
@@ -368,6 +453,37 @@ def _rank_report(target: str, routes: list, mode: str = "balanced") -> None:
             recommended=numbers[id(ranked[0])],
         )
     )
+    return data
+
+
+def _print_rank_report(data: dict) -> None:
+    if data["similar_past_targets"]:
+        click.echo("\n=== Similar past targets ===")
+        for past in data["similar_past_targets"]:
+            preferred = f", you preferred Route {past['preferred']}" if past["preferred"] else ""
+            click.echo(f"  {past['similarity']:.2f}  {past['target']}{preferred}")
+
+    click.echo("\n=== Ranking (score is relative to these candidates; abs is absolute) ===")
+    for entry in data["ranking"]:
+        tag = " [Pareto]" if entry["pareto"] else ""
+        click.echo(
+            f"  {entry['rank']}. Route {entry['route']}  "
+            f"score={entry['score']:.3f} (abs {entry['score_absolute']:.3f})  "
+            f"({entry['steps']} steps)  "
+            f"buys {entry['largest_leaf_fraction']:.0%} of the target  "
+            f"confidence={entry['confidence']} "
+            f"({entry['weakest_step_probability']:.2f}){tag}"
+        )
+    click.echo(
+        f"Pareto front: {data['pareto_front_size']} non-dominated route(s) "
+        f"of {data['candidates']}."
+    )
+
+    for warning in data["warnings"]:
+        click.echo(f"\nWARNING: {warning['message']}")
+
+    click.echo("\n=== Rationale ===")
+    click.echo(data["rationale"])
 
 
 @main.command()
