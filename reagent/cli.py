@@ -9,6 +9,7 @@ import click
 
 from reagent.core.chem import canonical
 from reagent.core.config import aizynth_config
+from reagent.eval.reference_review import review
 
 
 @click.group()
@@ -938,6 +939,9 @@ def check_agents(max_targets: int, routes_per: int, max_routes: int, local_model
     click.echo("\nMean absolute error by objective:")
     for obj, err in sorted(result["objective_mae"].items(), key=lambda kv: kv[1], reverse=True):
         click.echo(f"  {obj:16s} {err:.3f}")
+
+
+main.add_command(review)
 
 
 if __name__ == "__main__":

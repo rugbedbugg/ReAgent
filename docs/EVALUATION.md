@@ -12,6 +12,117 @@ rather than LLM variance.
 Figures written `a / b / c` are the three weight profiles: feasibility-led,
 safety-tilted, build-it-yourself.
 
+## Independent chemistry review
+
+Search solve-rate measures whether a route reaches the configured stock. It does
+not measure experimental success, yield, stereochemical correctness, or recovery
+of a published synthesis. `reagent review` prepares a separate evaluation of those
+claims from historical checkpoints without loading a search model or an LLM.
+
+Freeze the existing 49-target cohort before collecting reference evidence or
+judgments. Use the original Retro* controls at the 0.6 build cap, rather than
+choosing the best sweep result after looking at coverage:
+
+```sh
+uv run --no-sync reagent review prepare \
+  --moderate-checkpoint data/evaluations/v0.3.0/build-control-moderate \
+  --hard-checkpoint data/evaluations/v0.3.0/build-control-hard \
+  --profile build-it-yourself \
+  --output data/evaluations/chemistry-review-v1
+uv run --no-sync reagent review report data/evaluations/chemistry-review-v1
+```
+
+The command requires every target's checkpoint, including unsuccessful searches.
+It selects one solved route per target with the deterministic evaluation ranking;
+the profile is explicit and does not load learned personal weights. Original
+checkpoints are read only. A new output directory is mandatory, so rerunning the
+command cannot destroy reviews. The frozen `bundle.json` includes the cohort,
+selections, scoring implementation and dependency versions, search manifests and
+result digests. Worksheets carry its digest; changing the bundle invalidates them.
+This detects accidental mixing of versions, not deliberate tampering.
+
+The output contains:
+
+- `blinded.json`: target SMILES and selected reactions/leaves, without scores,
+  method labels or model confidence. Give this to reviewers, together with the
+  rubric below. Do not give them the unblinded bundle until judgments are locked.
+- `reviews.json`: route and per-step judgments. All begin as `unreviewed`.
+- `references.json`: an empty list of independently sourced routes for each
+  target, including targets for which the search failed.
+- `bundle.json`: the frozen selection and provenance for the evaluation owner.
+
+For a review, use `supported`, `unsupported`, or `uncertain`, and record a
+nonblank `reviewer` and `evidence`. These are expert judgments, not laboratory
+outcomes. A reference-based judgment should cite its DOI/patent identifier and
+scheme, example or page. An expert plausibility judgment should explain the
+chemical reasoning and identify missing experimental evidence. Never fill these
+fields by copying ReAgent's score or asking the same model to approve itself.
+
+At each step, check the transformation, functional-group compatibility,
+regioselectivity, stereochemistry and the conditions needed to make the claim.
+For the whole route, check intermediate continuity, unresolved starting
+materials, protecting groups and whether the target specification is actually
+met. Missing reagents, conditions or stereochemical information may warrant
+`uncertain`; syntactically valid SMILES alone do not justify `supported`. Many
+bundled targets omit stereochemistry, so agreement cannot establish synthesis
+of the specific drug stereoisomer. A whole-route judgment is recorded separately
+from step judgments and is not inferred from them.
+
+Prefer two independent chemists. Give each a separate copy of the worksheets;
+retain both original reviews. Reconcile disagreements in a final `reviews.json`,
+recording both reviewer identities and the reason for adjudication in `evidence`.
+Unresolved disagreements remain `uncertain`. The tool summarizes one worksheet
+at a time; it does not silently combine reviewers or manufacture consensus.
+No invitations or review material are sent automatically.
+
+To enter a reference, replace a target's empty list in `references.json` with one
+or more objects of this form (placeholders below are not reference evidence):
+
+```json
+{
+  "source": "DOI, patent identifier, or stable primary-source URL",
+  "locator": "Scheme/example/page and route boundaries",
+  "verified_by": "Person who checked the transcription against the source",
+  "reactions": [
+    {"product": "product SMILES", "precursors": ["precursor SMILES"]}
+  ]
+}
+```
+
+Transcribe the complete chosen route with consistent boundaries; keep alternative
+syntheses as separate objects. The tool rejects invalid SMILES, disconnected
+references, cycles and ambiguous multiple disconnections of one product. It
+compares multisets of product/precursor transformations, ignoring atom-map labels
+and precursor ordering while retaining stereochemistry, salts and protonation.
+It does not normalize tautomers, infer omitted reagents, or use reaction templates
+as experimental evidence. Reference matches are selected-route agreement, not a
+PaRoutes top-k score. A different route can still be chemically valid.
+
+The JSON report keeps these denominators separate:
+
+- Search coverage uses the entire frozen cohort, including failed targets.
+- Reference agreement uses only targets with supplied references, including
+  failed searches as nonmatches. Reference coverage is reported explicitly.
+- Expert route and step counts distinguish supported, unsupported, uncertain
+  and unreviewed. The supported fraction uses only decided judgments; read it
+  alongside the decided fraction and counts, never as an unconditional accuracy.
+- With no evidence, reference agreement and expert supported fractions are
+  `null`. Empty evidence is not a successful evaluation or a zero-accuracy result.
+
+This cohort is a convenience sample already used for tuning, and overlap with
+the pretrained model's training data is unverified. A future held-out study
+should freeze a separate test set, stock, budget and selection rule, check training
+overlap, and avoid tuning on its results. [PaRoutes](https://github.com/MolecularAI/PaRoutes)
+provides reference-route benchmarks and matching stock sets; its
+[data documentation](https://github.com/MolecularAI/PaRoutes/blob/main/data/README.md)
+also describes models trained with the benchmark route reactions excluded.
+Those assets need their own provenance/compatibility review before benchmarking
+our current pretrained model. They are not ground truth for the existing 49 targets.
+
+Keep raw references and reviewer worksheets under ignored `data/`. Commit reviewed
+aggregate measurements under `docs/measurements/` and describe conclusions here;
+do not commit expert identities or copied publication content without permission.
+
 ## The standard target set
 
 ```sh
