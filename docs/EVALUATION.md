@@ -12,7 +12,7 @@ rather than LLM variance.
 Figures written `a / b / c` are the three weight profiles: feasibility-led,
 safety-tilted, build-it-yourself.
 
-## Independent chemistry review
+## Checking chemistry against published evidence
 
 Search solve-rate measures whether a route reaches the configured stock. It does
 not measure experimental success, yield, stereochemical correctness, or recovery
@@ -41,18 +41,49 @@ selections, scoring implementation and dependency versions, search manifests and
 result digests. Worksheets carry its digest; changing the bundle invalidates them.
 This detects accidental mixing of versions, not deliberate tampering.
 
-The output contains:
+For individual review, generate a local page with molecular drawings and forms:
+
+```sh
+uv run --no-sync reagent review page data/evaluations/chemistry-review-v1
+```
+
+Open `data/evaluations/chemistry-review-v1/review.html` in a browser. No server,
+external reviewer or AI call is required. Each target shows its selected reactions,
+links for looking up molecule identities and finding papers/patents, and fields
+for your conclusions and evidence. Search links are leads, not citations proving
+the chemistry. Optional `literature.json` notes can attach primary-source leads to
+specific steps, but do not assign verdicts automatically.
+
+Enter your name or initials, inspect each reaction against the primary source,
+and record its DOI/URL, exact scheme/example, conditions, stereochemistry and
+remaining differences. The saved reaction lists omit conditions and yields.
+Review the complete sequence separately: finding precedent for each transformation
+does not establish that the combined sequence has been demonstrated.
+
+The page saves browser drafts where supported. Use **Export reviews.json** for a
+durable file; it requires attribution and evidence for every recorded judgment.
+Move that exported file into this review directory (keep a backup of an earlier
+review if needed), then run `review report` again. The browser cannot overwrite
+the original JSON files directly. **Load saved reviews** restores an exported
+worksheet for this exact bundle, replacing the current browser draft. Incomplete
+drafts can resume in the same browser but cannot be exported as completed evidence.
+
+These reviews are labeled `self_literature`; the report uses `route_judgments`
+and `step_judgments`, not an expert-accuracy label. A personal literature check
+does not establish independent expert approval or experimental validation.
+No communication with other people is needed to use this workflow.
+
+The underlying output contains:
 
 - `blinded.json`: target SMILES and selected reactions/leaves, without scores,
-  method labels or model confidence. Give this to reviewers, together with the
-  rubric below. Do not give them the unblinded bundle until judgments are locked.
+  method labels or model confidence; retained for optional independent review.
 - `reviews.json`: route and per-step judgments. All begin as `unreviewed`.
 - `references.json`: an empty list of independently sourced routes for each
   target, including targets for which the search failed.
 - `bundle.json`: the frozen selection and provenance for the evaluation owner.
 
 For a review, use `supported`, `unsupported`, or `uncertain`, and record a
-nonblank `reviewer` and `evidence`. These are expert judgments, not laboratory
+nonblank `reviewer` and `evidence`. These are attributed judgments, not laboratory
 outcomes. A reference-based judgment should cite its DOI/patent identifier and
 scheme, example or page. An expert plausibility judgment should explain the
 chemical reasoning and identify missing experimental evidence. Never fill these
@@ -68,12 +99,9 @@ bundled targets omit stereochemistry, so agreement cannot establish synthesis
 of the specific drug stereoisomer. A whole-route judgment is recorded separately
 from step judgments and is not inferred from them.
 
-Prefer two independent chemists. Give each a separate copy of the worksheets;
-retain both original reviews. Reconcile disagreements in a final `reviews.json`,
-recording both reviewer identities and the reason for adjudication in `evidence`.
-Unresolved disagreements remain `uncertain`. The tool summarizes one worksheet
-at a time; it does not silently combine reviewers or manufacture consensus.
-No invitations or review material are sent automatically.
+Independent chemist review remains an optional future validation layer. If used,
+keep its evidence separate from your self-review and label its `review_basis`
+as `expert`. The tool does not verify qualifications or manufacture consensus.
 
 To enter a reference, replace a target's empty list in `references.json` with one
 or more objects of this form (placeholders below are not reference evidence):
@@ -103,10 +131,10 @@ The JSON report keeps these denominators separate:
 - Search coverage uses the entire frozen cohort, including failed targets.
 - Reference agreement uses only targets with supplied references, including
   failed searches as nonmatches. Reference coverage is reported explicitly.
-- Expert route and step counts distinguish supported, unsupported, uncertain
+- Route and step judgment counts distinguish supported, unsupported, uncertain
   and unreviewed. The supported fraction uses only decided judgments; read it
   alongside the decided fraction and counts, never as an unconditional accuracy.
-- With no evidence, reference agreement and expert supported fractions are
+- With no evidence, reference agreement and reviewer supported fractions are
   `null`. Empty evidence is not a successful evaluation or a zero-accuracy result.
 
 This cohort is a convenience sample already used for tuning, and overlap with

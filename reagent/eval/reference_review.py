@@ -98,6 +98,7 @@ class Reviews(BaseModel):
     model_config = ConfigDict(extra="forbid")
     schema_version: Literal[1]
     bundle_sha256: str
+    review_basis: Literal["unspecified", "self_literature", "expert"] = "unspecified"
     targets: dict[str, ReviewRow]
 
 
@@ -177,7 +178,7 @@ def prepare(groups: list[tuple[str, list[tuple[str, str]], Path]], profile: str)
 
 def worksheets(bundle: dict) -> tuple[dict, dict, dict]:
     header = {"schema_version": 1, "bundle_sha256": digest(bundle)}
-    reviews = {**header, "targets": {
+    reviews = {**header, "review_basis": "self_literature", "targets": {
         row["id"]: {"route": Judgment().model_dump(), "steps": [
             Judgment().model_dump() for _ in row["route"]["reactions"]
         ]}
@@ -242,7 +243,8 @@ def report(bundle: dict, reviews: dict, references: dict) -> dict:
         "schema_version": 1, "bundle_sha256": expected_digest,
         "targets": len(rows), "solved_targets": len(solved),
         "solve_rate": len(solved) / len(rows) if rows else None,
-        "expert_routes": _counts(route_judgments), "expert_steps": _counts(step_judgments),
+        "review_basis": reviews.review_basis,
+        "route_judgments": _counts(route_judgments), "step_judgments": _counts(step_judgments),
         "reference_covered_targets": len(comparisons),
         "selected_route_exact_reaction_match_rate": (
             sum(row["selected_route_exact_reaction_match"] for row in comparisons) / len(comparisons)
@@ -252,7 +254,7 @@ def report(bundle: dict, reviews: dict, references: dict) -> dict:
         "limitations": [
             "Reference agreement is exact reaction-multiset agreement, not experimental validity.",
             "Alternative correct syntheses can disagree with a reference.",
-            "Human judgments are attributed opinions, not laboratory validation.",
+            "Judgments are attributed reviews, not laboratory validation or proof of expertise.",
             "Training overlap is unverified; this is not a held-out accuracy benchmark.",
             "The fixed convenience cohort does not establish population-wide accuracy.",
         ],
@@ -306,3 +308,16 @@ def report_command(directory: Path) -> None:
     except (OSError, ValueError, KeyError, TypeError) as exc:
         raise click.ClickException(str(exc)) from exc
     click.echo(json.dumps(result, indent=2, allow_nan=False))
+
+
+@review.command("page")
+@click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
+def page_command(directory: Path) -> None:
+    """Create a local page with molecular drawings and self-review forms."""
+    from reagent.eval.review_page import render_page
+
+    try:
+        path = render_page(directory)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"Open {path} in your browser. Export reviews.json to save your judgments.")
