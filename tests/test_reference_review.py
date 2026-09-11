@@ -45,9 +45,11 @@ def test_freeze_is_reproducible_and_never_writes_checkpoints(cohort):
     result = report(bundle, reviews, references)
     assert result["targets"] == 2
     assert result["solve_rate"] == 0.5
-    assert result["expert_routes"]["unreviewed"] == 1
-    assert result["expert_routes"]["supported_fraction_among_decided"] is None
+    assert result["route_judgments"]["unreviewed"] == 1
+    assert result["route_judgments"]["supported_fraction_among_decided"] is None
     assert result["selected_route_exact_reaction_match_rate"] is None
+    assert result["review_basis"] == "self_literature"
+    assert "expert_routes" not in result
 
 
 def test_missing_targets_fail_instead_of_shrinking_denominator(cohort):
@@ -81,7 +83,7 @@ def test_reference_match_is_separate_from_expert_validity(cohort):
     result = report(bundle, reviews, references)
     assert result["reference_covered_targets"] == 1
     assert result["selected_route_exact_reaction_match_rate"] == 1
-    assert result["expert_routes"]["supported_fraction_among_decided"] is None
+    assert result["route_judgments"]["supported_fraction_among_decided"] is None
     # A failed search with a reference still belongs in the reference denominator.
     references["targets"][bundle["targets"][1]["id"]] = [{
         **references["targets"][key][0],
@@ -103,9 +105,9 @@ def test_judgments_require_attribution_and_uncertainty_is_not_success(cohort):
     row["steps"] = [{"verdict": "unsupported", "reviewer": "chemist A",
                      "evidence": "Fixture rejection"}]
     result = report(bundle, reviews, references)
-    assert result["expert_routes"]["uncertain"] == 1
-    assert result["expert_routes"]["supported_fraction_among_decided"] is None
-    assert result["expert_steps"]["supported_fraction_among_decided"] == 0
+    assert result["route_judgments"]["uncertain"] == 1
+    assert result["route_judgments"]["supported_fraction_among_decided"] is None
+    assert result["step_judgments"]["supported_fraction_among_decided"] == 0
 
 
 @pytest.mark.parametrize("change", ["digest", "id", "steps", "verdict"])
@@ -164,3 +166,22 @@ def test_references_require_provenance(cohort):
         bundle["targets"][0]["route"]["reactions"])}]
     with pytest.raises(ValueError):
         report(bundle, reviews, references)
+
+
+def test_page_renders_structures_without_changing_evidence(cohort, tmp_path):
+    from reagent.eval.review_page import render_page
+
+    bundle = prepare(cohort, "build-it-yourself")
+    bundle["targets"][0]["name"] = '</script><script>alert("bad")</script>'
+    reviews, references, _ = worksheets(bundle)
+    for name, value in (("bundle", bundle), ("reviews", reviews), ("references", references)):
+        (tmp_path / f"{name}.json").write_text(json.dumps(value))
+    before = (tmp_path / "reviews.json").read_bytes()
+    html = render_page(tmp_path).read_text()
+    assert "data:image/svg+xml;base64," in html
+    assert '</script><script>alert("bad")</script>' not in html
+    assert "2 targets" in html
+    assert before == (tmp_path / "reviews.json").read_bytes()
+    (tmp_path / "literature.json").write_text(json.dumps({"bundle_sha256": "stale"}))
+    with pytest.raises(ValueError, match="Literature"):
+        render_page(tmp_path)
