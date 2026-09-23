@@ -12,6 +12,57 @@ rather than LLM variance.
 Figures written `a / b / c` are the three weight profiles: feasibility-led,
 safety-tilted, build-it-yourself.
 
+## What this document measures, and what it does not
+
+Four separate evaluations live here. They answer different questions and are
+deliberately never combined into a single score.
+
+| Evaluation | Question | Status |
+|---|---|---|
+| **Search evaluation** | does the planner reach purchasable material, and at what cost in route length and degeneracy | implemented |
+| **Route-selection evaluation** | given the same candidates, does weighted multi-objective selection choose better routes than a feasibility-only baseline | implemented |
+| **Literature recovery** | does a retained route match a published synthesis exactly, and how highly is it ranked | implemented, Phase 1 and 2 |
+| **Graded route similarity** | when it is not an exact match, how close is it under the Genheden-Shields metric | implemented, Phase 3A |
+
+### Standing limitations
+
+These apply to every number in this document.
+
+**Retained-candidate observability.** Absence of a match means the route was not
+in the retained candidate set, bounded by `--max-routes`. It does not mean the
+search never found one. Every recovery figure is therefore a lower bound.
+
+**Multiple references.** A target can have several valid published syntheses.
+References are a set, and disagreement with one of them is not an error.
+
+**Stereochemistry.** `M0` preserves stereochemistry, charge and form; `M1` is
+stereo-agnostic and diagnostic only. Stereo-stress references form a separate
+cohort and are never averaged into the core one.
+
+**Partial references.** A reference must be a complete, fully resolved route to
+be eligible for whole-route exact recovery. Partial references are excluded
+rather than counted as failures.
+
+**Mapper availability.** Automatic atom mapping needs NameRxn or RXNMapper,
+neither installed here. Pairs that cannot be mapped return a typed
+`mapper_unavailable` result and are excluded from similarity means. They are
+never recorded as similarity zero, which would silently bias the mean downward.
+
+**Training overlap.** The pretrained model's USPTO training set has not been
+checked against the evaluation targets. Nothing here is a held-out or
+out-of-distribution accuracy measurement.
+
+**Operational versus reference stock.** Candidate routes stop at the configured
+operational stock, while references stop at whatever the publication used. The
+two stopping rules are not the same, so leaf-level agreement is not expected.
+
+### Planned, not implemented
+
+Phase 3B metrics are **not implemented** and no number in this document reflects
+them: disconnection-level agreement, intermediate-level agreement, and
+leaf-level agreement. Where this document reports similarity, it is whole-route
+similarity only.
+
 ## Checking chemistry against published evidence
 
 Search solve-rate measures whether a route reaches the configured stock. It does
