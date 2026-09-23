@@ -7,16 +7,29 @@
 ![AUR version](https://img.shields.io/aur/version/reagent?style=for-the-badge&labelColor=000000)
 [![CI](https://img.shields.io/github/actions/workflow/status/rugbedbugg/ReAgent/ci.yml?branch=main&style=for-the-badge&labelColor=000000)](https://github.com/rugbedbugg/ReAgent/actions/workflows/ci.yml)
 
-Plans retrosynthetic routes for a target molecule and scores every candidate on
-seven independent objectives, so the route you get is the one that best fits
-what you actually care about rather than whichever the search returned first.
-Chemistry facts are computed deterministically with RDKit; LLM-backed specialist
-agents interpret those facts and write a cited rationale for the chosen route.
+Plans retrosynthetic routes for a target molecule, then picks the one that
+matches what you are actually asking for, whether that is **making** the
+molecule or **obtaining** it, and tells you how much of your target each route
+simply buys.
 
-Single-step model and tree search come from
-[AiZynthFinder](https://github.com/MolecularAI/aizynthfinder). ReAgent adds the
-evaluation, multi-objective selection, retrieval grounding, and adaptive layers
-on top.
+## What ReAgent Does
+
+ReAgent does not propose chemistry of its own. It works in three layers, and
+only the first belongs to somebody else:
+
+| Layer | Whose | What happens |
+|---|---|---|
+| 1. Candidate chemistry | [AiZynthFinder](https://github.com/MolecularAI/aizynthfinder), pretrained USPTO models | proposes retrosynthetic disconnections |
+| 2. Search constraints | **ReAgent** | changes what the planner accepts as a valid stopping point, chiefly through a target-relative stock rule |
+| 3. Selection and evaluation | **ReAgent** | ranks retained routes on seven deterministic objectives, and can compare them against published syntheses |
+
+Layer 2 is why this is not simply a re-ranker. Constraining what counts as
+purchasable changes which routes the search *finds*, not merely their order:
+removing the option to buy a nearly finished molecule made the search locate
+genuine multi-step routes for 6 of 10 targets it had previously been buying.
+
+No model is trained here. Route quality is bounded by the pretrained
+single-step model, and that bound is the project's main limitation.
 
 ## Status
 
@@ -24,7 +37,7 @@ on top.
 
 ## Features
 
-- Two modes over one engine: `build` refuses to buy the answer, `source` buys freely
+- Three planning modes over one engine: `balanced`, `build`, `source`
 - Seven scored objectives: feasibility, precursor availability, cost, safety, sustainability, efficiency, and buy-versus-build
 - Four tree searches over the same single-step model, poolable: `--algorithm mcts,retrostar`
   returns 13 distinct routes on naproxen where the best single search returns 9
@@ -104,6 +117,20 @@ uv venv --python 3.11
 uv pip install --python .venv/bin/python -e ".[dev]"
 ```
 
+Two optional extras are declared:
+
+| Extra | Installs | Needed for |
+|---|---|---|
+| `dev` | pytest, ruff | running the tests and linting |
+| `literature` | `reaction-utils` | the literature benchmark's graded route similarity |
+
+```bash
+uv pip install --python .venv/bin/python -e ".[dev,literature]"
+```
+
+`reaction-utils` is currently satisfied anyway, because AiZynthFinder requires
+it, but the literature code imports it directly and so declares it.
+
 ### Data and configuration
 
 Planning and evaluation commands need the pretrained model and stock. This is a
@@ -147,13 +174,41 @@ layer, `--rag` to cite precedent.
 | `build` | buy-versus-build led | a purchased leaf may be at most 60% of the target |
 | `source` | cost and step-count led | none, buying an advanced intermediate is the goal |
 
-Every route now reports how much of the target it buys, so a one-step answer
-that purchases the compound is visible rather than silently ranked first.
+Only `build` changes what the search will accept as finished. `balanced` and
+`source` differ in ranking objectives alone, so they reorder the same candidate
+set rather than producing a different one.
+
+#### Reading `largest leaf`
+
+Every route reports `largest leaf N% of target`, the size of the biggest
+purchased leaf relative to the target molecule. A route counts as *solved* when
+every leaf is purchasable, and that includes buying something almost as large as
+what you asked for. A leaf at 109% is a molecule bigger than your target.
+
+It is an honesty signal about what a route bought, not a measure of chemical
+quality. A low fraction does not make a route correct; a high one means the
+route mostly purchased its answer. `build` mode caps it at 60% of the target's
+heavy atoms, which is why that mode changes candidate generation.
 
 ```bash
 reagent plan "CC(=O)Oc1ccccc1C(=O)O"
 reagent plan "CC(=O)Oc1ccccc1C(=O)O" --local --hybrid --ghs
 ```
+
+#### Machine-readable output
+
+`--json` emits one document on stdout. Progress and warnings go to stderr, so
+stdout stays parseable when piped:
+
+```bash
+reagent plan "CC(=O)Nc1ccc(O)cc1" --json 2>/dev/null \
+  | jq '[.routes[] | {steps, buys: .largest_leaf_fraction, solved}]'
+```
+
+The document carries the target, mode, leaf cap, search settings and per-route
+reactions and leaves. `features`, `precedents`, `assessments` and `ranking`
+appear only when the corresponding flags are used. The shape is not a stability
+guarantee; treat it as an output format that may change between releases.
 
 Scoring runs also print each route's confidence (the weakest step's model
 probability), flag a recommended route the base model distrusts rather than
@@ -305,24 +360,49 @@ Planning, features, RAG, and evaluation all run without either.
 
 ## Quick Start / Demo
 
+One-time setup, about 760 MB:
+
 ```bash
-# 1) Install and fetch the model + stock (one time, ~760 MB)
-paru -S reagent
+paru -S reagent                                # or install from source, above
 reagent-download-data ~/.local/share/reagent
 reagent build-stock-cache
-
-# 2) Plan a route for aspirin
-reagent plan "CC(=O)Oc1ccccc1C(=O)O"
-
-# 3) Look at why, with the deterministic numbers
-reagent plan "CC(=O)Oc1ccccc1C(=O)O" --show-features
-
-# 4) Score it offline with a local model
-reagent plan "CC(=O)Oc1ccccc1C(=O)O" --local --hybrid
-
-# 5) Tell it which route you preferred; later runs adapt
-reagent feedback "CC(=O)Oc1ccccc1C(=O)O" --prefer 2
 ```
+
+### The five-command demo
+
+Paracetamol, the same target under both intents. This is the shortest honest
+demonstration of what the tool is for, and runs in well under a minute.
+
+```bash
+# 1) Obtain it. One step, and the third route buys a leaf LARGER than the target.
+reagent plan "CC(=O)Nc1ccc(O)cc1" --mode source --max-routes 3
+
+# 2) Make it. Same input, same engine: six steps from benzene and acetyl chloride.
+reagent plan "CC(=O)Nc1ccc(O)cc1" --mode build --max-routes 3
+
+# 3) Machine-readable, stdout is pure JSON
+reagent plan "CC(=O)Nc1ccc(O)cc1" --json --max-routes 3 2>/dev/null \
+  | jq '[.routes[] | {steps, buys: .largest_leaf_fraction}]'
+
+# 4) Honest metrics over the frozen 49-target cohort
+reagent review report data/evaluations/chemistry-review-v1
+
+# 5) The review worksheet itself
+reagent review page data/evaluations/chemistry-review-v1
+```
+
+Steps 1 and 2 are the point. The `<- buys most of the target` marker on the
+source-mode output makes the difference self-evident without narration.
+
+Step 4 closes on what the project does not claim: unreviewed accuracy comes back
+as `null` rather than zero, with the limitations listed alongside.
+
+A caution if your audience is chemists: the build-mode route is a demonstration
+that the constraint forces construction, not a recommendation. Nobody makes
+paracetamol that way.
+
+Working from a checkout rather than an installed package, substitute
+`.venv/bin/python -m reagent.cli` for `reagent`.
 
 ## Results
 
@@ -392,6 +472,56 @@ cannot see, regret measured as the utility gap against that hidden preference:
 
 Full methodology, all three weight profiles, the objective spreads, and the
 measured dead ends: **[docs/EVALUATION.md](docs/EVALUATION.md)**.
+
+## Literature Evaluation
+
+Solve-rate says a route reached the configured stock. It says nothing about
+whether the chemistry resembles how the molecule is actually made. The
+literature benchmark asks a different question:
+
+> How accurately does ReAgent recover established synthetic chemistry, and how
+> highly does it rank routes corresponding to known literature syntheses?
+
+Four distinct measurements, deliberately not collapsed into one score:
+
+| Measurement | What it asks |
+|---|---|
+| **Solve rate** | did the search reach purchasable material at all |
+| **Exact literature recovery** | does a retained route match a published synthesis under strict, topology-sensitive comparison |
+| **Recovery@k** | does such a match appear in the top k of the ranking (k = 1, 3, 5, 10, and all retained) |
+| **Graded route similarity** | how close is a route to the reference when it is not an exact match, via the published Genheden-Shields metric |
+
+Points that change how the numbers should be read:
+
+- **Two molecular identities.** `M0` preserves stereochemistry, charge and form. `M1` is stereo-agnostic and used as a diagnostic. Stereo-stress references are evaluated as a separate cohort rather than mixed into the core one.
+- **A target may have several valid published syntheses.** References are held as a set, not a single ground truth.
+- **Partial references are not counted as whole-route exact recovery.** A reference must be a complete, fully resolved route to be eligible.
+- **Absence means absent from the retained candidate set.** It does not mean the search never found such a route. `--max-routes` bounds what is retained, so this is an observability limit, not a statement about the search.
+
+### Genheden-Shields similarity status
+
+| | |
+|---|---|
+| Official `reaction-utils` metric wrapper | **ready** |
+| Comparison of pre-mapped routes | **ready** |
+| Automatic atom mapping of references and candidates | **unavailable in this environment** |
+
+Automatic mapping needs NameRxn or RXNMapper, neither of which is installed
+here. The metric is not broken. When mapping is unavailable the pair returns a
+typed `mapper_unavailable` result and is **excluded from similarity means**; it
+is never recorded as similarity zero.
+
+The benchmark is currently a library API (`run_exact_recovery_benchmark`,
+`run_similarity_benchmark`), not a CLI command. Methodology and limitations are
+in [docs/EVALUATION.md](docs/EVALUATION.md).
+
+## What Is and Is Not Validated
+
+- Routes are **computational proposals**. Nothing here has been carried out experimentally, and there is no claim about yield, selectivity or practicality.
+- Literature comparison measures **recovery against documented chemistry**, not correctness. A route disagreeing with a reference may still be sound, since alternative syntheses exist.
+- **Training overlap is unestablished.** The pretrained model's USPTO training data has not been checked against the evaluation targets, so these results must not be described as held-out or out-of-distribution accuracy.
+- The evaluation cohort is a **fixed convenience set** of 49 drug-like targets. It does not support population-wide claims.
+- `reagent review report` reflects this: accuracy over unreviewed routes is reported as `null`, never as zero or as a pass.
 
 ## Project Structure
 
