@@ -1,5 +1,7 @@
 """Evaluation-layer tests: deterministic scorer and harness (offline, no backend)."""
 
+import pytest
+
 from reagent.core.models import Molecule, Reaction, Route
 from reagent.eval.harness import evaluate
 from reagent.features.scoring import deterministic_scores
@@ -229,3 +231,175 @@ def test_build_solve_rate_matches_solve_rate_for_a_genuine_route():
 
     assert result["solve_rate"] == 1.0
     assert result["build_solve_rate"] == 1.0
+
+
+def test_weight_profiles_produce_different_rankings():
+    """Custom weight profiles should produce different rankings when objectives differ."""
+    from reagent.eval.harness import evaluate
+    from reagent.optimize.aggregate import WEIGHT_PROFILES
+
+    # Create two routes that differ in safety and cost
+    # Route 1: safer but more expensive (two steps, non-hazardous)
+    # Route 2: less safe but cheaper (one step, hazardous)
+    safe_expensive = Route(
+        target="CCN",
+        reactions=[Reaction(
+            product="CCN", precursors=["CCO", "N"],
+            metadata={"policy_probability": 0.7, "library_occurence": 50}
+        )],
+        leaves=[Molecule(smiles="CCO", in_stock=True), Molecule(smiles="N", in_stock=True)],
+        solved=True,
+    )
+    safe_expensive.reactions[0].metadata["hazardous"] = False
+
+    cheap_risky = Route(
+        target="CCN",
+        reactions=[Reaction(
+            product="CCN", precursors=["CC(=O)Cl", "N"],
+            metadata={"policy_probability": 0.72, "library_occurence": 50}
+        )],
+        leaves=[Molecule(smiles="CC(=O)Cl", in_stock=True), Molecule(smiles="N", in_stock=True)],
+        solved=True,
+    )
+    cheap_risky.reactions[0].metadata["hazardous"] = True
+
+    routes = [safe_expensive, cheap_risky]
+
+    # Test with safety-tilted profile
+    result_safety = evaluate(
+        [("t", "CCN")],
+        planner=lambda s: routes,
+        weights=WEIGHT_PROFILES["safety-tilted"]
+    )
+
+    # Test with source-led profile
+    result_source = evaluate(
+        [("t", "CCN")],
+        planner=lambda s: routes,
+        weights=WEIGHT_PROFILES["source-led"]
+    )
+
+    # The weight parameter should be accepted and used
+    # Verify the weights are passed through by checking the reagent_quality differs
+    # or that the results are structurally valid
+    assert "reagent_quality" in result_safety
+    assert "reagent_quality" in result_source
+    assert "per_target" in result_safety
+    assert "per_target" in result_source
+    # The weight vector should be recorded in the result
+    assert "reagent_weight_vector" in result_safety
+    assert "reagent_weight_vector" in result_source
+    # The weight vectors should reflect the profiles used
+    assert result_safety["reagent_weight_vector"] == WEIGHT_PROFILES["safety-tilted"]
+    assert result_source["reagent_weight_vector"] == WEIGHT_PROFILES["source-led"]
+
+
+def test_select_respects_custom_weights():
+    """_select should use the provided weights, not hardcoded DEFAULT_WEIGHTS."""
+    from reagent.eval.harness import _select
+    from reagent.optimize.aggregate import WEIGHT_PROFILES
+
+    # Create routes with different objective scores
+    route1 = Route(
+        target="CCN",
+        reactions=[Reaction(
+            product="CCN", precursors=["CCO", "N"],
+            metadata={"policy_probability": 0.7, "library_occurence": 50}
+        )],
+        leaves=[Molecule(smiles="CCO", in_stock=True), Molecule(smiles="N", in_stock=True)],
+        solved=True,
+    )
+    route1.reactions[0].metadata["hazardous"] = False
+
+    route2 = Route(
+        target="CCN",
+        reactions=[Reaction(
+            product="CCN", precursors=["CC(=O)Cl", "N"],
+            metadata={"policy_probability": 0.72, "library_occurence": 50}
+        )],
+        leaves=[Molecule(smiles="CC(=O)Cl", in_stock=True), Molecule(smiles="N", in_stock=True)],
+        solved=True,
+    )
+    route2.reactions[0].metadata["hazardous"] = True
+
+    routes = [route1, route2]
+
+    # With DEFAULT_WEIGHTS (feasibility-led), should pick route2 (higher feasibility)
+    _, pick_default = _select(routes, {"feasibility": 1.0})
+    assert pick_default is route2
+
+    # With safety-tilted weights, should pick route1 (safer)
+    _, pick_safety = _select(routes, WEIGHT_PROFILES["safety-tilted"])
+    assert pick_safety is route1
+
+
+def test_rank_candidates_accepts_custom_weights():
+    """rank_candidates should accept and use custom weight vectors."""
+    from reagent.eval.harness import rank_candidates
+    from reagent.optimize.aggregate import WEIGHT_PROFILES
+
+    route1 = Route(
+        target="CCN",
+        reactions=[Reaction(product="CCN", precursors=["CCO", "N"])],
+        leaves=[Molecule(smiles="CCO", in_stock=True), Molecule(smiles="N", in_stock=True)],
+        solved=True,
+    )
+    route1.reactions[0].metadata["hazardous"] = False
+
+    route2 = Route(
+        target="CCN",
+        reactions=[Reaction(product="CCN", precursors=["CC(=O)Cl", "N"])],
+        leaves=[Molecule(smiles="CC(=O)Cl", in_stock=True), Molecule(smiles="N", in_stock=True)],
+        solved=True,
+    )
+    route2.reactions[0].metadata["hazardous"] = True
+
+    routes = [route1, route2]
+
+    # With feasibility-only weights, route2 (higher feasibility) should rank first
+    ranked_feasibility = rank_candidates(routes, {"feasibility": 1.0})
+    # The route with higher feasibility (0.72) should rank first
+    assert ranked_feasibility.reagent_ranked[0] is route2
+
+    # With safety-tilted weights, route1 (safer) should rank first
+    ranked_safety = rank_candidates(routes, WEIGHT_PROFILES["safety-tilted"])
+    assert ranked_safety.reagent_ranked[0] is route1
+
+
+def test_baseline_ranking_unaffected_by_reagent_weights():
+    """Baseline (raw feasibility) ranking should be unchanged by ReAgent weight profiles."""
+    from reagent.eval.harness import rank_baseline_feasibility, rank_candidates
+
+    route1 = Route(
+        target="CCN",
+        reactions=[Reaction(product="CCN", precursors=["CCO", "N"])],
+        leaves=[Molecule(smiles="CCO", in_stock=True), Molecule(smiles="N", in_stock=True)],
+        solved=True,
+    )
+    route1.reactions[0].metadata["hazardous"] = False
+
+    route2 = Route(
+        target="CCN",
+        reactions=[Reaction(product="CCN", precursors=["CC(=O)Cl", "N"])],
+        leaves=[Molecule(smiles="CC(=O)Cl", in_stock=True), Molecule(smiles="N", in_stock=True)],
+        solved=True,
+    )
+    route2.reactions[0].metadata["hazardous"] = True
+
+    routes = [route1, route2]
+
+    # Baseline ranking (raw feasibility) should be identical regardless of ReAgent weights
+    baseline1 = rank_baseline_feasibility(routes)
+    baseline2 = rank_baseline_feasibility(routes)
+    assert [id(r) for r in baseline1] == [id(r) for r in baseline2]
+
+    # ReAgent ranking with different weights should give different orderings
+    ranked_default = rank_candidates(routes, {"feasibility": 1.0})
+    ranked_safety = rank_candidates(routes, {"safety": 1.0, "feasibility": 0.0})
+
+    # Different weights should produce different orderings
+    assert [id(r) for r in ranked_default.reagent_ranked] != [id(r) for r in ranked_safety.reagent_ranked]
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

@@ -14,6 +14,7 @@ selecting routes with better multi-objective quality.
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from statistics import mean
 
 from reagent.core.models import Route
@@ -29,7 +30,86 @@ from reagent.optimize.pareto import compromise_route
 
 # Re-exported: evaluate() and check-adaptive read the profiles from here, and
 # they now live beside DEFAULT_WEIGHTS so `plan` can reach them too.
-__all__ = ["WEIGHT_PROFILES", "evaluate", "largest_leaf_fraction", "ADVANCED_LEAF"]
+__all__ = [
+    "WEIGHT_PROFILES", "evaluate", "largest_leaf_fraction", "ADVANCED_LEAF",
+    "rank_routes_deterministic", "rank_baseline_feasibility", "rank_candidates",
+    "RankingResult",
+]
+
+
+@dataclass
+class RankingResult:
+    """Result of ranking with metadata."""
+    reagent_ranked: list[Route]
+    baseline_ranked: list[Route]
+    weight_vector: dict[str, float]
+
+
+def rank_routes_deterministic(
+    routes: list[Route],
+    weights: dict[str, float] | None = None,
+) -> list[Route]:
+    """
+    Deterministically rank routes using the same logic as harness._select.
+
+    This is the shared ranking function used by both evaluation and literature benchmark.
+    """
+    weights = weights or DEFAULT_WEIGHTS
+    solved = [r for r in routes if r.solved]
+    if not solved:
+        return []
+
+    # Compute deterministic scores
+    vectors = [deterministic_scores(r) for r in solved]
+    normalized = normalized_vectors(vectors)
+
+    # Weighted score
+    scored = []
+    for route, norm in zip(solved, normalized):
+        score = weighted_from_vector(norm, weights)
+        scored.append((route, score))
+
+    # Sort: descending score, then ascending route_signature (tie-break)
+    scored.sort(key=lambda x: (-x[1], route_signature(x[0])))
+
+    return [r for r, _ in scored]
+
+
+def rank_baseline_feasibility(routes: list[Route]) -> list[Route]:
+    """Rank by raw feasibility descending, then route_signature ascending."""
+    solved = [r for r in routes if r.solved]
+    if not solved:
+        return []
+
+    vectors = [deterministic_scores(r) for r in solved]
+    scored = []
+    for route, vec in zip(solved, vectors):
+        scored.append((route, vec.get("feasibility", 0.0)))
+
+    scored.sort(key=lambda x: (-x[1], route_signature(x[0])))
+    return [r for r, _ in scored]
+
+
+def rank_candidates(
+    routes: list[Route],
+    weights: dict[str, float] | None = None,
+) -> RankingResult:
+    """
+    Rank candidates using the authoritative deterministic method.
+
+    Args:
+        routes: The candidate routes to rank.
+        weights: Optional weight vector for ReAgent ranking. Defaults to DEFAULT_WEIGHTS.
+    """
+    weights = dict(weights or DEFAULT_WEIGHTS)
+    reagent_ranked = rank_routes_deterministic(routes, weights)
+    baseline_ranked = rank_baseline_feasibility(routes)
+
+    return RankingResult(
+        reagent_ranked=reagent_ranked,
+        baseline_ranked=baseline_ranked,
+        weight_vector=weights,
+    )
 
 
 def _select(routes: list[Route], weights: dict[str, float]) -> tuple[Route, Route]:
@@ -38,18 +118,18 @@ def _select(routes: list[Route], weights: dict[str, float]) -> tuple[Route, Rout
     ReAgent's pick uses the same candidate-normalized aggregation the CLI ranks
     with, so the comparison measures the real selection strategy.
     """
-    vectors = [deterministic_scores(r) for r in routes]
-    normalized = normalized_vectors(vectors)
+    solved = [r for r in routes if r.solved]
+    if not solved:
+        raise ValueError("_select called with no solved routes")
 
-    # Ties are common here and the search does not return routes in a stable
-    # order, so ``max`` alone would pick by arrival position. The signature
-    # makes the choice a property of the routes instead.
-    def best(score) -> int:
-        return min(range(len(routes)), key=lambda i: (-score(i), route_signature(routes[i])))
+    # Use shared ranking functions with the provided weights
+    ranking = rank_candidates(solved, weights)
+    reagent_pick = ranking.reagent_ranked[0]
 
-    baseline = best(lambda i: vectors[i]["feasibility"])
-    reagent = best(lambda i: weighted_from_vector(normalized[i], weights))
-    return routes[baseline], routes[reagent]
+    # Baseline uses raw feasibility (from shared ranking result)
+    baseline_pick = ranking.baseline_ranked[0]
+
+    return baseline_pick, reagent_pick
 
 
 ADVANCED_LEAF = 0.8
@@ -149,5 +229,6 @@ def evaluate(
         "compromise_largest_leaf_fraction": mean(comp_leaf) if comp_leaf else 0.0,
         "compromise_agrees_with_weighted": comp_agrees,
         "reagent_quality": {o: (mean(v) if v else 0.0) for o, v in reag_q.items()},
+        "reagent_weight_vector": dict(weights),
         "per_target": per_target,
     }
