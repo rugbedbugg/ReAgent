@@ -1007,6 +1007,113 @@ class TestUnsolvedMatchDiagnostic:
         assert target.unsolved_exact_match_present is True
 
 
+def _tree(smiles: str, *children: dict) -> dict:
+    """Molecule node; with children, a reaction node joining them to ``smiles``."""
+    if not children:
+        return {"type": "mol", "smiles": smiles}
+    return {
+        "type": "mol", "smiles": smiles,
+        "children": [{"type": "reaction", "smiles": "", "children": list(children)}],
+    }
+
+
+def _flatten(tree: dict, reactions: list[Reaction], leaves: list[Molecule]) -> None:
+    for rxn in tree.get("children", []):
+        reactions.append(Reaction(product=tree["smiles"], precursors=[c["smiles"] for c in rxn["children"]]))
+        for child in rxn["children"]:
+            if child.get("children"):
+                _flatten(child, reactions, leaves)
+            else:
+                leaves.append(Molecule(smiles=child["smiles"], in_stock=True))
+
+
+def _route_from_tree(tree: dict, keep_tree: bool) -> Route:
+    reactions: list[Reaction] = []
+    leaves: list[Molecule] = []
+    _flatten(tree, reactions, leaves)
+    return Route(target=tree["smiles"], reactions=reactions, leaves=leaves, solved=True,
+                 tree=tree if keep_tree else None)
+
+
+# Aspirin via Kolbe-Schmitt carboxylation then acetylation (linear)
+_LINEAR = _tree(_ASPIRIN, _tree(_SALICYLIC, _tree("Oc1ccccc1"), _tree("O=C=O")), _tree(_ANHYDRIDE))
+# N-methylbenzamide from two prepared partners (convergent)
+_CONVERGENT = _tree(
+    "CNC(=O)c1ccccc1",
+    _tree("O=C(Cl)c1ccccc1", _tree("O=C(O)c1ccccc1"), _tree("O=S(Cl)Cl")),
+    _tree("CN", _tree("C=O"), _tree("N")),
+)
+# Two occurrences of one intermediate, each made the same way
+_REPEATED = _tree(
+    "O=C(OCc1ccccc1)OCc1ccccc1",
+    _tree("OCc1ccccc1", _tree("O=Cc1ccccc1")),
+    _tree("OCc1ccccc1", _tree("O=Cc1ccccc1")),
+    _tree("O=C(Cl)Cl"),
+)
+
+
+class TestFlatReconstruction:
+    """Routes without a tree are rebuilt by M0 linkage, or rejected when ambiguous."""
+
+    @pytest.mark.parametrize("tree", [_LINEAR, _CONVERGENT, _REPEATED], ids=["linear", "convergent", "repeated"])
+    def test_flat_signature_matches_tree_signature(self, tree):
+        with_tree = derive_candidate(_route_from_tree(tree, keep_tree=True), "h")
+        flat = derive_candidate(_route_from_tree(tree, keep_tree=False), "h")
+
+        assert with_tree.graph_signature is not None
+        assert flat.graph_signature == with_tree.graph_signature
+
+    def test_flat_multistep_route_recovers_exactly(self):
+        """A multi-step reference is exactly recovered by the same route stored without a tree."""
+        ref = LiteratureReference(
+            reference_id="ref_linear",
+            target=TargetRecord(reagent_target_name="aspirin", reagent_target_smiles=_ASPIRIN),
+            sources=[SourceRecord(source_id="src", source_type=SourceType.PATENT, is_primary=True)],
+            molecules=[
+                _resolved("mol_t", _ASPIRIN, MoleculeRole.TARGET),
+                _resolved("mol_s", _SALICYLIC, MoleculeRole.INTERMEDIATE),
+                _resolved("mol_p", "Oc1ccccc1", MoleculeRole.STARTING_MATERIAL),
+                _resolved("mol_c", "O=C=O", MoleculeRole.STARTING_MATERIAL),
+                _resolved("mol_a", _ANHYDRIDE, MoleculeRole.STARTING_MATERIAL),
+            ],
+            steps=[
+                ReferenceStep(step_id="s1", precursor_ids=["mol_p", "mol_c"], product_id="mol_s",
+                              evidence_locators=[EvidenceLocator(source_id="src", example="1")]),
+                ReferenceStep(step_id="s2", precursor_ids=["mol_s", "mol_a"], product_id="mol_t",
+                              evidence_locators=[EvidenceLocator(source_id="src", example="2")]),
+            ],
+            stereo_metadata=StereoMetadata(relation_to_reagent=StereoRelation.EXACTLY_COMPATIBLE),
+        )
+        flat = derive_candidate(_route_from_tree(_LINEAR, keep_tree=False), "h")
+        assert compare_graph_exact(derive_reference(ref, "h"), flat).equality == GraphEquality.EXACT
+
+    def test_conflicting_producers_give_no_signature(self):
+        """One intermediate made two different ways cannot be placed from a flat list."""
+        tree = _tree(
+            "O=C(OCc1ccccc1)OCc1ccccc1",
+            _tree("OCc1ccccc1", _tree("O=Cc1ccccc1")),
+            _tree("OCc1ccccc1", _tree("ClCc1ccccc1"), _tree("O")),
+            _tree("O=C(Cl)Cl"),
+        )
+        flat = derive_candidate(_route_from_tree(tree, keep_tree=False), "h")
+        assert flat.graph_signature is None
+        assert any("multiple producers" in e for e in flat.derivation_errors)
+
+    def test_unreachable_step_gives_no_signature(self):
+        route = _route_from_tree(_LINEAR, keep_tree=False)
+        route.reactions.append(Reaction(product="CCO", precursors=["C=C", "O"]))
+        flat = derive_candidate(route, "h")
+        assert flat.graph_signature is None
+        assert any("unreachable" in e for e in flat.derivation_errors)
+
+    def test_leaf_mismatch_gives_no_signature(self):
+        route = _route_from_tree(_LINEAR, keep_tree=False)
+        route.leaves.append(Molecule(smiles="CCO", in_stock=True))
+        flat = derive_candidate(route, "h")
+        assert flat.graph_signature is None
+        assert any("leaves differ" in e for e in flat.derivation_errors)
+
+
 class TestStereoStressTargetGrouping:
     """References are grouped by their ReAgent target, not their own target M0."""
 

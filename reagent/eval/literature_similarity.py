@@ -9,7 +9,6 @@ expected by the similarity engine, and computes graded similarity scores.
 from __future__ import annotations
 
 import copy
-import functools
 import hashlib
 import warnings
 from dataclasses import dataclass
@@ -471,144 +470,25 @@ class SimilarityEvaluator:
         return self._build_tree_from_flat(candidate)
 
     def _build_tree_from_flat(self, candidate):
-        """Build AiZynthFinder tree dict from DerivedCandidate flat representation.
+        """Build an AiZynthFinder tree dict from a DerivedCandidate's flat steps.
 
-        This reconstructs topology from the flat step list. Since DerivedCandidate
-        preserves graph_signature (which encodes full topology), we can verify
-        the reconstruction is faithful, but the tree structure itself is rebuilt.
-
-        For true authoritative topology, the original Route.tree should be passed
-        through the derivation pipeline. This is a known limitation.
+        Uses the same M0-linked reconstruction as Phase 2's flat signature, so an
+        ambiguous flat route yields no tree rather than a guessed topology.
         """
+        from reagent.eval.literature_derived import reconstruct_tree_from_steps
+
         if not candidate.steps:
             return None
-
-        step_precursor_ids = []
-        step_product_ids = []
-        starting_material_ids = set()
-
-        # Assign synthetic node IDs
-        node_counter = [0]
-
-        def get_node_id():
-            node_counter[0] += 1
-            return f"n{node_counter[0]}"
-
-        # First pass: collect all unique M0s and assign node IDs
-        # We need to build the tree structure from the steps
-        # Use the same algorithm as _build_signature_from_reactions in literature_derived.py
-        m0_lookup = {}
-
-        # Assign node IDs to leaves first
-        leaf_node_ids = {}
-        smiles_to_node_id = {}
-        for i, leaf_m0 in enumerate(candidate.leaf_m0s):
-            leaf_id = f"leaf_{i}"
-            m0_lookup[leaf_id] = leaf_m0
-            leaf_node_ids[leaf_m0] = leaf_id
-            smiles_to_node_id[leaf_m0] = leaf_id
-            starting_material_ids.add(leaf_id)
-
-        # Assign node IDs to reactions and their products
-        for i, step in enumerate(candidate.steps):
-            product_id = f"prod_{i}"
-            m0_lookup[product_id] = step.product_m0
-            step_product_ids.append(product_id)
-
-            precursor_ids = []
-            for prec_m0 in step.precursor_m0s:
-                if prec_m0 in smiles_to_node_id:
-                    precursor_id = smiles_to_node_id[prec_m0]
-                else:
-                    precursor_id = f"prec_{len(m0_lookup)}"
-                    m0_lookup[precursor_id] = prec_m0
-                    smiles_to_node_id[prec_m0] = precursor_id
-                precursor_ids.append(precursor_id)
-
-            step_precursor_ids.append(tuple(precursor_ids))
-
-        # Build producers map
-        producers: dict[str, list[int]] = {}
-        for i, prod_id in enumerate(step_product_ids):
-            producers.setdefault(prod_id, []).append(i)
-
-        # Check for genuine multiple-producer ambiguity
-        for prod_id, step_indices in producers.items():
-            if len(step_indices) > 1:
-                warnings.warn(f"Candidate {candidate.route_id}: multiple producers for {prod_id}")
-                return None
-
-        # Find root: product not used as precursor anywhere
-        all_precursors = set()
-        for precs in step_precursor_ids:
-            all_precursors.update(precs)
-        root_candidates = set(step_product_ids) - all_precursors
-        if not root_candidates:
-            return None
-        root_id = root_candidates.pop()
-
-        # Build tree recursively
-
-        @functools.cache
-        def build_reaction_subtree(node_id: str) -> dict | None:
-            """Build reaction subtree for a node that has a producing step."""
-            if node_id in starting_material_ids:
-                return None  # Starting materials don't have reaction subtrees
-
-            prod_steps = producers.get(node_id)
-            if not prod_steps:
-                return None
-            step_idx = prod_steps[0]
-            precursor_ids = step_precursor_ids[step_idx]
-
-            reaction_children = []
-            for pid in precursor_ids:
-                child_m0 = m0_lookup.get(pid, "")
-                if not child_m0:
-                    continue
-
-                # Check if precursor has a producer (is an intermediate)
-                if pid in producers:
-                    # Intermediate - build its reaction subtree
-                    child_subtree = build_reaction_subtree(pid)
-                    if child_subtree:
-                        reaction_children.append({
-                            "type": "mol",
-                            "smiles": child_m0,
-                            "children": [child_subtree]
-                        })
-                else:
-                    # Starting material (leaf)
-                    reaction_children.append({"type": "mol", "smiles": child_m0})
-
-            if not reaction_children:
-                return None
-
-            # A flat reconstruction has no atom mapping of its own
-            precursor_m0s = [m0_lookup.get(pid, "") for pid in precursor_ids if m0_lookup.get(pid, "")]
-            reaction_smiles = ".".join(precursor_m0s) + ">>" + m0_lookup.get(node_id, "")
-
-            return {
-                "type": "reaction",
-                "smiles": reaction_smiles,
-                "metadata": {},
-                "children": reaction_children,
-            }
-
-        # Build the reaction subtree for the root
-        root_m0 = m0_lookup.get(root_id, "")
-        reaction_subtree = build_reaction_subtree(root_id)
-
-        if reaction_subtree is None:
-            # Root has no producing step - it's a leaf
-            return {"type": "mol", "smiles": root_m0}
-
-        # Wrap in mol node (target molecule)
-        return {
-            "type": "mol",
-            "smiles": root_m0,
-            "children": [reaction_subtree]
-        }
+        errors: list[str] = []
+        tree = reconstruct_tree_from_steps(
+            candidate.target_m0,
+            [(step.product_m0, step.precursor_m0s) for step in candidate.steps],
+            candidate.leaf_m0s,
+            errors,
+        )
+        if tree is None:
+            warnings.warn(f"Candidate {candidate.route_id}: {'; '.join(errors)}")
+        return tree
 
     def _compare_pair(
         self,
