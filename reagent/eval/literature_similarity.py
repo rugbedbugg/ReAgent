@@ -123,15 +123,16 @@ class SimilarityMetrics:
     n_targets_mapping_failed: int             # Has graded ref + solved candidates but ALL comparisons failed mapping
     n_targets_mapper_unavailable: int         # Has graded ref + solved candidates but ALL comparisons mapper unavailable
 
-    mean_selected_route_similarity: float
-    median_selected_route_similarity: float
-    mean_max_similarity_retained: float
-    median_max_similarity_retained: float
+    # None when no target is similarity-evaluable; never zero-filled
+    mean_selected_route_similarity: float | None
+    median_selected_route_similarity: float | None
+    mean_max_similarity_retained: float | None
+    median_max_similarity_retained: float | None
 
-    mean_selected_atom_similarity: float
-    median_selected_atom_similarity: float
-    mean_selected_bond_similarity: float
-    median_selected_bond_similarity: float
+    mean_selected_atom_similarity: float | None
+    median_selected_atom_similarity: float | None
+    mean_selected_bond_similarity: float | None
+    median_selected_bond_similarity: float | None
 
     per_target: list = None
     schema_version: Literal[1] = 1
@@ -1016,12 +1017,11 @@ class SimilarityEvaluator:
             max_bond = max(all_bonds) if all_bonds else None
             best_rank = None
             if max_sim is not None:
-                # Find the rank of the candidate that achieved max_sim
-                best_match = max((m for m in reference_matches
-                                  if m.status == SimilarityStatus.SUCCESS and m.route_similarity == max_sim),
-                                 key=lambda m: m.reagent_rank or 999, default=None)
-                if best_match:
-                    best_rank = best_match.reagent_rank
+                # Best ReAgent rank among candidates achieving max_sim. Every solved
+                # route has a ReAgent rank, so baseline-only pairs are not needed.
+                best_rank = min((m.reagent_rank for m in reference_matches
+                                 if m.status == SimilarityStatus.SUCCESS and m.route_similarity == max_sim
+                                 and m.reagent_rank is not None), default=None)
 
             # Baseline selected similarity (rank 1 in baseline ranking)
             baseline_sim = None
@@ -1068,7 +1068,8 @@ class SimilarityEvaluator:
             ))
 
         # Aggregate across targets
-        n_requested = len(self.reference_set.references)
+        # The unit of aggregation is the target, not the reference
+        n_requested = len(refs_by_target)
         n_with_graded_ref = len([t for t in per_target_results if t.eligible_reference_ids])
         n_evaluable = len([t for t in per_target_results if t.similarity_evaluable])
         n_mapping_failed = len([t for t in per_target_results if t.mapping_failed_count > 0 and t.mapper_unavailable_count == 0])
@@ -1077,14 +1078,14 @@ class SimilarityEvaluator:
         def mean_attr(attr):
             targets = [t for t in per_target_results if t.similarity_evaluable and getattr(t, attr) is not None]
             if not targets:
-                return 0.0
+                return None
             return sum(getattr(t, attr) for t in targets) / len(targets)
 
         def median_attr(attr):
             vals = sorted(getattr(t, attr) for t in per_target_results
                           if t.similarity_evaluable and getattr(t, attr) is not None)
             if not vals:
-                return 0.0
+                return None
             n = len(vals)
             if n % 2 == 1:
                 return vals[n // 2]
