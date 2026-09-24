@@ -1,13 +1,16 @@
 [tools]
-python = "3.11"
+python = "{{ env.REAGENT_PYTHON_VERSION | default(value='3.11') }}"
 uv = "latest"
+
+[settings]
+python.uv_venv_auto = true
 
 [env]
 _.python.venv = { path = ".venv", create = true }
 
 [tasks.install]
 description = "Install the package with dev and literature extras into the project venv"
-run = "uv pip install -e '.[dev,literature]'"
+run = 'uv pip install -e ".[dev,literature]"'
 
 [tasks.test]
 description = "Run the test suite"
@@ -16,3 +19,11 @@ run = "pytest"
 [tasks.lint]
 description = "Run Ruff over the project"
 run = "ruff check ."
+
+[tasks.build]
+description = "Build wheel and source distribution"
+run = "uv build"
+
+[tasks.check-dist]
+description = "Check distribution metadata"
+run = "uvx twine check dist/*"

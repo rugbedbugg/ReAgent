@@ -556,23 +556,29 @@ mise run test     # or: pytest
 mise run lint     # or: ruff check .
 ```
 
-The suite covers deterministic scoring rubrics, aggregation and tie-breaking,
-stock hashing, catalogue ingestion, CLI parsing, and the adaptive loop.
+The suite covers deterministic scoring, route aggregation, stock handling,
+CLI modes, adaptive preferences, resumable evaluations, queue recovery, and
+package launchers. See the [pipeline baseline](.github/STANDARDS.md) for the
+shared CI/CD and README structure.
 
-```bash
-mise run install   # create/update the project environment
-mise run lint      # Ruff
-mise run test      # pytest
-python -m build    # optional local sdist and wheel build
-python -m twine check dist/*
-```
+### CI and releases
 
-`ci.yml` runs Ruff, pytest, source-distribution checks, and Windows CLI smoke
-tests on Python 3.10 and 3.11 for pushes to `main` and pull requests.
-`release.yml` validates the same matrix, checks a `v*` tag against the version
-in `pyproject.toml`, builds the sdist and wheel, runs `twine check`, and attaches
-the artifacts to a GitHub release. The release workflow grants `contents: write`
-for that publication workflow; validation jobs do not publish artifacts.
+Run `mise run install`, `mise run lint`, and `mise run test` locally. mise selects
+Python from the existing project pin and uses uv to create the environment and
+install dependencies. CI runs the same tasks on Linux and Windows with Python
+3.10 and 3.11, then builds distributions with `mise run build`, checks metadata
+with `mise run check-dist`, and smoke-tests the wheel in an isolated environment.
+
+Pull requests, pushes to `main` or `ci/**`, and manual CI runs perform validation.
+A release requires a `v` tag matching the package version and reuses the same CI
+workflow. Publication uploads the validated artifacts and verifies their downloaded
+checksums. Manual release runs must select a version tag. Publishing jobs have
+write permission; validation jobs have read-only access.
+
+Chocolatey publishing remains a manual operation in the `chocolatey` environment.
+Manual packaging runs are serialized across branches, and release runs for the
+same tag do not cancel an active publication. The packaging workflow retains its
+installer checks and metadata-correction support.
 
 ## Notes / Gotchas
 

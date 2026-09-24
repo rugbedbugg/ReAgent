@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <title>ReAgent molecular synthesis icon</title>
+  <rect width="256" height="256" rx="48" fill="#102a33"/>
+  <g fill="none" stroke="#73e2ba" stroke-width="10" stroke-linejoin="round">
+    <path d="M70 91 128 58 186 91 186 158 128 191 70 158Z"/>
+    <path d="M87 101 128 77M169 101V148M128 172 87 148" stroke-width="5"/>
+    <path d="M186 91 217 73M70 158 39 176"/>
+  </g>
+  <g fill="#f1c76d" stroke="#102a33" stroke-width="4">
+    <circle cx="128" cy="58" r="13"/><circle cx="186" cy="158" r="13"/>
+    <circle cx="39" cy="176" r="13"/><circle cx="217" cy="73" r="13"/>
+  </g>
+</svg>
