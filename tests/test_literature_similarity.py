@@ -167,7 +167,7 @@ def create_candidate_route(smiles: str = "CC(=O)Oc1ccccc1C(=O)O",
                 "type": "reaction",
                 "smiles": "CC(=O)O.C1=CC=CC=C1C(=O)O>>CC(=O)Oc1ccccc1C(=O)O",
                 "metadata": {
-                    "mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4].[c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]>>[CH3:1][C:2](=[O:3])[O:4][c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]"
+                    "mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4][c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]>>[CH3:1][C:2](=[O:3])[O:4].[c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]"
                 },
                 "children": [
                     {"type": "mol", "smiles": "CC(=O)O"},
@@ -212,16 +212,16 @@ def create_convergent_route() -> Route:
             "type": "mol", "smiles": "CC(=O)Oc1ccccc1C(=O)O",
             "children": [{
                 "type": "reaction", "smiles": "CC(=O)O.C1=CC=CC=C1C(=O)O>>CC(=O)Oc1ccccc1C(=O)O",
-                "metadata": {"mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4].[c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]>>[CH3:1][C:2](=[O:3])[O:4][c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]"},
+                "metadata": {"mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4][c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]>>[CH3:1][C:2](=[O:3])[O:4].[c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]"},
                 "children": [
                     {"type": "mol", "smiles": "CC(=O)O", "children": [{
                         "type": "reaction", "smiles": "CCO>>CC(=O)O",
-                        "metadata": {"mapped_reaction_smiles": "[CH3:1][CH2:2][O:3]>>[CH3:1][C:2](=[O:3])[O:4]"},
+                        "metadata": {"mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4]>>[CH3:1][CH2:2][O:3]"},
                         "children": [{"type": "mol", "smiles": "CCO"}]
                     }]},
                     {"type": "mol", "smiles": "C1=CC=CC=C1C(=O)O", "children": [{
                         "type": "reaction", "smiles": "CCO>>C1=CC=CC=C1C(=O)O",
-                        "metadata": {"mapped_reaction_smiles": "[CH3:1][CH2:2][O:3]>>[c:1]1[c:2][c:3][c:4][c:5][c:6]1[C:7](=[O:8])[O:9]"},
+                        "metadata": {"mapped_reaction_smiles": "[c:1]1[c:2][c:3][c:4][c:5][c:6]1[C:7](=[O:8])[O:9]>>[CH3:1][CH2:2][O:3]"},
                         "children": [{"type": "mol", "smiles": "CCO"}]
                     }]}
                 ]
@@ -251,15 +251,15 @@ def create_linear_route() -> Route:
             "type": "mol", "smiles": "CC(=O)Oc1ccccc1C(=O)O",
             "children": [{
                 "type": "reaction", "smiles": "C1=CC=CC=C1C(=O)O.CCO>>CC(=O)Oc1ccccc1C(=O)O",
-                "metadata": {"mapped_reaction_smiles": "[c:1]1[c:2][c:3][c:4][c:5][c:6]1[C:7](=[O:8])[O:9].[CH3:10][CH2:11][O:12]>>[CH3:1][C:2](=[O:3])[O:4][c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]"},
+                "metadata": {"mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4][c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]>>[c:1]1[c:2][c:3][c:4][c:5][c:6]1[C:7](=[O:8])[O:9].[CH3:10][CH2:11][O:12]"},
                 "children": [
                     {"type": "mol", "smiles": "C1=CC=CC=C1C(=O)O", "children": [{
                         "type": "reaction", "smiles": "CC(=O)O>>C1=CC=CC=C1C(=O)O",
-                        "metadata": {"mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4]>>[c:1]1[c:2][c:3][c:4][c:5][c:6]1[C:7](=[O:8])[O:9]"},
+                        "metadata": {"mapped_reaction_smiles": "[c:1]1[c:2][c:3][c:4][c:5][c:6]1[C:7](=[O:8])[O:9]>>[CH3:1][C:2](=[O:3])[O:4]"},
                         "children": [{
                             "type": "mol", "smiles": "CC(=O)O", "children": [{
                                 "type": "reaction", "smiles": "CCO>>CC(=O)O",
-                                "metadata": {"mapped_reaction_smiles": "[CH3:1][CH2:2][O:3]>>[CH3:1][C:2](=[O:3])[O:4]"},
+                                "metadata": {"mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4]>>[CH3:1][CH2:2][O:3]"},
                                 "children": [{"type": "mol", "smiles": "CCO"}]
                             }]}
                         ]}
@@ -362,7 +362,7 @@ class TestOfficialAPIParity:
                 "type": "reaction",
                 "smiles": "CC(=O)O.C1=CC=CC=C1C(=O)O>>CC(=O)Oc1ccccc1C(=O)O",
                 "metadata": {
-                    "mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4].[c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]>>[CH3:1][C:2](=[O:3])[O:4][c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]"
+                    "mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4][c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]>>[CH3:1][C:2](=[O:3])[O:4].[c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]"
                 },
                 "children": [
                     {"type": "mol", "smiles": "CC(=O)O"},
@@ -377,7 +377,7 @@ class TestOfficialAPIParity:
                 "type": "reaction",
                 "smiles": "CC(=O)O.C1=CC=CC=C1C(=O)O>>CC(=O)Oc1ccccc1C(=O)O",
                 "metadata": {
-                    "mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4].[c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]>>[CH3:1][C:2](=[O:3])[O:4][c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]"
+                    "mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4][c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]>>[CH3:1][C:2](=[O:3])[O:4].[c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]"
                 },
                 "children": [
                     {"type": "mol", "smiles": "CC(=O)O"},
@@ -544,8 +544,10 @@ class TestReferenceMappingLifecycle:
         route = evaluator._get_reference_route(derived)
 
         assert route is not None
-        assert hasattr(route, 'mapped_root_smiles')
-        # Note: mapping may fail if no mapper available, but route should exist
+        # Literature steps carry no mapping of their own; without a mapper the
+        # route must report none rather than an unmapped stand-in.
+        if not evaluator._check_mapper_availability():
+            assert evaluator._has_valid_atom_mappings(route) is False
 
     def test_candidate_route_gets_mapped(self):
         """Candidate Route -> DerivedCandidate -> SynthesisRoute -> mapped."""
@@ -617,11 +619,124 @@ class TestSimilarityOneNotExact:
         route1 = readers.read_aizynthfinder_dict(cand_route.tree)
         route2 = readers.read_aizynthfinder_dict(cand_route.tree)
 
-        # Two routes from same tree - similarity behavior documented
+        # Two routes read from the same mapped tree are identical
         sim = comp.simple_route_similarity([route1, route2])[0, 1]
-        # The rxnutils metric may not return 1.0 for separately created routes
-        # This documents the actual behavior
-        assert 0.0 <= sim <= 1.0
+        assert sim == pytest.approx(1.0)
+
+
+# N-methylbenzamide, mapped the way AiZynthFinder stores it (product>>reactants).
+# The acid and acid-chloride routes form the same target bond with different
+# leaving groups; the N-methylation route forms a different target bond.
+_AMIDE = "CNC(=O)c1ccccc1"
+_AMIDE_MAPPED = "[CH3:10][NH:1][C:2](=[O:3])[c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1"
+# The same amide with an unrelated numbering, as an independent mapper call would give
+_AMIDE_RENUMBERED = "[CH3:1][NH:2][C:3](=[O:4])[c:5]1[cH:6][cH:7][cH:8][cH:9][cH:10]1"
+
+
+def _amide_route(precursors: list[str], mapped_retro: str) -> Route:
+    tree = {
+        "type": "mol", "smiles": _AMIDE,
+        "children": [{
+            "type": "reaction", "smiles": f"{_AMIDE}>>{'.'.join(precursors)}",
+            "metadata": {"mapped_reaction_smiles": mapped_retro},
+            "children": [{"type": "mol", "smiles": p} for p in precursors],
+        }],
+    }
+    return Route(
+        target=_AMIDE,
+        reactions=[Reaction(product=_AMIDE, precursors=precursors)],
+        leaves=[Molecule(smiles=p, in_stock=True) for p in precursors],
+        solved=True,
+        tree=tree,
+    )
+
+
+_ACID_CHLORIDE_ROUTE = lambda: _amide_route(  # noqa: E731
+    ["O=C(Cl)c1ccccc1", "CN"],
+    _AMIDE_MAPPED + ">>[O:3]=[C:2](Cl)[c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1.[CH3:10][NH2:1]",
+)
+_ACID_ROUTE_RENUMBERED = lambda: _amide_route(  # noqa: E731
+    ["O=C(O)c1ccccc1", "CN"],
+    _AMIDE_RENUMBERED + ">>[O:4]=[C:3]([OH:20])[c:5]1[cH:6][cH:7][cH:8][cH:9][cH:10]1.[CH3:1][NH2:2]",
+)
+_METHYLATION_ROUTE = lambda: _amide_route(  # noqa: E731
+    ["NC(=O)c1ccccc1", "CI"],
+    _AMIDE_MAPPED + ">>[NH2:1][C:2](=[O:3])[c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1.I[CH3:10]",
+)
+
+
+def _amide_reference() -> LiteratureReference:
+    """Amide coupling from benzoyl chloride, the chemistry of _ACID_CHLORIDE_ROUTE."""
+    def mol(molecule_id, smiles, role):
+        return ReferenceMolecule(molecule_id=molecule_id, reported_smiles=smiles, role=role,
+                                 structure_resolution=StructureResolutionStatus.RESOLVED)
+    return LiteratureReference(
+        reference_id="ref_amide",
+        target=TargetRecord(reagent_target_name="N-methylbenzamide", reagent_target_smiles=_AMIDE),
+        sources=[SourceRecord(source_id="src", source_type=SourceType.PATENT, is_primary=True)],
+        molecules=[
+            mol("mol_t", _AMIDE, MoleculeRole.TARGET),
+            mol("mol_a", "O=C(Cl)c1ccccc1", MoleculeRole.STARTING_MATERIAL),
+            mol("mol_b", "CN", MoleculeRole.STARTING_MATERIAL),
+        ],
+        steps=[ReferenceStep(step_id="s1", precursor_ids=["mol_a", "mol_b"], product_id="mol_t",
+                             evidence_locators=[EvidenceLocator(source_id="src", example="1")])],
+        stereo_metadata=StereoMetadata(relation_to_reagent=StereoRelation.EXACTLY_COMPATIBLE),
+    )
+
+
+class TestPreMappedAdapterComparison:
+    """Pre-mapped comparisons through the adapter, with mappings as AiZynthFinder stores them."""
+
+    def _compare(self, candidate: Route):
+        ref = _amide_reference()
+        evaluator = SimilarityEvaluator(LiteratureReferenceSet(references=[ref]), "h")
+        derived_ref = derive_reference(ref, "h")
+        # Supply the reference's mapping directly: the curated schema carries none
+        evaluator._reference_routes[ref.reference_id] = evaluator._build_candidate_route(_ACID_CHLORIDE_ROUTE())
+        cand = derive_candidate(candidate, "h")
+        return evaluator._compare_pair(
+            derived_ref, evaluator._build_candidate_route(candidate),
+            candidate_route_id=cand.route_id, candidate_content_hash=cand.content_hash(),
+            reagent_rank=1, baseline_rank=None,
+        )
+
+    def test_similarity_one_does_not_imply_exact_recovery(self):
+        """Different leaving groups, independent numbering: similarity 1.0, exact recovery false."""
+        from reagent.eval.literature_exact import GraphEquality, compare_graph_exact
+
+        candidate = _ACID_ROUTE_RENUMBERED()
+        result = self._compare(candidate)
+
+        assert result.status == SimilarityStatus.SUCCESS
+        assert result.route_similarity == pytest.approx(1.0)
+        assert result.atom_similarity == pytest.approx(1.0)
+        assert result.bond_similarity == pytest.approx(1.0)
+        exact = compare_graph_exact(derive_reference(_amide_reference(), "h"), derive_candidate(candidate, "h"))
+        assert exact.equality == GraphEquality.NOT_EXACT
+
+    def test_different_disconnection_scores_zero_bond_similarity(self):
+        result = self._compare(_METHYLATION_ROUTE())
+
+        assert result.status == SimilarityStatus.SUCCESS
+        assert result.bond_similarity == pytest.approx(0.0)
+        assert result.route_similarity == pytest.approx(0.0)
+
+    def test_comparison_does_not_mutate_candidate_mapping(self):
+        candidate = _ACID_ROUTE_RENUMBERED()
+        evaluator = SimilarityEvaluator(LiteratureReferenceSet(references=[_amide_reference()]), "h")
+        built = evaluator._build_candidate_route(candidate)
+        before = built.atom_mapped_reaction_smiles()
+        evaluator._reference_routes["ref_amide"] = evaluator._build_candidate_route(_ACID_CHLORIDE_ROUTE())
+        evaluator._compare_pair(derive_reference(_amide_reference(), "h"), built, "c", "h", 1, None)
+        assert built.atom_mapped_reaction_smiles() == before
+
+    def test_different_root_compound_is_target_mismatch(self):
+        aspirin = create_candidate_route()
+        result = self._compare(aspirin)
+
+        assert result.status == SimilarityStatus.TARGET_MISMATCH
+        assert result.route_similarity is None
 
 
 # ============================================================
@@ -681,16 +796,16 @@ class TestStepPartitionSensitivity:
             "type": "mol", "smiles": target,
             "children": [{
                 "type": "reaction", "smiles": "CC(=O)O.C1=CC=CC=C1C(=O)O>>CC(=O)Oc1ccccc1C(=O)O",
-                "metadata": {"mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4].[c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]>>[CH3:1][C:2](=[O:3])[O:4][c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]"},
+                "metadata": {"mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4][c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]>>[CH3:1][C:2](=[O:3])[O:4].[c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]"},
                 "children": [
                     {"type": "mol", "smiles": "CC(=O)O", "children": [{
                         "type": "reaction", "smiles": "CCO>>CC(=O)O",
-                        "metadata": {"mapped_reaction_smiles": "[CH3:1][CH2:2][O:3]>>[CH3:1][C:2](=[O:3])[O:4]"},
+                        "metadata": {"mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4]>>[CH3:1][CH2:2][O:3]"},
                         "children": [{"type": "mol", "smiles": "CCO"}]
                     }]},
                     {"type": "mol", "smiles": "C1=CC=CC=C1C(=O)O", "children": [{
                         "type": "reaction", "smiles": "CCO>>C1=CC=CC=C1C(=O)O",
-                        "metadata": {"mapped_reaction_smiles": "[CH3:1][CH2:2][O:3]>>[c:1]1[c:2][c:3][c:4][c:5][c:6]1[C:7](=[O:8])[O:9]"},
+                        "metadata": {"mapped_reaction_smiles": "[c:1]1[c:2][c:3][c:4][c:5][c:6]1[C:7](=[O:8])[O:9]>>[CH3:1][CH2:2][O:3]"},
                         "children": [{"type": "mol", "smiles": "CCO"}]
                     }]}
                 ]
@@ -702,7 +817,7 @@ class TestStepPartitionSensitivity:
             "type": "mol", "smiles": "CC(=O)Oc1ccccc1C(=O)O",
             "children": [{
                 "type": "reaction", "smiles": "CCO.C1=CC=CC=C1C(=O)O>>CC(=O)Oc1ccccc1C(=O)O",
-                "metadata": {"mapped_reaction_smiles": "[CH3:1][CH2:2][O:3].[c:4]1[c:5][c:6][c:7][c:8][c:9]1[C:10](=[O:11])[O:12]>>[CH3:1][C:2](=[O:3])[O:4][c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]"},
+                "metadata": {"mapped_reaction_smiles": "[CH3:1][C:2](=[O:3])[O:4][c:5]1[c:6][c:7][c:8][c:9][c:10]1[C:11](=[O:12])[O:13]>>[CH3:1][CH2:2][O:3].[c:4]1[c:5][c:6][c:7][c:8][c:9]1[C:10](=[O:11])[O:12]"},
                 "children": [{"type": "mol", "smiles": "CCO"}, {"type": "mol", "smiles": "C1=CC=CC=C1C(=O)O"}]
             }]
         }

@@ -8,6 +8,7 @@ expected by the similarity engine, and computes graded similarity scores.
 
 from __future__ import annotations
 
+import copy
 import functools
 import hashlib
 import warnings
@@ -34,6 +35,16 @@ from reagent.eval.literature_derived import (
 
 # Silence RDKit warnings
 RDLogger.DisableLog("rdApp.*")
+
+
+def _every_reaction_mapped(tree: dict) -> bool:
+    """True if every reaction node in an AiZynthFinder tree has a mapped reaction SMILES."""
+    for child in tree.get("children", []):
+        if child.get("type") == "reaction" and not child.get("metadata", {}).get("mapped_reaction_smiles"):
+            return False
+        if not _every_reaction_mapped(child):
+            return False
+    return True
 
 
 class SimilarityStatus(Enum):
@@ -237,7 +248,9 @@ class SimilarityEvaluator:
             return None
 
         try:
-            route = readers.read_aizynthfinder_dict(tree)
+            # This tree is built here in forward form. read_aizynthfinder_dict
+            # expects AiZynthFinder's retro-form mapping and would reverse it.
+            route = base.SynthesisRoute(copy.deepcopy(tree))
             # Attempt to assign atom mapping for similarity computation
             # This will fail gracefully if no mapper is available
             self._ensure_route_mapping(route)
@@ -406,70 +419,28 @@ class SimilarityEvaluator:
         if not reaction_children:
             return None
 
-        # Build reaction SMILES and generate atom-mapped version
+        # Literature steps carry no atom mapping; a mapper may assign one later
         precursor_m0s = [mol_id_to_m0.get(pid, "") for pid in precursor_ids if mol_id_to_m0.get(pid, "")]
         reaction_smiles = ".".join(precursor_m0s) + ">>" + m0
-        mapped_rsmi = self._generate_atom_mapped_rsmi(reaction_smiles)
-        if mapped_rsmi is None:
-            mapped_rsmi = reaction_smiles
 
         return {
             "type": "reaction",
             "smiles": reaction_smiles,
-            "metadata": {"mapped_reaction_smiles": mapped_rsmi},
+            "metadata": {},
             "children": reaction_children
         }
-
-    def _generate_atom_mapped_rsmi(self, reaction_smiles: str) -> str | None:
-        """Generate atom-mapped reaction SMILES from unmapped reaction SMILES using RDKit."""
-        try:
-            from rdkit import Chem
-
-            # Parse reaction SMILES
-            rxn = Chem.ReactionFromSmarts(reaction_smiles, useSmiles=True)
-            if rxn is None:
-                return None
-
-            # Try to map the reaction
-            # First, ensure reactants and products have valid molecules
-            reactants = [Chem.MolFromSmiles(smi) for smi in reaction_smiles.split(">>")[0].split(".")]
-            products = [Chem.MolFromSmiles(smi) for smi in reaction_smiles.split(">>")[1].split(".")]
-
-            # Filter out None molecules
-            reactants = [m for m in reactants if m is not None]
-            products = [m for m in products if m is not None]
-
-            if not reactants or not products:
-                return None
-
-            # Create a new reaction with these molecules
-            rxn = Chem.rdChemReactions.ChemicalReaction()
-            for r in reactants:
-                rxn.AddReactantTemplate(r)
-            for p in products:
-                rxn.AddProductTemplate(p)
-
-            # Try to assign atom maps
-            try:
-                rxn.Initialize()
-                # Get the atom-mapped reaction SMILES
-                mapped_rsmi = Chem.rdChemReactions.ReactionToSmarts(rxn)
-                return mapped_rsmi
-            except Exception:
-                return None
-
-        except Exception:
-            return None
 
     def _build_candidate_route(self, route_or_cand) -> base.SynthesisRoute | None:
         """Build SynthesisRoute from a generated Route or DerivedCandidate, preferring the original Route.tree."""
         # Check if it's a Route object (has tree attribute) or DerivedCandidate
         from reagent.core.models import Route
+        search_tree = False
         if isinstance(route_or_cand, Route):
             route = route_or_cand
             if route.tree and isinstance(route.tree, dict):
                 # Use authoritative original tree topology
                 tree = route.tree
+                search_tree = True
             else:
                 # Fallback: reconstruct from flat representation
                 from reagent.eval.literature_derived import derive_candidate
@@ -484,7 +455,12 @@ class SimilarityEvaluator:
                 return None
 
         try:
-            return readers.read_aizynthfinder_dict(tree)
+            # AiZynthFinder stores retro-form mappings (product>>reactants), which
+            # only the AiZynthFinder reader converts. Trees without a mapping on
+            # every reaction are read as-is and reported as lacking mappings.
+            if search_tree and _every_reaction_mapped(tree):
+                return readers.read_aizynthfinder_dict(tree)
+            return base.SynthesisRoute(copy.deepcopy(tree))
         except Exception as e:
             warnings.warn(f"Failed to parse candidate route: {e}")
             return None
@@ -607,17 +583,14 @@ class SimilarityEvaluator:
             if not reaction_children:
                 return None
 
-            # Build reaction SMILES and generate atom-mapped version
+            # A flat reconstruction has no atom mapping of its own
             precursor_m0s = [m0_lookup.get(pid, "") for pid in precursor_ids if m0_lookup.get(pid, "")]
             reaction_smiles = ".".join(precursor_m0s) + ">>" + m0_lookup.get(node_id, "")
-            mapped_rsmi = self._generate_atom_mapped_rsmi(reaction_smiles)
-            if mapped_rsmi is None:
-                mapped_rsmi = reaction_smiles
 
             return {
                 "type": "reaction",
                 "smiles": reaction_smiles,
-                "metadata": {"mapped_reaction_smiles": mapped_rsmi},
+                "metadata": {},
                 "children": reaction_children,
             }
 
@@ -722,7 +695,28 @@ class SimilarityEvaluator:
                     warnings=["Route lacks atom mappings and auto-mapping failed"],
                 )
 
+        # Both metrics compare atom-map numbers, so the two routes must share the
+        # target's numbering. Remap a copy of the candidate onto the reference root.
+        ref_root = m1_key(ref_route.reaction_tree.get("smiles", ""))
+        cand_root = m1_key(cand_route.reaction_tree.get("smiles", ""))
+        if ref_root is None or ref_root != cand_root:
+            return SimilarityPairResult(
+                reference_id=ref.reference_id,
+                candidate_route_id=candidate_route_id,
+                candidate_content_hash=candidate_content_hash,
+                reagent_rank=reagent_rank,
+                baseline_rank=baseline_rank,
+                atom_similarity=None,
+                bond_similarity=None,
+                route_similarity=None,
+                status=SimilarityStatus.TARGET_MISMATCH,
+                mapping_status="root_compounds_differ",
+                warnings=[f"Reference root {ref_root} differs from candidate root {cand_root}"],
+            )
+        cand_route = copy.deepcopy(cand_route)
+
         try:
+            cand_route.remap(ref_route)
             sim_matrix = comp.simple_route_similarity([ref_route, cand_route])
             if sim_matrix is None or sim_matrix.size == 0:
                 return SimilarityPairResult(
