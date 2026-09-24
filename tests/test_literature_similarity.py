@@ -739,6 +739,51 @@ class TestPreMappedAdapterComparison:
         assert result.route_similarity is None
 
 
+class TestMappingLayerSemantics:
+    """Mapping outcomes Phase 3A must report, whatever the mapper environment."""
+
+    def test_python_rxnmapper_package_is_not_a_route_mapper(self, tmp_path, monkeypatch):
+        """rxnutils maps through a conda environment, so an importable rxnmapper
+        package does not make mapping possible: that is MAPPER_UNAVAILABLE, not a
+        mapping failure."""
+        (tmp_path / "rxnmapper").mkdir()
+        (tmp_path / "rxnmapper" / "__init__.py").write_text("")
+        monkeypatch.syspath_prepend(str(tmp_path))
+        monkeypatch.delenv("RXNMAPPER_ENV_PATH", raising=False)
+        ref = create_simple_reference()
+        evaluator = SimilarityEvaluator(LiteratureReferenceSet(references=[ref]), "h")
+        cand = create_candidate_route()
+
+        result = evaluator._compare_pair(derive_reference(ref, "h"), evaluator._build_candidate_route(cand),
+                                         "c", "h", 1, None)
+
+        assert result.status == SimilarityStatus.MAPPER_UNAVAILABLE
+        assert result.route_similarity is None
+
+    def test_per_step_target_number_reuse_is_not_scored(self):
+        """AiZynthFinder can reuse a target map number for an atom outside the
+        target in a later step. Scoring that would count a formed "target" bond
+        that does not exist (C-Cl here), so the stored maps are rejected."""
+        chloride_step = (
+            "[O:3]=[C:2]([Cl:10])[c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1"
+            ">>[O:3]=[C:2](O)[c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1.O=S([Cl:10])Cl"
+        )
+        route = _amide_route(["O=C(Cl)c1ccccc1", "CN"], _ACID_CHLORIDE_ROUTE().tree["children"][0]["metadata"][
+            "mapped_reaction_smiles"])
+        route.tree["children"][0]["children"][0]["children"] = [{
+            "type": "reaction", "smiles": "", "metadata": {"mapped_reaction_smiles": chloride_step},
+            "children": [{"type": "mol", "smiles": "O=C(O)c1ccccc1"}, {"type": "mol", "smiles": "O=S(Cl)Cl"}],
+        }]
+        evaluator = SimilarityEvaluator(LiteratureReferenceSet(references=[_amide_reference()]), "h")
+        evaluator._reference_routes["ref_amide"] = evaluator._build_candidate_route(_ACID_CHLORIDE_ROUTE())
+
+        result = evaluator._compare_pair(derive_reference(_amide_reference(), "h"),
+                                         evaluator._build_candidate_route(route), "c", "h", 1, None)
+
+        assert result.status == SimilarityStatus.MAPPER_UNAVAILABLE
+        assert result.bond_similarity is None
+
+
 # ============================================================
 # 6. STEREO SEMANTICS TEST
 # ============================================================
