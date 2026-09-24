@@ -157,14 +157,25 @@ def probe_rxnutils_mapper(environ: dict[str, str] | None = None) -> MapperProbe:
     return MapperProbe(MapperCapability.AVAILABLE, namerxn, conda, rxnmapper_env, "rxnmapper environment found")
 
 
+def _prefix_dist_version(prefix: str, name: str) -> str | None:
+    """Version of a distribution installed in another environment, read from its metadata."""
+    for site in ("lib/python*/site-packages", "Lib/site-packages"):
+        for info in sorted(Path(prefix).glob(f"{site}/{name}-*.dist-info")):
+            return info.name[len(name) + 1:-len(".dist-info")]
+    return None
+
+
 class RxnutilsRouteMapper:
     """Route-wide mapping through the official ``SynthesisRoute.assign_atom_mapping``."""
 
     def __init__(self, rxnmapper_version: str | None = None, environ: dict[str, str] | None = None):
         self.probe = probe_rxnutils_mapper(environ)
         backends = ["namerxn"] if self.probe.namerxn else []
-        # rxnmapper runs in its own environment, so its version is only known if declared
-        backends.append(f"rxnmapper=={rxnmapper_version or 'unrecorded'}")
+        # rxnmapper runs in its own environment; its model depends on these versions
+        env = self.probe.rxnmapper_env
+        found = {n: _prefix_dist_version(env, n) if env else None for n in ("rxnmapper", "transformers", "torch")}
+        found["rxnmapper"] = rxnmapper_version or found["rxnmapper"]
+        backends += [f"{n}=={v or 'unrecorded'}" for n, v in found.items()]
         self.identity = MapperIdentity(
             tool="rxnutils.SynthesisRoute.assign_atom_mapping",
             version=f"reaction-utils=={_dist_version('reaction-utils')};" + ";".join(backends),

@@ -745,6 +745,17 @@ class TestMapperCapability:
         probe = probe_rxnutils_mapper({"PATH": str(tmp_path), "RXNMAPPER_ENV_PATH": str(tmp_path)})
         assert probe.capability == MapperCapability.AVAILABLE
 
+    def test_mapper_identity_records_environment_versions(self, tmp_path):
+        conda = tmp_path / "conda"
+        conda.write_text("")
+        conda.chmod(0o755)
+        site = tmp_path / "lib" / "python3.11" / "site-packages"
+        for dist in ("rxnmapper-0.4.3", "transformers-4.57.6", "torch-2.14.0+cpu"):
+            (site / f"{dist}.dist-info").mkdir(parents=True)
+        mapper = RxnutilsRouteMapper(environ={"PATH": str(tmp_path), "RXNMAPPER_ENV_PATH": str(tmp_path)})
+
+        assert mapper.identity.version.endswith(";rxnmapper==0.4.3;transformers==4.57.6;torch==2.14.0+cpu")
+
     def test_python_rxnmapper_package_alone_is_not_a_mapper(self, tmp_path, monkeypatch):
         """rxnutils runs rxnmapper through conda, never in-process."""
         (tmp_path / "rxnmapper").mkdir()
