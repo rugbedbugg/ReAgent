@@ -8,6 +8,7 @@ import pytest
 
 from reagent.core.chem import m0_key, m1_key
 from reagent.core.models import Molecule, Reaction, Route
+from reagent.eval.checkpoint import Checkpoint
 from reagent.eval.harness import (
     DEFAULT_WEIGHTS,
     RankingResult,
@@ -19,6 +20,7 @@ from reagent.eval.harness import (
 from reagent.eval.literature import (
     EvidenceLocator,
     LiteratureReference,
+    LiteratureReferenceSet,
     MolecularForm,
     MoleculeRole,
     ReferenceMolecule,
@@ -42,14 +44,11 @@ from reagent.eval.literature_derived import (
     derive_candidate,
     derive_reference,
 )
-from reagent.eval.checkpoint import Checkpoint
-from reagent.eval.literature import LiteratureReferenceSet
 from reagent.eval.literature_exact import (
     GraphEquality,
     compare_graph_exact,
     run_exact_recovery_benchmark,
 )
-
 
 _ASPIRIN = "CC(=O)Oc1ccccc1C(=O)O"
 _SALICYLIC = "O=C(O)c1ccccc1O"
