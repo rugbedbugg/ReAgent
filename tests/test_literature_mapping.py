@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import copy
 import json
+import os
 
 import pytest
 
@@ -48,6 +49,25 @@ from reagent.eval.literature_mapping import (
     validate_route_mapping,
 )
 from reagent.eval.literature_similarity import SimilarityEvaluator, SimilarityStatus
+
+# The machine's own environment, read before any test hides the mapper
+_REAL_ENV = dict(os.environ)
+
+
+@pytest.fixture(autouse=True)
+def _no_route_mapper(monkeypatch):
+    """Keep results independent of any mapper installed on the machine."""
+    for name in ("RXNMAPPER_ENV_PATH", "CONDA_PATH"):
+        monkeypatch.delenv(name, raising=False)
+
+
+@pytest.fixture
+def real_mapper_env(monkeypatch):
+    """Restore the machine's mapper variables, which rxnutils reads when it maps."""
+    for name in ("RXNMAPPER_ENV_PATH", "CONDA_PATH"):
+        if name in _REAL_ENV:
+            monkeypatch.setenv(name, _REAL_ENV[name])
+
 
 # N-methylbenzamide made from benzoic acid through the acid chloride.
 AMIDE = "CNC(=O)c1ccccc1"
@@ -732,10 +752,10 @@ class TestMapperCapability:
         monkeypatch.syspath_prepend(str(tmp_path))
         assert probe_rxnutils_mapper({"PATH": ""}).capability == MapperCapability.UNAVAILABLE
 
-    def test_automatic_mapping_request_here(self):
+    def test_automatic_mapping_request_here(self, real_mapper_env):
         """With whatever this environment offers, an unmapped reference is either
         mapped by the real mapper or reported MAPPER_UNAVAILABLE - never faked."""
-        mapper = RxnutilsRouteMapper()
+        mapper = RxnutilsRouteMapper(environ=_REAL_ENV)
         artifact = _mapped_reference(premapped=None, mapper=mapper)
         if mapper.capability() == MapperCapability.AVAILABLE:
             assert artifact.mapping_status in (MappingStatus.SUCCESS, MappingStatus.MAPPING_FAILED)
@@ -743,9 +763,9 @@ class TestMapperCapability:
             assert artifact.mapping_status == MappingStatus.MAPPER_UNAVAILABLE
 
 
-@pytest.mark.skipif(RxnutilsRouteMapper().capability() != MapperCapability.AVAILABLE,
+@pytest.mark.skipif(RxnutilsRouteMapper(environ=_REAL_ENV).capability() != MapperCapability.AVAILABLE,
                     reason="needs RXNMAPPER_ENV_PATH and conda for rxnutils route mapping")
-def test_real_rxnutils_mapping_is_route_wide():
-    artifact = _mapped_reference(premapped=None, mapper=RxnutilsRouteMapper())
+def test_real_rxnutils_mapping_is_route_wide(real_mapper_env):
+    artifact = _mapped_reference(premapped=None, mapper=RxnutilsRouteMapper(environ=_REAL_ENV))
     assert artifact.mapping_status == MappingStatus.SUCCESS
     assert validate_route_mapping(artifact.mapped_tree) == []

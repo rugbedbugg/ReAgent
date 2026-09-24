@@ -45,6 +45,14 @@ from reagent.eval.literature_similarity import (
     run_similarity_benchmark,
 )
 
+
+@pytest.fixture(autouse=True)
+def _no_route_mapper(monkeypatch):
+    """Keep results independent of any mapper installed on the machine."""
+    for name in ("RXNMAPPER_ENV_PATH", "CONDA_PATH"):
+        monkeypatch.delenv(name, raising=False)
+
+
 # ============================================================
 # Helper: Build minimal reference and candidate for testing
 # ============================================================
