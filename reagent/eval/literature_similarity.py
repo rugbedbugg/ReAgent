@@ -8,8 +8,8 @@ expected by the similarity engine, and computes graded similarity scores.
 
 from __future__ import annotations
 
-import copy
 import hashlib
+import json
 import warnings
 from dataclasses import dataclass
 from enum import Enum
@@ -18,32 +18,35 @@ from typing import Literal
 
 import rxnutils.routes.base as base
 import rxnutils.routes.comparison as comp
-import rxnutils.routes.readers as readers
 from rdkit import RDLogger
 
 from reagent.core.chem import m0_key, m1_key
 from reagent.eval.checkpoint import Checkpoint
 from reagent.eval.literature import (
-    LiteratureReference,
     LiteratureReferenceSet,
-    MoleculeRole,
 )
 from reagent.eval.literature_derived import (
     ExactEligibility,
 )
+from reagent.eval.literature_mapping import (
+    MappedArtifactStore,
+    MappedDerivedCandidate,
+    MappedDerivedReference,
+    MappedDerivedRoute,
+    MapperCapability,
+    MapperIdentity,
+    MappingStatus,
+    RouteMapper,
+    RxnutilsRouteMapper,
+    align_to_reference,
+    map_synthesis_route,
+    resolve_candidate,
+    resolve_reference,
+    validate_route_mapping,
+)
 
 # Silence RDKit warnings
 RDLogger.DisableLog("rdApp.*")
-
-
-def _every_reaction_mapped(tree: dict) -> bool:
-    """True if every reaction node in an AiZynthFinder tree has a mapped reaction SMILES."""
-    for child in tree.get("children", []):
-        if child.get("type") == "reaction" and not child.get("metadata", {}).get("mapped_reaction_smiles"):
-            return False
-        if not _every_reaction_mapped(child):
-            return False
-    return True
 
 
 class SimilarityStatus(Enum):
@@ -56,6 +59,21 @@ class SimilarityStatus(Enum):
     REFERENCE_CONVERSION_FAILED = "reference_conversion_failed"
     TARGET_MISMATCH = "target_mismatch"
     DEPENDENCY_UNAVAILABLE = "dependency_unavailable"
+
+
+def _pair_status(status: MappingStatus, side: str | None) -> tuple[SimilarityStatus, str]:
+    """Pair status for a comparison the mapping layer could not align."""
+    if status == MappingStatus.TARGET_MISMATCH:
+        return SimilarityStatus.TARGET_MISMATCH, "root_compounds_differ"
+    if status == MappingStatus.MAPPER_UNAVAILABLE:
+        return SimilarityStatus.MAPPER_UNAVAILABLE, "no_mapper_available"
+    if status == MappingStatus.STALE:
+        return SimilarityStatus.MAPPER_UNAVAILABLE, "stale_mapping"
+    if status == MappingStatus.MAPPING_FAILED:
+        return SimilarityStatus.MAPPING_FAILED, "mapping_failed"
+    if side == "candidate":
+        return SimilarityStatus.CANDIDATE_CONVERSION_FAILED, "candidate_conversion_failed"
+    return SimilarityStatus.REFERENCE_CONVERSION_FAILED, "reference_conversion_failed"
 
 
 @dataclass
@@ -204,11 +222,29 @@ class SimilarityEvaluator:
         self,
         reference_set: LiteratureReferenceSet,
         derivation_generator_hash: str,
+        mapper: RouteMapper | None = None,
+        mapped_references: dict[str, MappedDerivedReference] | None = None,
+        artifact_store: MappedArtifactStore | None = None,
+        stored_maps_identity: MapperIdentity | None = None,
     ):
+        """Mapping comes only from the shared mapping layer.
+
+        ``mapped_references`` supplies artifacts produced elsewhere (for example in
+        a dedicated mapping environment); stale ones are rejected, never used.
+        ``artifact_store`` caches artifacts on disk. ``stored_maps_identity``
+        records what produced maps saved on candidate trees; by default it is
+        read from the checkpoint manifest.
+        """
         self.reference_set = reference_set
         self.derivation_generator_hash = derivation_generator_hash
+        self.mapper = mapper if mapper is not None else RxnutilsRouteMapper()
+        self.mapped_references = dict(mapped_references or {})
+        self.artifact_store = artifact_store
+        self.stored_maps_identity = stored_maps_identity
         self._derived_refs = []
-        self._reference_routes = {}
+        # Already-mapped forward-form reference routes supplied directly by a caller
+        self._reference_routes: dict[str, base.SynthesisRoute] = {}
+        self._reference_artifacts: dict[str, MappedDerivedRoute | None] = {}
 
     def _derive_all_references(self):
         if self._derived_refs:
@@ -223,396 +259,122 @@ class SimilarityEvaluator:
         self._derived_refs = derived
         return derived
 
-    def _get_reference_route(self, derived_ref):
-        if derived_ref.reference_id in self._reference_routes:
-            return self._reference_routes[derived_ref.reference_id]
-
-        try:
-            route = self._build_reference_route(derived_ref)
-            self._reference_routes[derived_ref.reference_id] = route
-            return route
-        except Exception as e:
-            warnings.warn(f"Failed to build reference route for {derived_ref.reference_id}: {e}")
-            return None
-
-    def _build_reference_route(self, derived_ref):
-        # Build route for CORE_EXACT_ELIGIBLE (M0 target match) or STEREO_STRESS (M1 target match)
-        if derived_ref.exact_eligibility not in (
-            ExactEligibility.CORE_EXACT_ELIGIBLE,
-            ExactEligibility.STEREO_STRESS,
-        ):
-            return None
-
-        tree = self._reference_to_tree(derived_ref)
-        if tree is None:
-            return None
-
-        try:
-            # This tree is built here in forward form. read_aizynthfinder_dict
-            # expects AiZynthFinder's retro-form mapping and would reverse it.
-            route = base.SynthesisRoute(copy.deepcopy(tree))
-            # Attempt to assign atom mapping for similarity computation
-            # This will fail gracefully if no mapper is available
-            self._ensure_route_mapping(route)
-            return route
-        except Exception as e:
-            warnings.warn(f"Failed to parse reference route {derived_ref.reference_id}: {e}")
-            return None
-
-    def _ensure_route_mapping(self, route: base.SynthesisRoute) -> bool:
-        """
-        Ensure the route has atom mappings for similarity computation.
-
-        Returns True if mapping succeeded or was already present, False if mapping failed.
-        Does not raise - mapping failures are handled by the similarity computation.
-        """
-        try:
-            # Check if route already has meaningful atom mappings
-            if route.mapped_root_smiles and any(
-                ":" in mol for mol in route.mapped_root_smiles.split(".")
+    def _reference_artifact(self, derived_ref) -> MappedDerivedRoute | None:
+        """The reference's mapped artifact, or None if it is not graded-eligible."""
+        rid = derived_ref.reference_id
+        if rid in self._reference_routes:
+            return map_synthesis_route(self._reference_routes[rid], "reference", rid,
+                                       MapperIdentity("caller-supplied", "unrecorded"), self.mapper)
+        if rid not in self._reference_artifacts:
+            original = next((r for r in self.reference_set.references if r.reference_id == rid), None)
+            # Only CORE_EXACT_ELIGIBLE (M0 target) and STEREO_STRESS (M1 target) are graded
+            if original is None or derived_ref.exact_eligibility not in (
+                ExactEligibility.CORE_EXACT_ELIGIBLE,
+                ExactEligibility.STEREO_STRESS,
             ):
-                return True
+                self._reference_artifacts[rid] = None
+            else:
+                self._reference_artifacts[rid] = resolve_reference(
+                    original, derived_ref, self.mapper, self.artifact_store, self.mapped_references.get(rid),
+                )
+        return self._reference_artifacts[rid]
 
-            # Try to assign mapping using available mapper
-            route.assign_atom_mapping(overwrite=True, only_rxnmapper=False)
-            return True
-        except Exception:
-            # Mapping failed - similarity computation will handle this
-            return False
-
-    def _has_valid_atom_mappings(self, route: base.SynthesisRoute) -> bool:
-        """Check if a route has valid atom mappings for similarity computation.
-
-        A route has valid mappings if its atom_mapped_reaction_smiles contains
-        atom map numbers (indicated by :digit pattern). This does NOT attempt
-        to assign mappings - it only checks existing mappings.
-        """
-        try:
-            mapped_reactions = route.atom_mapped_reaction_smiles()
-            if not mapped_reactions:
-                return False
-            import re
-            atom_map_pattern = re.compile(r':\d+')
-            for rxn_smi in mapped_reactions:
-                if not atom_map_pattern.search(rxn_smi):
-                    return False
-            return True
-        except Exception:
-            return False
+    def _get_reference_route(self, derived_ref) -> base.SynthesisRoute | None:
+        """rxnutils view of the reference artifact: mapped if mapping succeeded."""
+        artifact = self._reference_artifact(derived_ref)
+        return artifact.synthesis_route() if artifact is not None else None
 
     def _check_mapper_availability(self) -> bool:
-        """Check if any supported atom mapper (NameRxn or RxnMapper) is available."""
-        import importlib.util
-        if importlib.util.find_spec("namrxn") is not None:
-            return True
-        if importlib.util.find_spec("rxnmapper") is not None:
-            return True
-        return False
+        return self.mapper.capability() == MapperCapability.AVAILABLE
 
-    def _reference_to_tree(self, derived_ref):
-        # Use the original LiteratureReference for tree building since it has
-        # the full graph structure with molecule_ids and roles
-        original_ref = None
-        for ref in self.reference_set.references:
-            if ref.reference_id == derived_ref.reference_id:
-                original_ref = ref
-                break
+    def _has_valid_atom_mappings(self, route: base.SynthesisRoute) -> bool:
+        """True if the route carries a mapping that passes route-wide validation."""
+        return not validate_route_mapping(route.reaction_tree)
 
-        if original_ref is None:
-            return None
+    def _candidate_artifact(self, route_or_cand) -> MappedDerivedCandidate:
+        """Mapped artifact of a generated Route (original tree first) or a DerivedCandidate."""
+        from reagent.core.models import Route
+        from reagent.eval.literature_derived import derive_candidate
 
-        return self._build_tree_from_original_ref(original_ref)
+        if isinstance(route_or_cand, Route):
+            derived = derive_candidate(route_or_cand, self.derivation_generator_hash)
+        else:
+            derived = route_or_cand
+        return resolve_candidate(route_or_cand, derived, self.mapper, self.artifact_store,
+                                 self.stored_maps_identity)
 
-    def _build_tree_from_original_ref(self, ref: LiteratureReference):
-        """Build AiZynthFinder tree from original LiteratureReference."""
-        if not ref.molecules or not ref.steps:
-            return None
-
-        # Build molecule_id -> M0 mapping
-        mol_id_to_m0 = {}
-        for m in ref.molecules:
-            if m.reported_smiles:
-                m0 = m0_key(m.reported_smiles)
-                if m0:
-                    mol_id_to_m0[m.molecule_id] = m0
-
-        if not mol_id_to_m0:
-            return None
-
-        # Find target molecule
-        target_mol_id = None
-        for m in ref.molecules:
-            if m.role == MoleculeRole.TARGET:
-                target_mol_id = m.molecule_id
-                break
-
-        if not target_mol_id or target_mol_id not in mol_id_to_m0:
-            return None
-
-        # Build the reaction subtree for the target
-        target_m0 = mol_id_to_m0[target_mol_id]
-        reaction_subtree = self._build_reaction_subtree(target_mol_id, ref, mol_id_to_m0, set())
-
-        if reaction_subtree is None:
-            # Target has no producing step - it's a leaf
-            return {"type": "mol", "smiles": target_m0}
-
-        # Wrap in mol node (target molecule)
-        return {
-            "type": "mol",
-            "smiles": target_m0,
-            "children": [reaction_subtree]
-        }
-
-    def _build_reaction_subtree(
-        self,
-        mol_id: str,
-        ref: LiteratureReference,
-        mol_id_to_m0: dict[str, str],
-        visited: set[str]
-    ):
-        """Build reaction subtree for a molecule that has a producing step."""
-        if mol_id in visited:
-            return None
-        visited.add(mol_id)
-
-        m0 = mol_id_to_m0.get(mol_id)
-        if not m0:
-            return None
-
-        # Find producing step
-        producing_step = None
-        for step in ref.steps:
-            if step.product_id == mol_id:
-                producing_step = step
-                break
-
-        if not producing_step:
-            return None
-
-        precursor_ids = producing_step.precursor_ids
-        if not precursor_ids:
-            return None
-
-        reaction_children = []
-        for pid in precursor_ids:
-            child_m0 = mol_id_to_m0.get(pid, "")
-            if not child_m0:
-                continue
-
-            # Check if precursor has a producing step (i.e., is an intermediate)
-            has_producer = any(s.product_id == pid for s in ref.steps)
-
-            if has_producer:
-                # Precursor is an intermediate - build its reaction subtree
-                child_subtree = self._build_reaction_subtree(pid, ref, mol_id_to_m0, visited.copy())
-                if child_subtree:
-                    reaction_children.append({
-                        "type": "mol",
-                        "smiles": child_m0,
-                        "children": [child_subtree]
-                    })
-            else:
-                # Precursor is a starting material (leaf)
-                reaction_children.append({"type": "mol", "smiles": child_m0})
-
-        if not reaction_children:
-            return None
-
-        # Literature steps carry no atom mapping; a mapper may assign one later
-        precursor_m0s = [mol_id_to_m0.get(pid, "") for pid in precursor_ids if mol_id_to_m0.get(pid, "")]
-        reaction_smiles = ".".join(precursor_m0s) + ">>" + m0
-
-        return {
-            "type": "reaction",
-            "smiles": reaction_smiles,
-            "metadata": {},
-            "children": reaction_children
-        }
+    def _candidate_or_none(self, route) -> MappedDerivedCandidate | None:
+        artifact = self._candidate_artifact(route)
+        return artifact if artifact.route_tree is not None else None
 
     def _build_candidate_route(self, route_or_cand) -> base.SynthesisRoute | None:
-        """Build SynthesisRoute from a generated Route or DerivedCandidate, preferring the original Route.tree."""
-        # Check if it's a Route object (has tree attribute) or DerivedCandidate
-        from reagent.core.models import Route
-        search_tree = False
-        if isinstance(route_or_cand, Route):
-            route = route_or_cand
-            if route.tree and isinstance(route.tree, dict):
-                # Use authoritative original tree topology
-                tree = route.tree
-                search_tree = True
-            else:
-                # Fallback: reconstruct from flat representation
-                from reagent.eval.literature_derived import derive_candidate
-                cand_derived = derive_candidate(route, self.derivation_generator_hash)
-                tree = self._candidate_to_tree(cand_derived)
-                if tree is None:
-                    return None
-        else:
-            # It's a DerivedCandidate
-            tree = self._candidate_to_tree(route_or_cand)
-            if tree is None:
-                return None
-
-        try:
-            # AiZynthFinder stores retro-form mappings (product>>reactants), which
-            # only the AiZynthFinder reader converts. Trees without a mapping on
-            # every reaction are read as-is and reported as lacking mappings.
-            if search_tree and _every_reaction_mapped(tree):
-                return readers.read_aizynthfinder_dict(tree)
-            return base.SynthesisRoute(copy.deepcopy(tree))
-        except Exception as e:
-            warnings.warn(f"Failed to parse candidate route: {e}")
-            return None
-
-    def _candidate_to_tree(self, candidate):
-        """Alias for _build_tree_from_flat for backward compatibility."""
-        return self._build_tree_from_flat(candidate)
-
-    def _build_tree_from_flat(self, candidate):
-        """Build an AiZynthFinder tree dict from a DerivedCandidate's flat steps.
-
-        Uses the same M0-linked reconstruction as Phase 2's flat signature, so an
-        ambiguous flat route yields no tree rather than a guessed topology.
-        """
-        from reagent.eval.literature_derived import reconstruct_tree_from_steps
-
-        if not candidate.steps:
-            return None
-        errors: list[str] = []
-        tree = reconstruct_tree_from_steps(
-            candidate.target_m0,
-            [(step.product_m0, step.precursor_m0s) for step in candidate.steps],
-            candidate.leaf_m0s,
-            errors,
-        )
-        if tree is None:
-            warnings.warn(f"Candidate {candidate.route_id}: {'; '.join(errors)}")
-        return tree
+        """rxnutils view of the candidate artifact, or None without a usable topology."""
+        return self._candidate_artifact(route_or_cand).synthesis_route()
 
     def _compare_pair(
         self,
         ref,
-        cand_route: base.SynthesisRoute,
+        cand_route,
         candidate_route_id: str,
         candidate_content_hash: str,
         reagent_rank,
         baseline_rank,
     ):
-        """Compare a reference route against a pre-built candidate SynthesisRoute.
+        """Compare a reference against one candidate through the shared mapping layer.
 
         Args:
             ref: DerivedReference object
-            cand_route: Pre-built SynthesisRoute for the candidate
+            cand_route: the candidate's MappedDerivedCandidate, or an already-built
+                forward-form SynthesisRoute, or None if it could not be converted
             candidate_route_id: Identifier for the candidate route
             candidate_content_hash: Content hash for provenance
             reagent_rank: Rank in reagent ranking (or None)
             baseline_rank: Rank in baseline ranking (or None)
         """
-
-        ref_route = self._get_reference_route(ref)
-        if ref_route is None:
+        def result(status, mapping_status, notes, atom=None, bond=None, total=None):
             return SimilarityPairResult(
                 reference_id=ref.reference_id,
                 candidate_route_id=candidate_route_id,
                 candidate_content_hash=candidate_content_hash,
                 reagent_rank=reagent_rank,
                 baseline_rank=baseline_rank,
-                atom_similarity=None,
-                bond_similarity=None,
-                route_similarity=None,
-                status=SimilarityStatus.REFERENCE_CONVERSION_FAILED,
-                mapping_status="reference_conversion_failed",
-                warnings=[f"Reference conversion failed: {ref.exclusion_reasons}"],
+                atom_similarity=atom,
+                bond_similarity=bond,
+                route_similarity=total,
+                status=status,
+                mapping_status=mapping_status,
+                warnings=notes,
             )
 
-        if cand_route is None:
-            return SimilarityPairResult(
-                reference_id=ref.reference_id,
-                candidate_route_id=candidate_route_id,
-                candidate_content_hash=candidate_content_hash,
-                reagent_rank=reagent_rank,
-                baseline_rank=baseline_rank,
-                atom_similarity=None,
-                bond_similarity=None,
-                route_similarity=None,
-                status=SimilarityStatus.CANDIDATE_CONVERSION_FAILED,
-                mapping_status="candidate_conversion_failed",
-                warnings=["Candidate route is None"],
-            )
+        ref_artifact = self._reference_artifact(ref)
+        if ref_artifact is None or ref_artifact.route_tree is None:
+            reason = ref_artifact.failure_reason if ref_artifact is not None else ref.exclusion_reasons
+            return result(SimilarityStatus.REFERENCE_CONVERSION_FAILED, "reference_conversion_failed",
+                          [f"Reference conversion failed: {reason}"])
 
-        # Check if routes have valid atom mappings before computing similarity
-        ref_has_mappings = self._has_valid_atom_mappings(ref_route)
-        cand_has_mappings = self._has_valid_atom_mappings(cand_route)
-
-        if not ref_has_mappings or not cand_has_mappings:
-            mapper_available = self._check_mapper_availability()
-            if not mapper_available:
-                return SimilarityPairResult(
-                    reference_id=ref.reference_id,
-                    candidate_route_id=candidate_route_id,
-                    candidate_content_hash=candidate_content_hash,
-                    reagent_rank=reagent_rank,
-                    baseline_rank=baseline_rank,
-                    atom_similarity=None,
-                    bond_similarity=None,
-                    route_similarity=None,
-                    status=SimilarityStatus.MAPPER_UNAVAILABLE,
-                    mapping_status="no_mapper_available",
-                    warnings=["No atom mapper (NameRxn/RxnMapper) available for auto-mapping"],
-                )
-            else:
-                return SimilarityPairResult(
-                    reference_id=ref.reference_id,
-                    candidate_route_id=candidate_route_id,
-                    candidate_content_hash=candidate_content_hash,
-                    reagent_rank=reagent_rank,
-                    baseline_rank=baseline_rank,
-                    atom_similarity=None,
-                    bond_similarity=None,
-                    route_similarity=None,
-                    status=SimilarityStatus.MAPPING_FAILED,
-                    mapping_status="route_lacks_atom_mappings",
-                    warnings=["Route lacks atom mappings and auto-mapping failed"],
-                )
-
-        # Both metrics compare atom-map numbers, so the two routes must share the
-        # target's numbering. Remap a copy of the candidate onto the reference root.
-        ref_root = m1_key(ref_route.reaction_tree.get("smiles", ""))
-        cand_root = m1_key(cand_route.reaction_tree.get("smiles", ""))
-        if ref_root is None or ref_root != cand_root:
-            return SimilarityPairResult(
-                reference_id=ref.reference_id,
-                candidate_route_id=candidate_route_id,
-                candidate_content_hash=candidate_content_hash,
-                reagent_rank=reagent_rank,
-                baseline_rank=baseline_rank,
-                atom_similarity=None,
-                bond_similarity=None,
-                route_similarity=None,
-                status=SimilarityStatus.TARGET_MISMATCH,
-                mapping_status="root_compounds_differ",
-                warnings=[f"Reference root {ref_root} differs from candidate root {cand_root}"],
-            )
-        cand_route = copy.deepcopy(cand_route)
+        if isinstance(cand_route, base.SynthesisRoute):
+            cand_route = map_synthesis_route(cand_route, "candidate", candidate_route_id,
+                                             MapperIdentity("caller-supplied", "unrecorded"), self.mapper)
+        if cand_route is None or cand_route.route_tree is None:
+            return result(SimilarityStatus.CANDIDATE_CONVERSION_FAILED, "candidate_conversion_failed",
+                          ["Candidate route is None"])
 
         try:
-            cand_route.remap(ref_route)
+            alignment = align_to_reference(ref_artifact, cand_route)
+        except Exception as e:
+            warnings.warn(f"Target alignment failed: {e}")
+            return result(SimilarityStatus.MAPPING_FAILED, f"exception: {e}", [f"Target alignment raised: {e}"])
+        if alignment.status != MappingStatus.SUCCESS:
+            status, mapping_status = _pair_status(alignment.status, alignment.side)
+            return result(status, mapping_status, [alignment.reason])
+
+        # Both routes now share the reference target's atom numbering
+        ref_route, cand_route = alignment.reference_route, alignment.candidate_route
+        try:
             sim_matrix = comp.simple_route_similarity([ref_route, cand_route])
             if sim_matrix is None or sim_matrix.size == 0:
-                return SimilarityPairResult(
-                    reference_id=ref.reference_id,
-                    candidate_route_id=candidate_route_id,
-                    candidate_content_hash=candidate_content_hash,
-                    reagent_rank=reagent_rank,
-                    baseline_rank=baseline_rank,
-                    atom_similarity=None,
-                    bond_similarity=None,
-                    route_similarity=None,
-                    status=SimilarityStatus.MAPPING_FAILED,
-                    mapping_status="similarity_computation_failed",
-                    warnings=["similarity computation returned empty matrix"],
-                )
+                return result(SimilarityStatus.MAPPING_FAILED, "similarity_computation_failed",
+                              ["similarity computation returned empty matrix"])
 
             if sim_matrix.shape == (2, 2):
                 route_sim = float(sim_matrix[0, 1])
@@ -625,34 +387,11 @@ class SimilarityEvaluator:
             bond_val = float(bond_sim[0, 1]) if bond_sim is not None and bond_sim.shape == (2, 2) else None
             atom_val = float(atom_sim[0, 1]) if atom_sim is not None and atom_sim.shape == (2, 2) else None
 
-            return SimilarityPairResult(
-                reference_id=ref.reference_id,
-                candidate_route_id=candidate_route_id,
-                candidate_content_hash=candidate_content_hash,
-                reagent_rank=reagent_rank,
-                baseline_rank=baseline_rank,
-                atom_similarity=atom_val,
-                bond_similarity=bond_val,
-                route_similarity=route_sim,
-                status=SimilarityStatus.SUCCESS,
-                mapping_status="success",
-                warnings=[],
-            )
+            return result(SimilarityStatus.SUCCESS, "success", [], atom=atom_val, bond=bond_val, total=route_sim)
         except Exception as e:
             warnings.warn(f"Similarity computation failed: {e}")
-            return SimilarityPairResult(
-                reference_id=ref.reference_id,
-                candidate_route_id=candidate_route_id,
-                candidate_content_hash=candidate_content_hash,
-                reagent_rank=reagent_rank,
-                baseline_rank=baseline_rank,
-                atom_similarity=None,
-                bond_similarity=None,
-                route_similarity=None,
-                status=SimilarityStatus.MAPPING_FAILED,
-                mapping_status=f"exception: {str(e)}",
-                warnings=[f"Similarity computation raised: {e}"],
-            )
+            return result(SimilarityStatus.MAPPING_FAILED, f"exception: {str(e)}",
+                          [f"Similarity computation raised: {e}"])
 
     def evaluate(
         self,
@@ -669,6 +408,8 @@ class SimilarityEvaluator:
         (reagent_target_name + reagent_target_smiles), not M0 grouping.
         This ensures stereo-stress references (M1-compatible) are not pre-filtered.
         """
+        if self.stored_maps_identity is None:
+            self.stored_maps_identity = _stored_maps_identity(candidate_checkpoint)
         # Prime the lazy derivation cache. Everything below reads
         # self._derived_refs directly, so without this the cache stays empty and
         # every reference silently drops out before eligibility is ever assessed.
@@ -767,7 +508,7 @@ class SimilarityEvaluator:
             # Build SynthesisRoute objects for all solved candidates (reagent ranking).
             # A candidate that cannot be converted keeps its rank and is reported,
             # so no later candidate is promoted into its slot.
-            reagent_built = [self._build_candidate_route(r) for r in reagent_ranked]
+            reagent_built = [self._candidate_or_none(r) for r in reagent_ranked]
 
             if all(c is None for c in reagent_built):
                 per_target_results.append(TargetSimilarityResult(
@@ -795,7 +536,7 @@ class SimilarityEvaluator:
                 ))
                 continue
 
-            baseline_selected = self._build_candidate_route(baseline_ranked[0])
+            baseline_selected = self._candidate_or_none(baseline_ranked[0])
 
             # Compare each graded reference against all valid candidates
             reference_matches = []
@@ -811,8 +552,8 @@ class SimilarityEvaluator:
             for ref in graded_refs:
                 is_stereo_stress = ref.exact_eligibility == ExactEligibility.STEREO_STRESS
 
-                ref_route = self._get_reference_route(ref)
-                if ref_route is None:
+                ref_artifact = self._reference_artifact(ref)
+                if ref_artifact is None or ref_artifact.route_tree is None:
                     continue
 
                 # For STEREO_STRESS, verify M1 target compatibility before comparing
@@ -986,6 +727,16 @@ class SimilarityEvaluator:
         )
 
         return metrics
+
+
+def _stored_maps_identity(checkpoint: Checkpoint) -> MapperIdentity:
+    """Attribute maps saved on candidate trees to the AiZynthFinder that searched."""
+    try:
+        manifest = json.loads((Path(checkpoint.directory) / "manifest.json").read_text(encoding="utf-8"))
+        version = manifest.get("dependencies", {}).get("aizynthfinder") or "unrecorded"
+    except (OSError, ValueError, AttributeError):
+        version = "unrecorded"
+    return MapperIdentity("aizynthfinder-template-application", f"aizynthfinder=={version}")
 
 
 def run_similarity_benchmark(
