@@ -43,6 +43,8 @@ def cli(monkeypatch, tmp_path):
     import reagent.singlestep.aizynth as aizynth
 
     monkeypatch.setattr(aizynth, "AiZynthBackend", _Backend)
+    # The stub backend needs no model files, so neither should the config lookup
+    monkeypatch.setattr("reagent.cli.aizynth_config", lambda: tmp_path / "unused")
     monkeypatch.chdir(tmp_path)
     return CliRunner()
 
