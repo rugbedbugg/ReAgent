@@ -24,12 +24,7 @@ from reagent.eval.harness import (
     DEFAULT_WEIGHTS,
     rank_candidates,
 )
-from reagent.eval.literature import (
-    LiteratureReferenceSet,
-    RouteCompleteness,
-    RouteScope,
-    StereoRelation,
-)
+from reagent.eval.literature import LiteratureReferenceSet
 from reagent.eval.literature_derived import (
     DerivedCandidate,
     DerivedReference,
@@ -236,27 +231,20 @@ def run_exact_recovery_benchmark(
     for ref in reference_set.references:
         derived_refs.append(derive_reference(ref, derivation_generator_hash))
 
-    # Group by target
-    refs_by_target: dict[str, list[DerivedReference]] = {}
-    for dref in derived_refs:
-        # Use target M0 as grouping key
-        refs_by_target.setdefault(dref.target_m0, []).append(dref)
+    # Group by the explicit ReAgent target association, not by the reference's
+    # own target M0: a stereo-stress reference is more specific than the
+    # ReAgent target and would otherwise look up the wrong checkpoint entry.
+    refs_by_target: dict[tuple[str, str], list[DerivedReference]] = {}
+    for ref, dref in zip(reference_set.references, derived_refs):
+        target_key = (ref.target.reagent_target_name, ref.target.reagent_target_smiles)
+        refs_by_target.setdefault(target_key, []).append(dref)
 
     # Process each target
     per_target_results: list[TargetRecoveryResult] = []
 
-    for target_m0, refs in refs_by_target.items():
-        # Find target name from original references
-        target_name = ""
-        target_smiles = ""
-        for ref in reference_set.references:
-            if m0_key(ref.target.reagent_target_smiles) == target_m0:
-                target_name = ref.target.reagent_target_name
-                target_smiles = ref.target.reagent_target_smiles
-                break
-
-        # Load candidates from checkpoint
-        result = checkpoint.load(target_m0)
+    for (target_name, target_smiles), refs in refs_by_target.items():
+        # Checkpoints are keyed by the ReAgent target, as in Phase 3A
+        result = checkpoint.load(m0_key(target_smiles) or target_smiles)
         if result is None:
             # No candidates generated for this target
             per_target_results.append(TargetRecoveryResult(
@@ -333,15 +321,17 @@ def run_exact_recovery_benchmark(
             # Check solved candidates
             reagent_rank = None
             baseline_rank = None
+            matched_route_id = None
 
             for rank, cand in enumerate(derived_cands, 1):
                 comp = compare_graph_exact(ref, cand)
                 if comp.equality == GraphEquality.EXACT:
                     reagent_rank = rank
+                    matched_route_id = cand.route_id
                     break
 
-            for rank, cand in enumerate(baseline_ranked, 1):
-                derived = derive_candidate(cand, derivation_generator_hash)
+            for rank, baseline_route in enumerate(baseline_ranked, 1):
+                derived = derive_candidate(baseline_route, derivation_generator_hash)
                 comp = compare_graph_exact(ref, derived)
                 if comp.equality == GraphEquality.EXACT:
                     baseline_rank = rank
@@ -358,7 +348,7 @@ def run_exact_recovery_benchmark(
             if reagent_rank is not None:
                 reference_matches.append(ExactReferenceMatch(
                     reference_id=ref.reference_id,
-                    candidate_route_id=cand.route_id,
+                    candidate_route_id=matched_route_id,
                     reagent_rank=reagent_rank,
                     baseline_rank=baseline_rank,
                     is_core_exact=is_core,
@@ -400,11 +390,10 @@ def run_exact_recovery_benchmark(
         ))
 
     # Aggregate metrics
-    n_requested = len(reference_set.references)
-    n_with_core = len([r for r in reference_set.references if r.route_completeness == RouteCompleteness.COMPLETE and r.route_scope == RouteScope.FULL_ROUTE and r.graph_complete() and not any(s.inferred for s in r.steps) and r.stereo_metadata.relation_to_reagent in (StereoRelation.EXACTLY_COMPATIBLE, StereoRelation.RACEMATE_COMPATIBLE)])
-    n_without_core = n_requested - n_with_core
-
+    # The unit of aggregation is the target, not the reference
+    n_requested = len(refs_by_target)
     targets_with_core_results = [t for t in per_target_results if t.eligible_reference_ids]
+    n_without_core = n_requested - len(targets_with_core_results)
     n_solved = len([t for t in per_target_results if t.solved_candidates > 0])
 
     def rate(attr: str) -> float:
