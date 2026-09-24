@@ -323,6 +323,71 @@ def _build_signature_from_tree(
     return json.dumps(result, sort_keys=True), target_m0
 
 
+def reconstruct_tree_from_steps(
+    target_m0: str,
+    steps: list[tuple[str, tuple[str, ...]]],
+    leaf_m0s: list[str] | tuple[str, ...],
+    derivation_errors: list[str],
+) -> dict | None:
+    """
+    Rebuild an AiZynthFinder-style tree from flat (product M0, precursor M0s) steps.
+
+    A flat list does not record which occurrence of a molecule a step expands, so
+    each molecule is linked to the step producing its M0. When that link is not
+    unique, when a step is unreachable from the target, or when the rebuilt leaves
+    differ from the recorded leaves, the topology cannot be recovered faithfully
+    and None is returned instead of a guess.
+    """
+    producers: dict[str, tuple[str, ...]] = {}
+    for product, precursors in steps:
+        precursors = tuple(sorted(precursors))
+        if not product or not all(precursors):
+            derivation_errors.append("flat reconstruction: unparseable molecule")
+            return None
+        if producers.setdefault(product, precursors) != precursors:
+            derivation_errors.append(f"flat reconstruction: multiple producers for {product}")
+            return None
+    if target_m0 not in producers:
+        derivation_errors.append("flat reconstruction: target is not produced by any step")
+        return None
+
+    used: set[str] = set()
+    leaves: list[str] = []
+
+    def build(m0: str, path: frozenset[str]) -> dict | None:
+        if m0 not in producers:
+            leaves.append(m0)
+            return {"type": "mol", "smiles": m0}
+        if m0 in path:
+            derivation_errors.append(f"flat reconstruction: cycle through {m0}")
+            return None
+        used.add(m0)
+        children = [build(p, path | {m0}) for p in producers[m0]]
+        if any(c is None for c in children):
+            return None
+        return {
+            "type": "mol",
+            "smiles": m0,
+            "children": [{
+                "type": "reaction",
+                "smiles": ".".join(producers[m0]) + ">>" + m0,
+                "metadata": {},
+                "children": children,
+            }],
+        }
+
+    tree = build(target_m0, frozenset())
+    if tree is None:
+        return None
+    if used != set(producers):
+        derivation_errors.append("flat reconstruction: steps unreachable from the target")
+        return None
+    if sorted(leaves) != sorted(leaf_m0s):
+        derivation_errors.append("flat reconstruction: rebuilt leaves differ from recorded leaves")
+        return None
+    return tree
+
+
 def _build_signature_from_reactions(
     route: Route,
     derivation_errors: list[str],
@@ -330,97 +395,18 @@ def _build_signature_from_reactions(
     """
     Fallback: build graph signature from flattened reactions.
 
-    Assigns synthetic node IDs to each reaction's product and reactants.
+    The tree is rebuilt by M0 linkage and then signed exactly like an original
+    Route.tree, so both paths agree whenever the reconstruction is unambiguous.
     """
-    m0_lookup = {}
-    step_precursor_ids = []
-    step_product_ids = []
-    starting_material_ids = set()
-    node_counter = [0]
-
-    def get_node_id() -> str:
-        node_counter[0] += 1
-        return f"n{node_counter[0]}"
-
-    # Assign node IDs to leaves first
-    leaf_node_ids = {}
-    smiles_to_node_id = {}
-    for leaf in route.leaves:
-        leaf_id = f"leaf_{len(leaf_node_ids)}"
-        m0 = m0_key(leaf.smiles) or ""
-        if m0 == "":
-            derivation_errors.append(f"leaf unparseable: {leaf.smiles}")
-        m0_lookup[leaf_id] = m0
-        leaf_node_ids[leaf.smiles] = leaf_id
-        smiles_to_node_id[leaf.smiles] = leaf_id
-        starting_material_ids.add(leaf_id)
-
-    # Assign node IDs to reactions and their products
-    for i, rxn in enumerate(route.reactions):
-        product_id = f"prod_{i}"
-        prod_m0 = m0_key(rxn.product) or ""
-        m0_lookup[product_id] = prod_m0
-        step_product_ids.append(product_id)
-
-        precursor_ids = []
-        for prec_smiles in rxn.precursors:
-            if prec_smiles in smiles_to_node_id:
-                precursor_id = smiles_to_node_id[prec_smiles]
-            else:
-                precursor_id = f"prec_{len(m0_lookup)}"
-                prec_m0 = m0_key(prec_smiles) or ""
-                if prec_m0 == "":
-                    derivation_errors.append(f"step {i} precursor unparseable: {prec_smiles}")
-                m0_lookup[precursor_id] = prec_m0
-                smiles_to_node_id[prec_smiles] = precursor_id
-            precursor_ids.append(precursor_id)
-
-        step_precursor_ids.append(tuple(precursor_ids))
-
-    target_m0 = m0_key(route.target) or ""
-
-    # Build producers map
-    producers: dict[str, list[int]] = {}
-    for i, prod_id in enumerate(step_product_ids):
-        producers.setdefault(prod_id, []).append(i)
-
-    # Check for genuine multiple-producer ambiguity
-    for prod_id, step_indices in producers.items():
-        if len(step_indices) > 1:
-            return None, ""
-
-
-    @cache
-    def sig(node_id: str) -> tuple | None:
-        if node_id in starting_material_ids:
-            return ("leaf", m0_lookup.get(node_id, ""))
-        prod_steps = producers.get(node_id)
-        if not prod_steps:
-            return None
-        step_idx = prod_steps[0]
-        precursor_ids = step_precursor_ids[step_idx]
-        precursor_sigs_list = []
-        for p in precursor_ids:
-            s = sig(p)
-            if s is None:
-                return None
-            precursor_sigs_list.append(s)
-        precursor_sigs = tuple(sorted(precursor_sigs_list))
-        return ("reaction", m0_lookup.get(node_id, ""), precursor_sigs)
-
-    # Find root: product not used as precursor anywhere
-    all_precursors = set()
-    for precs in step_precursor_ids:
-        all_precursors.update(precs)
-    root_candidates = set(step_product_ids) - all_precursors
-    if not root_candidates:
+    steps = [
+        (m0_key(rxn.product) or "", tuple(m0_key(p) or "" for p in rxn.precursors))
+        for rxn in route.reactions
+    ]
+    leaf_m0s = [m0_key(leaf.smiles) or "" for leaf in route.leaves]
+    tree = reconstruct_tree_from_steps(m0_key(route.target) or "", steps, leaf_m0s, derivation_errors)
+    if tree is None:
         return None, ""
-    root_id = root_candidates.pop()
-
-    result = sig(root_id)
-    if result is None:
-        return None, ""
-    return json.dumps(result, sort_keys=True), target_m0
+    return _build_signature_from_tree(tree, derivation_errors)
 
 
 def derive_reference(
