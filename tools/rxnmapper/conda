@@ -1,0 +1,18 @@
+#!/bin/sh
+# Stand-in for the one conda call reaction-utils makes to run RXNMapper:
+#   conda run -p PREFIX python SCRIPT ARGS...
+# PREFIX arrives as the literal "${RXNMAPPER_ENV_PATH}" because rxnutils splits
+# its command without a shell. The environment itself is a uv venv.
+set -eu
+if [ "${1:-}" != run ] || [ "${2:-}" != -p ] || [ $# -lt 4 ]; then
+    echo "conda shim: only 'conda run -p PREFIX COMMAND ...' is supported" >&2
+    exit 2
+fi
+prefix=$3
+if [ "$prefix" = '${RXNMAPPER_ENV_PATH}' ]; then
+    prefix=${RXNMAPPER_ENV_PATH:?RXNMAPPER_ENV_PATH is not set}
+fi
+shift 3
+command=$1
+shift
+exec "$prefix/bin/$command" "$@"
