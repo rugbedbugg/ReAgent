@@ -301,6 +301,17 @@ class TestLiteratureReference:
         ref.route_completeness = RouteCompleteness.AMBIGUOUS
         assert ref.is_exact_recovery_eligible() is False
 
+    def test_composite_not_eligible(self):
+        ref = self.create_minimal_reference()
+        ref.sources.append(SourceRecord(
+            source_id="src_2",
+            source_type=SourceType.PATENT,
+            is_primary=True,
+        ))
+        composite = LiteratureReference.model_validate(ref.model_dump())
+        assert composite.is_composite is True
+        assert composite.is_exact_recovery_eligible() is False
+
     def test_inferred_step_not_eligible(self):
         ref = self.create_minimal_reference()
         ref.steps[0].inferred = True

@@ -41,7 +41,9 @@ cohort and are never averaged into the core one.
 
 **Partial references.** A reference must be a complete, fully resolved route to
 be eligible for whole-route exact recovery. Partial references are excluded
-rather than counted as failures.
+rather than counted as failures. Composite references, which join chemistry
+from several sources, are not a published route and are excluded the same way,
+from graded similarity as well.
 
 **Mapper availability.** Automatic atom mapping needs NameRxn or RXNMapper,
 neither installed here. Pairs that cannot be mapped return a typed

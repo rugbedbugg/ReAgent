@@ -1114,6 +1114,34 @@ class TestFlatReconstruction:
         assert any("leaves differ" in e for e in flat.derivation_errors)
 
 
+class TestCompositeReferences:
+    """A composite reference is not a published route and is never exact-eligible."""
+
+    def _composite(self) -> LiteratureReference:
+        ref = _aspirin_reference("ref_composite", _ANHYDRIDE)
+        data = ref.model_dump()
+        data["sources"].append({"source_id": "src_2", "source_type": "patent", "is_primary": True})
+        return LiteratureReference.model_validate(data)
+
+    def test_composite_reference_excluded_from_exact_eligibility(self):
+        derived = derive_reference(self._composite(), "h")
+        assert derived.exact_eligibility == ExactEligibility.EXCLUDED
+        assert "is_composite=true" in derived.exclusion_reasons
+
+    def test_composite_reference_does_not_count_as_recovered(self, tmp_path):
+        """Even a route identical to the composite chemistry is not recovery of a published route."""
+        checkpoint = _checkpoint(tmp_path, {_ASPIRIN: [_aspirin_route(_ANHYDRIDE)]})
+        metrics = run_exact_recovery_benchmark(
+            LiteratureReferenceSet(references=[self._composite()]), checkpoint,
+        ).metrics
+
+        target = metrics.per_target[0]
+        assert target.eligible_reference_ids == []
+        assert target.excluded_reference_ids == ["ref_composite"]
+        assert target.exact_recovered is False
+        assert metrics.n_targets_with_core_exact_reference == 0
+
+
 class TestStereoStressTargetGrouping:
     """References are grouped by their ReAgent target, not their own target M0."""
 
