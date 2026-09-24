@@ -732,27 +732,24 @@ class TestMapperCapability:
         assert probe.capability == MapperCapability.ENVIRONMENT_INCOMPATIBLE
 
     def test_missing_env_directory_is_incompatible(self, tmp_path):
-        conda = tmp_path / "conda"
-        conda.write_text("")
-        conda.chmod(0o755)
-        probe = probe_rxnutils_mapper({"PATH": str(tmp_path), "RXNMAPPER_ENV_PATH": str(tmp_path / "missing")})
+        (tmp_path / "conda").write_text("")
+        probe = probe_rxnutils_mapper({"PATH": "", "CONDA_PATH": str(tmp_path),
+                                       "RXNMAPPER_ENV_PATH": str(tmp_path / "missing")})
         assert probe.capability == MapperCapability.ENVIRONMENT_INCOMPATIBLE
 
     def test_conda_and_env_are_available(self, tmp_path):
-        conda = tmp_path / "conda"
-        conda.write_text("")
-        conda.chmod(0o755)
-        probe = probe_rxnutils_mapper({"PATH": str(tmp_path), "RXNMAPPER_ENV_PATH": str(tmp_path)})
+        (tmp_path / "conda").write_text("")
+        # CONDA_PATH, as rxnutils uses it, needs no executable-suffix lookup on any OS
+        probe = probe_rxnutils_mapper({"PATH": "", "CONDA_PATH": str(tmp_path), "RXNMAPPER_ENV_PATH": str(tmp_path)})
         assert probe.capability == MapperCapability.AVAILABLE
 
     def test_mapper_identity_records_environment_versions(self, tmp_path):
-        conda = tmp_path / "conda"
-        conda.write_text("")
-        conda.chmod(0o755)
+        (tmp_path / "conda").write_text("")
         site = tmp_path / "lib" / "python3.11" / "site-packages"
         for dist in ("rxnmapper-0.4.3", "transformers-4.57.6", "torch-2.14.0+cpu"):
             (site / f"{dist}.dist-info").mkdir(parents=True)
-        mapper = RxnutilsRouteMapper(environ={"PATH": str(tmp_path), "RXNMAPPER_ENV_PATH": str(tmp_path)})
+        mapper = RxnutilsRouteMapper(environ={"PATH": "", "CONDA_PATH": str(tmp_path),
+                                              "RXNMAPPER_ENV_PATH": str(tmp_path)})
 
         assert mapper.identity.version.endswith(";rxnmapper==0.4.3;transformers==4.57.6;torch==2.14.0+cpu")
 
