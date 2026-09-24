@@ -45,10 +45,31 @@ rather than counted as failures. Composite references, which join chemistry
 from several sources, are not a published route and are excluded the same way,
 from graded similarity as well.
 
-**Mapper availability.** Automatic atom mapping needs NameRxn or RXNMapper,
-neither installed here. Pairs that cannot be mapped return a typed
-`mapper_unavailable` result and are excluded from similarity means. They are
-never recorded as similarity zero, which would silently bias the mean downward.
+**Mapper availability.** Graded similarity compares atom-mapped routes. The
+metric is available for routes that are already mapped. Automatic mapping of
+unmapped routes depends on an external route atom mapper: `reaction-utils` runs
+RXNMapper in a separate conda environment named by `RXNMAPPER_ENV_PATH`, with
+NameRxn optional, and none of these is present here. Pairs that cannot be mapped
+return a typed `mapper_unavailable` result and are excluded from similarity
+means. They are never recorded as similarity zero, which would silently bias the
+mean downward.
+
+**Mapped derived artifacts.** Evaluators never map routes themselves. Each
+reference and candidate is turned into a mapped derived artifact
+(`reagent/eval/literature_mapping.py`) that records the chemistry mapped, the
+mapping tool and version, the mapping and normalization policy, and the exact
+mapped reactions, under a content digest. An artifact holds no ranks, scores or
+stock state, and one produced in a dedicated mapping environment can be consumed
+where no mapper is installed. Maps already on a route are used only when they
+form a route-wide molecular mapping: every mapped molecule matches the route,
+no map number repeats, the target is fully mapped, and each intermediate is
+numbered as its parent reaction numbers it. Reaction templates, per-step maps
+that disagree, and target map numbers reused on non-target atoms are rejected,
+never repaired; such a route then needs the external mapper. Cached artifacts are
+rejected as stale when the reference or candidate, the policy, RDKit or
+`reaction-utils` change, or when an available mapper's version differs. Without
+a mapper to regenerate them they are reported `stale`, never used. Candidate and
+reference numbers are put on a common target numbering for each comparison.
 
 **Training overlap.** The pretrained model's USPTO training set has not been
 checked against the evaluation targets. Nothing here is a held-out or

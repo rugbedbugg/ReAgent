@@ -506,13 +506,15 @@ Points that change how the numbers should be read:
 | | |
 |---|---|
 | Official `reaction-utils` metric wrapper | **ready** |
-| Comparison of pre-mapped routes | **ready** |
+| Comparison of pre-mapped routes, through mapped derived artifacts | **ready** |
 | Automatic atom mapping of references and candidates | **unavailable in this environment** |
 
-Automatic mapping needs NameRxn or RXNMapper, neither of which is installed
-here. The metric is not broken. When mapping is unavailable the pair returns a
-typed `mapper_unavailable` result and is **excluded from similarity means**; it
-is never recorded as similarity zero.
+Automatic mapping depends on an external route atom mapper: `reaction-utils`
+runs RXNMapper in a separate conda environment (`RXNMAPPER_ENV_PATH`), with
+NameRxn optional, and none is installed here. The metric is not broken. Mapped
+derived artifacts isolate this dependency from the evaluators. When mapping is
+unavailable the pair returns a typed `mapper_unavailable` result and is
+**excluded from similarity means**; it is never recorded as similarity zero.
 
 The benchmark is currently a library API (`run_exact_recovery_benchmark`,
 `run_similarity_benchmark`), not a CLI command. Methodology and limitations are
