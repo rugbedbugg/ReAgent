@@ -499,6 +499,9 @@ def derive_reference(
 
     # Step 6: Determine exact eligibility
     exact_eligibility = ExactEligibility.EXCLUDED
+    if ref.is_composite:
+        # Chemistry joined from several sources is not a published route
+        exclusion_reasons.append("is_composite=true")
     if not exclusion_reasons:
         if ref.route_scope == RouteScope.FULL_ROUTE:
             if ref.route_completeness == RouteCompleteness.COMPLETE:

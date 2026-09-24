@@ -352,7 +352,13 @@ class LiteratureReference(BaseModel):
         return [m for m in self.molecules if m.role == MoleculeRole.STARTING_MATERIAL]
 
     def is_exact_recovery_eligible(self) -> bool:
-        """Check if this reference is eligible for exact whole-route recovery."""
+        """Check if this reference is eligible for exact whole-route recovery.
+
+        A composite reference joins chemistry from several sources, so it is not
+        a published route and cannot be recovered as one.
+        """
+        if self.is_composite:
+            return False
         if any(s.inferred for s in self.steps):
             return False
         if self.route_completeness != RouteCompleteness.COMPLETE:
