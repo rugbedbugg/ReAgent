@@ -507,11 +507,12 @@ Points that change how the numbers should be read:
 |---|---|
 | Official `reaction-utils` metric wrapper | **ready** |
 | Comparison of pre-mapped routes, through mapped derived artifacts | **ready** |
-| Automatic atom mapping of references and candidates | **unavailable in this environment** |
+| Automatic atom mapping of references and candidates | **optional**, needs a separate mapper environment |
 
 Automatic mapping depends on an external route atom mapper: `reaction-utils`
-runs RXNMapper in a separate conda environment (`RXNMAPPER_ENV_PATH`), with
-NameRxn optional, and none is installed here. The metric is not broken. Mapped
+runs RXNMapper in a separate environment (`RXNMAPPER_ENV_PATH`), with NameRxn
+optional. Neither ships with the project; [docs/EVALUATION.md](docs/EVALUATION.md)
+shows how to set up the mapper environment. The metric is not broken. Mapped
 derived artifacts isolate this dependency from the evaluators. When mapping is
 unavailable the pair returns a typed `mapper_unavailable` result and is
 **excluded from similarity means**; it is never recorded as similarity zero.

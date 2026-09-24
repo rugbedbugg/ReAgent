@@ -49,7 +49,8 @@ from graded similarity as well.
 metric is available for routes that are already mapped. Automatic mapping of
 unmapped routes depends on an external route atom mapper: `reaction-utils` runs
 RXNMapper in a separate conda environment named by `RXNMAPPER_ENV_PATH`, with
-NameRxn optional, and none of these is present here. Pairs that cannot be mapped
+NameRxn optional. None of these ships with the project; see *Setting up the
+route mapper* below. Pairs that cannot be mapped
 return a typed `mapper_unavailable` result and are excluded from similarity
 means. They are never recorded as similarity zero, which would silently bias the
 mean downward.
@@ -70,6 +71,32 @@ rejected as stale when the reference or candidate, the policy, RDKit or
 `reaction-utils` change, or when an available mapper's version differs. Without
 a mapper to regenerate them they are reported `stale`, never used. Candidate and
 reference numbers are put on a common target numbering for each comparison.
+
+**Setting up the route mapper.** The mapper lives in its own environment,
+outside the project venv, so torch and transformers never enter ReAgent's
+dependencies. It needs `reaction-utils` too, because rxnutils runs its own
+mapping script there. rxnutils starts it with `conda run -p PREFIX python ...`;
+`tools/rxnmapper/conda` implements just that call, so the environment can be a
+uv venv:
+
+```bash
+MAPPER="$HOME/.local/share/reagent/rxnmapper-env"
+uv venv --python 3.11 "$MAPPER"
+uv pip install --python "$MAPPER/bin/python" \
+  --index-url https://download.pytorch.org/whl/cpu \
+  --extra-index-url https://pypi.org/simple --index-strategy unsafe-best-match \
+  "reaction-utils==1.9.4" "rxnmapper==0.4.3" "torch==2.14.0+cpu" \
+  "transformers==4.57.6" "setuptools<81"
+export RXNMAPPER_ENV_PATH="$MAPPER"
+export CONDA_PATH="$PWD/tools/rxnmapper"
+```
+
+rxnmapper 0.4.3 still imports `pkg_resources`, hence `setuptools<81`. Its model
+weights ship inside the package, so mapping runs offline. With both variables
+set, automatic mapping is attempted and each artifact records the rxnmapper,
+transformers and torch versions it used. The literature tests hide these
+variables so their results do not depend on the machine; one integration test
+uses the real mapper whenever it is configured.
 
 **Training overlap.** The pretrained model's USPTO training set has not been
 checked against the evaluation targets. Nothing here is a held-out or
