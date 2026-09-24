@@ -37,7 +37,7 @@ jobs:
         with:
           path: ${{ steps.uv-cache.outputs.dir }}
           key: uv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
-      - name: Install package and dev extras
+      - name: Install package with dev and literature extras
         run: mise run install
       - name: Verify matrix interpreter
         run: mise exec -- python -c "import os, sys; actual = '.'.join(map(str, sys.version_info[:2])); assert actual == os.environ['REAGENT_PYTHON_VERSION'], actual"

@@ -12,6 +12,246 @@ rather than LLM variance.
 Figures written `a / b / c` are the three weight profiles: feasibility-led,
 safety-tilted, build-it-yourself.
 
+## What this document measures, and what it does not
+
+Four separate evaluations live here. They answer different questions and are
+deliberately never combined into a single score.
+
+| Evaluation | Question | Status |
+|---|---|---|
+| **Search evaluation** | does the planner reach purchasable material, and at what cost in route length and degeneracy | implemented |
+| **Route-selection evaluation** | given the same candidates, does weighted multi-objective selection choose better routes than a feasibility-only baseline | implemented |
+| **Literature recovery** | does a retained route match a published synthesis exactly, and how highly is it ranked | implemented, Phase 1 and 2 |
+| **Graded route similarity** | when it is not an exact match, how close is it under the Genheden-Shields metric | implemented, Phase 3A |
+
+### Standing limitations
+
+These apply to every number in this document.
+
+**Retained-candidate observability.** Absence of a match means the route was not
+in the retained candidate set, bounded by `--max-routes`. It does not mean the
+search never found one. Every recovery figure is therefore a lower bound.
+
+**Multiple references.** A target can have several valid published syntheses.
+References are a set, and disagreement with one of them is not an error.
+
+**Stereochemistry.** `M0` preserves stereochemistry, charge and form; `M1` is
+stereo-agnostic and diagnostic only. Stereo-stress references form a separate
+cohort and are never averaged into the core one.
+
+**Partial references.** A reference must be a complete, fully resolved route to
+be eligible for whole-route exact recovery. Partial references are excluded
+rather than counted as failures. Composite references, which join chemistry
+from several sources, are not a published route and are excluded the same way,
+from graded similarity as well.
+
+**Mapper availability.** Graded similarity compares atom-mapped routes. The
+metric is available for routes that are already mapped. Automatic mapping of
+unmapped routes depends on an external route atom mapper: `reaction-utils` runs
+RXNMapper in a separate conda environment named by `RXNMAPPER_ENV_PATH`, with
+NameRxn optional. None of these ships with the project; see *Setting up the
+route mapper* below. Pairs that cannot be mapped
+return a typed `mapper_unavailable` result and are excluded from similarity
+means. They are never recorded as similarity zero, which would silently bias the
+mean downward.
+
+**Mapped derived artifacts.** Evaluators never map routes themselves. Each
+reference and candidate is turned into a mapped derived artifact
+(`reagent/eval/literature_mapping.py`) that records the chemistry mapped, the
+mapping tool and version, the mapping and normalization policy, and the exact
+mapped reactions, under a content digest. An artifact holds no ranks, scores or
+stock state, and one produced in a dedicated mapping environment can be consumed
+where no mapper is installed. Maps already on a route are used only when they
+form a route-wide molecular mapping: every mapped molecule matches the route,
+no map number repeats, the target is fully mapped, and each intermediate is
+numbered as its parent reaction numbers it. Reaction templates, per-step maps
+that disagree, and target map numbers reused on non-target atoms are rejected,
+never repaired; such a route then needs the external mapper. Cached artifacts are
+rejected as stale when the reference or candidate, the policy, RDKit or
+`reaction-utils` change, or when an available mapper's version differs. Without
+a mapper to regenerate them they are reported `stale`, never used. Candidate and
+reference numbers are put on a common target numbering for each comparison.
+
+**Setting up the route mapper.** The mapper lives in its own environment,
+outside the project venv, so torch and transformers never enter ReAgent's
+dependencies. It needs `reaction-utils` too, because rxnutils runs its own
+mapping script there. rxnutils starts it with `conda run -p PREFIX python ...`;
+`tools/rxnmapper/conda` implements just that call, so the environment can be a
+uv venv:
+
+```bash
+MAPPER="$HOME/.local/share/reagent/rxnmapper-env"
+uv venv --python 3.11 "$MAPPER"
+uv pip install --python "$MAPPER/bin/python" \
+  --index-url https://download.pytorch.org/whl/cpu \
+  --extra-index-url https://pypi.org/simple --index-strategy unsafe-best-match \
+  "reaction-utils==1.9.4" "rxnmapper==0.4.3" "torch==2.14.0+cpu" \
+  "transformers==4.57.6" "setuptools<81"
+export RXNMAPPER_ENV_PATH="$MAPPER"
+export CONDA_PATH="$PWD/tools/rxnmapper"
+```
+
+rxnmapper 0.4.3 still imports `pkg_resources`, hence `setuptools<81`. Its model
+weights ship inside the package, so mapping runs offline. With both variables
+set, automatic mapping is attempted and each artifact records the rxnmapper,
+transformers and torch versions it used. The literature tests hide these
+variables so their results do not depend on the machine; one integration test
+uses the real mapper whenever it is configured.
+
+**Training overlap.** The pretrained model's USPTO training set has not been
+checked against the evaluation targets. Nothing here is a held-out or
+out-of-distribution accuracy measurement.
+
+**Operational versus reference stock.** Candidate routes stop at the configured
+operational stock, while references stop at whatever the publication used. The
+two stopping rules are not the same, so leaf-level agreement is not expected.
+
+### Planned, not implemented
+
+Phase 3B metrics are **not implemented** and no number in this document reflects
+them: disconnection-level agreement, intermediate-level agreement, and
+leaf-level agreement. Where this document reports similarity, it is whole-route
+similarity only.
+
+## Checking chemistry against published evidence
+
+Search solve-rate measures whether a route reaches the configured stock. It does
+not measure experimental success, yield, stereochemical correctness, or recovery
+of a published synthesis. `reagent review` prepares a separate evaluation of those
+claims from historical checkpoints without loading a search model or an LLM.
+
+Freeze the existing 49-target cohort before collecting reference evidence or
+judgments. Use the original Retro* controls at the 0.6 build cap, rather than
+choosing the best sweep result after looking at coverage:
+
+```sh
+uv run --no-sync reagent review prepare \
+  --moderate-checkpoint data/evaluations/v0.3.0/build-control-moderate \
+  --hard-checkpoint data/evaluations/v0.3.0/build-control-hard \
+  --profile build-it-yourself \
+  --output data/evaluations/chemistry-review-v1
+uv run --no-sync reagent review report data/evaluations/chemistry-review-v1
+```
+
+The command requires every target's checkpoint, including unsuccessful searches.
+It selects one solved route per target with the deterministic evaluation ranking;
+the profile is explicit and does not load learned personal weights. Original
+checkpoints are read only. A new output directory is mandatory, so rerunning the
+command cannot destroy reviews. The frozen `bundle.json` includes the cohort,
+selections, scoring implementation and dependency versions, search manifests and
+result digests. Worksheets carry its digest; changing the bundle invalidates them.
+This detects accidental mixing of versions, not deliberate tampering.
+
+For individual review, generate a local page with molecular drawings and forms:
+
+```sh
+uv run --no-sync reagent review page data/evaluations/chemistry-review-v1
+```
+
+Open `data/evaluations/chemistry-review-v1/review.html` in a browser. No server,
+external reviewer or AI call is required. Each target shows its selected reactions,
+links for looking up molecule identities and finding papers/patents, and fields
+for your conclusions and evidence. Search links are leads, not citations proving
+the chemistry. Optional `literature.json` notes can attach primary-source leads to
+specific steps, but do not assign verdicts automatically.
+
+Enter your name or initials, inspect each reaction against the primary source,
+and record its DOI/URL, exact scheme/example, conditions, stereochemistry and
+remaining differences. The saved reaction lists omit conditions and yields.
+Review the complete sequence separately: finding precedent for each transformation
+does not establish that the combined sequence has been demonstrated.
+
+The page saves browser drafts where supported. Use **Export reviews.json** for a
+durable file; it requires attribution and evidence for every recorded judgment.
+Move that exported file into this review directory (keep a backup of an earlier
+review if needed), then run `review report` again. The browser cannot overwrite
+the original JSON files directly. **Load saved reviews** restores an exported
+worksheet for this exact bundle, replacing the current browser draft. Incomplete
+drafts can resume in the same browser but cannot be exported as completed evidence.
+
+These reviews are labeled `self_literature`; the report uses `route_judgments`
+and `step_judgments`, not an expert-accuracy label. A personal literature check
+does not establish independent expert approval or experimental validation.
+No communication with other people is needed to use this workflow.
+
+The underlying output contains:
+
+- `blinded.json`: target SMILES and selected reactions/leaves, without scores,
+  method labels or model confidence; retained for optional independent review.
+- `reviews.json`: route and per-step judgments. All begin as `unreviewed`.
+- `references.json`: an empty list of independently sourced routes for each
+  target, including targets for which the search failed.
+- `bundle.json`: the frozen selection and provenance for the evaluation owner.
+
+For a review, use `supported`, `unsupported`, or `uncertain`, and record a
+nonblank `reviewer` and `evidence`. These are attributed judgments, not laboratory
+outcomes. A reference-based judgment should cite its DOI/patent identifier and
+scheme, example or page. An expert plausibility judgment should explain the
+chemical reasoning and identify missing experimental evidence. Never fill these
+fields by copying ReAgent's score or asking the same model to approve itself.
+
+At each step, check the transformation, functional-group compatibility,
+regioselectivity, stereochemistry and the conditions needed to make the claim.
+For the whole route, check intermediate continuity, unresolved starting
+materials, protecting groups and whether the target specification is actually
+met. Missing reagents, conditions or stereochemical information may warrant
+`uncertain`; syntactically valid SMILES alone do not justify `supported`. Many
+bundled targets omit stereochemistry, so agreement cannot establish synthesis
+of the specific drug stereoisomer. A whole-route judgment is recorded separately
+from step judgments and is not inferred from them.
+
+Independent chemist review remains an optional future validation layer. If used,
+keep its evidence separate from your self-review and label its `review_basis`
+as `expert`. The tool does not verify qualifications or manufacture consensus.
+
+To enter a reference, replace a target's empty list in `references.json` with one
+or more objects of this form (placeholders below are not reference evidence):
+
+```json
+{
+  "source": "DOI, patent identifier, or stable primary-source URL",
+  "locator": "Scheme/example/page and route boundaries",
+  "verified_by": "Person who checked the transcription against the source",
+  "reactions": [
+    {"product": "product SMILES", "precursors": ["precursor SMILES"]}
+  ]
+}
+```
+
+Transcribe the complete chosen route with consistent boundaries; keep alternative
+syntheses as separate objects. The tool rejects invalid SMILES, disconnected
+references, cycles and ambiguous multiple disconnections of one product. It
+compares multisets of product/precursor transformations, ignoring atom-map labels
+and precursor ordering while retaining stereochemistry, salts and protonation.
+It does not normalize tautomers, infer omitted reagents, or use reaction templates
+as experimental evidence. Reference matches are selected-route agreement, not a
+PaRoutes top-k score. A different route can still be chemically valid.
+
+The JSON report keeps these denominators separate:
+
+- Search coverage uses the entire frozen cohort, including failed targets.
+- Reference agreement uses only targets with supplied references, including
+  failed searches as nonmatches. Reference coverage is reported explicitly.
+- Route and step judgment counts distinguish supported, unsupported, uncertain
+  and unreviewed. The supported fraction uses only decided judgments; read it
+  alongside the decided fraction and counts, never as an unconditional accuracy.
+- With no evidence, reference agreement and reviewer supported fractions are
+  `null`. Empty evidence is not a successful evaluation or a zero-accuracy result.
+
+This cohort is a convenience sample already used for tuning, and overlap with
+the pretrained model's training data is unverified. A future held-out study
+should freeze a separate test set, stock, budget and selection rule, check training
+overlap, and avoid tuning on its results. [PaRoutes](https://github.com/MolecularAI/PaRoutes)
+provides reference-route benchmarks and matching stock sets; its
+[data documentation](https://github.com/MolecularAI/PaRoutes/blob/main/data/README.md)
+also describes models trained with the benchmark route reactions excluded.
+Those assets need their own provenance/compatibility review before benchmarking
+our current pretrained model. They are not ground truth for the existing 49 targets.
+
+Keep raw references and reviewer worksheets under ignored `data/`. Commit reviewed
+aggregate measurements under `docs/measurements/` and describe conclusions here;
+do not commit expert identities or copied publication content without permission.
+
 ## The standard target set
 
 ```sh

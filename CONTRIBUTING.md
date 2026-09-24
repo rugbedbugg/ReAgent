@@ -11,7 +11,7 @@ versions.
 ```sh
 mise trust
 mise install        # Python 3.11 + uv; creates .venv
-mise run install    # editable install with dev extras
+mise run install    # editable install with dev and literature extras
 mise run test
 mise run lint
 ```
@@ -20,7 +20,7 @@ Without mise (`.python-version` selects 3.11 for uv):
 
 ```sh
 uv venv
-uv pip install -e ".[dev]"
+uv pip install -e ".[dev,literature]"
 uv run pytest
 uv run ruff check .
 ```
