@@ -915,30 +915,121 @@ class TestComponentScoresFromOfficialAPI:
 # 9. AGGREGATION AND FAILURE SEMANTICS
 # ============================================================
 
+_PARACETAMOL = "CC(=O)Nc1ccc(O)cc1"
+
+
+def _reference_for(target_name: str, target_smiles: str, ref_id: str) -> LiteratureReference:
+    ref = create_simple_reference(ref_id)
+    return ref.model_copy(update={
+        "target": TargetRecord(reagent_target_name=target_name, reagent_target_smiles=target_smiles),
+    })
+
+
+def _run_scripted(tmp_path, monkeypatch, references, n_routes_by_target, script):
+    """Run evaluate() on a real checkpoint with the per-pair comparison scripted.
+
+    ``script(reference_id, target_smiles, reagent_rank, baseline_rank)`` returns
+    ``(status, similarity)``. Only the metric computation is replaced, so this
+    exercises target grouping, ranking slots and cohort aggregation.
+    """
+    from reagent.eval.literature_similarity import SimilarityPairResult
+
+    checkpoint = Checkpoint(tmp_path / "checkpoint", {"schema": 1})
+    for target, n in n_routes_by_target.items():
+        key = m0_key(target)
+        route = create_candidate_route(target_smiles=key)
+        checkpoint.save(key, [route.model_copy(deep=True) for _ in range(n)], False)
+
+    def scripted(self, ref, cand_route, candidate_route_id, candidate_content_hash, reagent_rank, baseline_rank):
+        target = next(r.target.reagent_target_smiles for r in references if r.reference_id == ref.reference_id)
+        status, sim = script(ref.reference_id, target, reagent_rank, baseline_rank)
+        value = sim if status == SimilarityStatus.SUCCESS else None
+        return SimilarityPairResult(
+            ref.reference_id, candidate_route_id, candidate_content_hash, reagent_rank, baseline_rank,
+            value, value, value, status, status.value, [],
+        )
+
+    monkeypatch.setattr(SimilarityEvaluator, "_compare_pair", scripted)
+    evaluator = SimilarityEvaluator(LiteratureReferenceSet(references=references), "h")
+    return evaluator.evaluate(Checkpoint.open_readonly(tmp_path / "checkpoint"))
+
+
 class TestAggregationSemantics:
     """Test aggregate metrics handle failures correctly."""
 
-    def test_selected_vs_retained_best(self):
+    def test_selected_vs_retained_best(self, tmp_path, monkeypatch):
         """rank 1 -> sim 0.55, rank 4 -> sim 0.92 -> selected=0.55, max=0.92, best_rank=4."""
-        # This is tested by the evaluator logic, but we can verify the aggregation
-        pass  # Integration test would need full checkpoint
+        sims = {1: 0.55, 4: 0.92}
+        metrics = _run_scripted(
+            tmp_path, monkeypatch, [create_simple_reference("ref_a")], {"CC(=O)Oc1ccccc1C(=O)O": 5},
+            lambda ref_id, target, rank, base: (SimilarityStatus.SUCCESS, sims.get(rank, 0.3)),
+        )
+        target = metrics.per_target[0]
+        assert target.selected_route_similarity == pytest.approx(0.55)
+        assert target.max_similarity_retained == pytest.approx(0.92)
+        assert target.best_similarity_rank == 4
 
-    def test_multiple_references_preserves_both(self):
-        """Multiple references -> preserve both pairwise, use best for max."""
-        pass
+    def test_best_rank_is_lowest_rank_among_ties(self, tmp_path, monkeypatch):
+        """Ties at ranks 1 and 4 (and the baseline pick) report rank 1."""
+        metrics = _run_scripted(
+            tmp_path, monkeypatch, [create_simple_reference("ref_a")], {"CC(=O)Oc1ccccc1C(=O)O": 5},
+            lambda ref_id, target, rank, base: (SimilarityStatus.SUCCESS, 0.9 if rank in (1, 4, None) else 0.2),
+        )
+        assert metrics.per_target[0].best_similarity_rank == 1
 
-    def test_mapping_failed_excluded_from_mean(self):
+    def test_multiple_references_preserves_both(self, tmp_path, monkeypatch):
+        """Multiple references -> preserve both pairwise, use best for max; still one target."""
+        refs = [create_simple_reference("ref_a"), create_simple_reference("ref_b")]
+        sims = {"ref_a": 0.4, "ref_b": 0.7}
+        metrics = _run_scripted(
+            tmp_path, monkeypatch, refs, {"CC(=O)Oc1ccccc1C(=O)O": 2},
+            lambda ref_id, target, rank, base: (SimilarityStatus.SUCCESS, sims[ref_id]),
+        )
+        target = metrics.per_target[0]
+        assert {m.reference_id for m in target.reference_matches} == {"ref_a", "ref_b"}
+        assert target.selected_route_similarity == pytest.approx(0.7)
+        assert metrics.n_targets_requested == 1
+
+    def test_mapping_failed_excluded_from_mean(self, tmp_path, monkeypatch):
         """Failed comparisons must not become zero in mean."""
-        # The evaluator only averages over SUCCESS comparisons
-        pass
+        refs = [create_simple_reference("ref_a"), _reference_for("paracetamol", _PARACETAMOL, "ref_p")]
 
-    def test_mapping_failed_counted_in_denominator(self):
+        def script(ref_id, target, rank, base):
+            if ref_id == "ref_p":
+                return SimilarityStatus.MAPPING_FAILED, None
+            return SimilarityStatus.SUCCESS, 0.6
+
+        metrics = _run_scripted(tmp_path, monkeypatch, refs,
+                                {"CC(=O)Oc1ccccc1C(=O)O": 1, _PARACETAMOL: 1}, script)
+        assert metrics.mean_selected_route_similarity == pytest.approx(0.6)
+        assert metrics.median_selected_route_similarity == pytest.approx(0.6)
+
+    def test_mapping_failed_counted_in_denominator(self, tmp_path, monkeypatch):
         """Target with all failed comparisons -> in n_targets_mapping_failed."""
-        pass
+        refs = [create_simple_reference("ref_a"), _reference_for("paracetamol", _PARACETAMOL, "ref_p")]
 
-    def test_aggregate_over_evaluable_only(self):
-        """Aggregate means/medians over evaluable targets only."""
-        pass
+        def script(ref_id, target, rank, base):
+            if ref_id == "ref_p":
+                return SimilarityStatus.MAPPING_FAILED, None
+            return SimilarityStatus.SUCCESS, 0.6
+
+        metrics = _run_scripted(tmp_path, monkeypatch, refs,
+                                {"CC(=O)Oc1ccccc1C(=O)O": 1, _PARACETAMOL: 1}, script)
+        assert metrics.n_targets_requested == 2
+        assert metrics.n_targets_with_graded_reference == 2
+        assert metrics.n_targets_similarity_evaluable == 1
+        assert metrics.n_targets_mapping_failed == 1
+
+    def test_aggregate_over_evaluable_only(self, tmp_path, monkeypatch):
+        """With no evaluable target, aggregates are None rather than zero."""
+        metrics = _run_scripted(
+            tmp_path, monkeypatch, [create_simple_reference("ref_a")], {"CC(=O)Oc1ccccc1C(=O)O": 2},
+            lambda ref_id, target, rank, base: (SimilarityStatus.MAPPER_UNAVAILABLE, None),
+        )
+        assert metrics.n_targets_similarity_evaluable == 0
+        assert metrics.n_targets_mapper_unavailable == 1
+        assert metrics.mean_selected_route_similarity is None
+        assert metrics.median_max_similarity_retained is None
 
 
 # ============================================================
