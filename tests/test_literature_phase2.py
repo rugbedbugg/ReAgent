@@ -42,10 +42,75 @@ from reagent.eval.literature_derived import (
     derive_candidate,
     derive_reference,
 )
+from reagent.eval.checkpoint import Checkpoint
+from reagent.eval.literature import LiteratureReferenceSet
 from reagent.eval.literature_exact import (
     GraphEquality,
     compare_graph_exact,
+    run_exact_recovery_benchmark,
 )
+
+
+_ASPIRIN = "CC(=O)Oc1ccccc1C(=O)O"
+_SALICYLIC = "O=C(O)c1ccccc1O"
+_ANHYDRIDE = "CC(=O)OC(C)=O"
+_CHLORIDE = "CC(=O)Cl"
+
+
+def _resolved(molecule_id: str, smiles: str, role: MoleculeRole) -> ReferenceMolecule:
+    return ReferenceMolecule(
+        molecule_id=molecule_id,
+        reported_smiles=smiles,
+        role=role,
+        structure_resolution=StructureResolutionStatus.RESOLVED,
+    )
+
+
+def _aspirin_reference(reference_id: str, acetyl_source: str) -> LiteratureReference:
+    """One-step aspirin reference: salicylic acid acetylated by ``acetyl_source``."""
+    return LiteratureReference(
+        reference_id=reference_id,
+        target=TargetRecord(reagent_target_name="aspirin", reagent_target_smiles=_ASPIRIN),
+        sources=[SourceRecord(source_id="src", source_type=SourceType.PATENT, is_primary=True)],
+        molecules=[
+            _resolved("mol_t", _ASPIRIN, MoleculeRole.TARGET),
+            _resolved("mol_a", _SALICYLIC, MoleculeRole.STARTING_MATERIAL),
+            _resolved("mol_b", acetyl_source, MoleculeRole.STARTING_MATERIAL),
+        ],
+        steps=[ReferenceStep(step_id="s1", precursor_ids=["mol_a", "mol_b"], product_id="mol_t",
+                             evidence_locators=[EvidenceLocator(source_id="src", example="1")])],
+        stereo_metadata=StereoMetadata(relation_to_reagent=StereoRelation.EXACTLY_COMPATIBLE),
+    )
+
+
+def _one_step_route(target: str, precursors: list[str], solved: bool = True) -> Route:
+    tree = {
+        "type": "mol", "smiles": target,
+        "children": [{
+            "type": "reaction", "smiles": f"{target}>>{'.'.join(precursors)}",
+            "children": [{"type": "mol", "smiles": p} for p in precursors],
+        }],
+    }
+    return Route(
+        target=target,
+        reactions=[Reaction(product=target, precursors=precursors)],
+        leaves=[Molecule(smiles=p, in_stock=solved) for p in precursors],
+        solved=solved,
+        tree=tree,
+    )
+
+
+def _aspirin_route(acetyl_source: str, solved: bool = True) -> Route:
+    return _one_step_route(_ASPIRIN, [_SALICYLIC, acetyl_source], solved)
+
+
+def _checkpoint(tmp_path, routes_by_target: dict[str, list[Route]]):
+    """Write a read-only-compatible checkpoint keyed by each target's M0."""
+    checkpoint = Checkpoint(tmp_path / "checkpoint", {"schema": 1})
+    for target, routes in routes_by_target.items():
+        key = m0_key(target)
+        checkpoint.save(key, [r.model_copy(update={"target": key}) for r in routes], False)
+    return tmp_path / "checkpoint"
 
 
 class TestM0Identity:
@@ -881,17 +946,44 @@ class TestRecoveryMetrics:
         assert (best_rank is not None and best_rank <= 10) is False
         assert best_rank is None  # @Retained is False when no match
 
-    def test_denominator_excludes_ineligible_targets(self):
+    def test_denominator_excludes_ineligible_targets(self, tmp_path):
         """Targets with only ineligible references don't count in denominator."""
-        pass
+        partial = _aspirin_reference("ref_partial", _ANHYDRIDE)
+        partial = partial.model_copy(update={
+            "reference_id": "ref_partial",
+            "target": TargetRecord(reagent_target_name="salicylic acid", reagent_target_smiles=_SALICYLIC),
+            "route_completeness": RouteCompleteness.PARTIAL,
+        })
+        checkpoint = _checkpoint(tmp_path, {_ASPIRIN: [_aspirin_route(_ANHYDRIDE)]})
+        metrics = run_exact_recovery_benchmark(
+            LiteratureReferenceSet(references=[_aspirin_reference("ref_a", _ANHYDRIDE), partial]),
+            checkpoint,
+        ).metrics
+
+        assert metrics.n_targets_requested == 2
+        assert metrics.n_targets_with_core_exact_reference == 1
+        assert metrics.n_targets_without_core_exact_reference == 1
+        assert metrics.recovery_at_1 == 1.0
 
 
 class TestMultipleReferences:
     """Tests for multiple reference aggregation."""
 
-    def test_target_recovered_if_any_core_reference_matches(self):
+    def test_target_recovered_if_any_core_reference_matches(self, tmp_path):
         """Target recovered if ANY core-exact-eligible reference matches."""
-        pass
+        route = _aspirin_route(_ANHYDRIDE)
+        checkpoint = _checkpoint(tmp_path, {_ASPIRIN: [route]})
+        refs = [_aspirin_reference("ref_chloride", _CHLORIDE), _aspirin_reference("ref_anhydride", _ANHYDRIDE)]
+        metrics = run_exact_recovery_benchmark(LiteratureReferenceSet(references=refs), checkpoint).metrics
+
+        # Two references to one target are one target, not two
+        assert metrics.n_targets_requested == 1
+        target = metrics.per_target[0]
+        assert target.exact_recovered is True
+        assert target.best_exact_rank == 1
+        assert [m.reference_id for m in target.reference_matches] == ["ref_anhydride"]
+        assert target.reference_matches[0].candidate_route_id == derive_candidate(route, "h").route_id
+        assert target.reference_matches[0].baseline_rank == 1
 
     def test_best_rank_is_minimum_across_references(self):
         """Best rank is min across all matching eligible references."""
@@ -902,9 +994,49 @@ class TestMultipleReferences:
 class TestUnsolvedMatchDiagnostic:
     """Tests for unsolved exact match diagnostic."""
 
-    def test_unsolved_match_diagnostic_only(self):
+    def test_unsolved_match_diagnostic_only(self, tmp_path):
         """Unsolved match sets diagnostic but not primary recovery."""
-        pass
+        routes = [_aspirin_route(_ANHYDRIDE, solved=False), _aspirin_route(_CHLORIDE)]
+        checkpoint = _checkpoint(tmp_path, {_ASPIRIN: routes})
+        metrics = run_exact_recovery_benchmark(
+            LiteratureReferenceSet(references=[_aspirin_reference("ref_a", _ANHYDRIDE)]), checkpoint,
+        ).metrics
+
+        target = metrics.per_target[0]
+        assert target.exact_recovered is False
+        assert target.recovery_at_retained is False
+        assert target.unsolved_exact_match_present is True
+
+
+class TestStereoStressTargetGrouping:
+    """References are grouped by their ReAgent target, not their own target M0."""
+
+    def test_stereo_specific_reference_reads_reagent_target_checkpoint(self, tmp_path):
+        racemic = "CC(C)Cc1ccc(C(C)C(=O)O)cc1"
+        specific = "CC(C)Cc1ccc([C@H](C)C(=O)O)cc1"
+        ref = LiteratureReference(
+            reference_id="ref_stereo",
+            target=TargetRecord(reagent_target_name="ibuprofen", reagent_target_smiles=racemic),
+            sources=[SourceRecord(source_id="src", source_type=SourceType.PATENT, is_primary=True)],
+            molecules=[
+                _resolved("mol_t", specific, MoleculeRole.TARGET),
+                _resolved("mol_a", "CC(C)Cc1ccc([C@H](C)C#N)cc1", MoleculeRole.STARTING_MATERIAL),
+            ],
+            steps=[ReferenceStep(step_id="s1", precursor_ids=["mol_a"], product_id="mol_t",
+                                 evidence_locators=[EvidenceLocator(source_id="src", example="1")])],
+            stereo_metadata=StereoMetadata(
+                target_status=StereoStatus.STEREOSPECIFIC,
+                relation_to_reagent=StereoRelation.REFERENCE_MORE_SPECIFIC,
+            ),
+        )
+        route = _one_step_route(racemic, ["CC(C)Cc1ccc(C(C)C#N)cc1"])
+        checkpoint = _checkpoint(tmp_path, {racemic: [route]})
+        target = run_exact_recovery_benchmark(LiteratureReferenceSet(references=[ref]), checkpoint).metrics.per_target[0]
+
+        assert target.target_name == "ibuprofen"
+        assert target.retained_candidates == 1
+        # A stereo-unspecified route is never a strict exact match for a stereospecific reference
+        assert target.exact_recovered is False
 
 
 class TestCandidateIdentity:
