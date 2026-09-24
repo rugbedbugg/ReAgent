@@ -21,11 +21,10 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6"]
-# The literature benchmark imports rxnutils directly. It is satisfied today
-# only because aizynthfinder happens to require reaction-utils; declaring it
-# here states the dependency we actually rely on. The bound matches
-# aizynthfinder's own (>=1.9.3,<2.0.0) so the two cannot resolve apart.
-literature = ["reaction-utils>=1.9.3,<2.0.0"]
+# The literature benchmark imports rxnutils directly rather than relying on
+# aizynthfinder's transitive requirement (>=1.9.3,<2.0.0). The pin is exact
+# because the graded-similarity baseline and its tests were validated on 1.9.4.
+literature = ["reaction-utils==1.9.4"]
 
 [project.scripts]
 reagent = "reagent.cli:main"

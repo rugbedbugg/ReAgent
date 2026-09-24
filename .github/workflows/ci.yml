@@ -27,7 +27,7 @@ jobs:
       - name: Trust project config
         run: mise trust
 
-      - name: Install package and dev extras
+      - name: Install package with dev and literature extras
         run: mise run install
 
       - name: Lint
@@ -63,8 +63,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install package and dev extras
-        run: python -m pip install -e ".[dev]"
+      - name: Install package with dev and literature extras
+        run: python -m pip install -e ".[dev,literature]"
 
       - name: Test
         run: python -m pytest -q
