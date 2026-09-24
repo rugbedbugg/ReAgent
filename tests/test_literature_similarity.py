@@ -1036,6 +1036,52 @@ class TestAggregationSemantics:
 # 10. MAPPING FAILURE TEST
 # ============================================================
 
+class TestCandidateRankAttribution:
+    """A candidate that cannot be converted keeps its rank slot."""
+
+    def test_unconvertible_rank_one_does_not_promote_rank_two(self, tmp_path, monkeypatch):
+        import reagent.eval.harness as harness
+        from reagent.eval.literature_similarity import SimilarityPairResult
+
+        target = m0_key("CC(=O)Oc1ccccc1C(=O)O")
+        convertible = create_candidate_route(target_smiles=target)
+        # Treeless, and salicylic acid has two producers: its topology cannot be rebuilt
+        ambiguous = Route(
+            target=target,
+            reactions=[
+                Reaction(product=target, precursors=["CC(=O)O", "O=C(O)c1ccccc1O"]),
+                Reaction(product="O=C(O)c1ccccc1O", precursors=["Oc1ccccc1"]),
+                Reaction(product="O=C(O)c1ccccc1O", precursors=["COC(=O)c1ccccc1O"]),
+            ],
+            leaves=[Molecule(smiles=s, in_stock=True) for s in ("CC(=O)O", "Oc1ccccc1", "COC(=O)c1ccccc1O")],
+            solved=True,
+            tree=None,
+        )
+        checkpoint = Checkpoint(tmp_path / "checkpoint", {"schema": 1})
+        checkpoint.save(target, [convertible, ambiguous], False)
+        order = [ambiguous, convertible]
+        monkeypatch.setattr(harness, "rank_candidates", lambda routes: harness.RankingResult(
+            reagent_ranked=order, baseline_ranked=order, weight_vector={}))
+
+        calls = []
+
+        def recording(self, ref, cand_route, candidate_route_id, candidate_content_hash, reagent_rank, baseline_rank):
+            calls.append((candidate_route_id, reagent_rank, baseline_rank, cand_route is None))
+            return SimilarityPairResult(ref.reference_id, candidate_route_id, candidate_content_hash, reagent_rank,
+                                        baseline_rank, None, None, None, SimilarityStatus.MAPPER_UNAVAILABLE, "x", [])
+
+        monkeypatch.setattr(SimilarityEvaluator, "_compare_pair", recording)
+        evaluator = SimilarityEvaluator(LiteratureReferenceSet(references=[create_simple_reference()]), "h")
+        evaluator.evaluate(Checkpoint.open_readonly(tmp_path / "checkpoint"))
+
+        ambiguous_id = derive_candidate(ambiguous, "h").route_id
+        convertible_id = derive_candidate(convertible, "h").route_id
+        assert (ambiguous_id, 1, None, True) in calls
+        assert (convertible_id, 2, None, False) in calls
+        # The baseline-selected slot is the unconvertible route, not the next one
+        assert (ambiguous_id, None, 1, True) in calls
+
+
 class TestMappingFailure:
     """Test explicit mapping failure handling."""
 

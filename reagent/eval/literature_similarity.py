@@ -764,11 +764,12 @@ class SimilarityEvaluator:
             reagent_ranked = ranking.reagent_ranked
             baseline_ranked = ranking.baseline_ranked
 
-            # Build SynthesisRoute objects for all solved candidates (reagent ranking)
-            derived_cands = [self._build_candidate_route(r) for r in reagent_ranked]
-            valid_cands = [(r, c) for r, c in zip(reagent_ranked, derived_cands) if c is not None]
+            # Build SynthesisRoute objects for all solved candidates (reagent ranking).
+            # A candidate that cannot be converted keeps its rank and is reported,
+            # so no later candidate is promoted into its slot.
+            reagent_built = [self._build_candidate_route(r) for r in reagent_ranked]
 
-            if not valid_cands:
+            if all(c is None for c in reagent_built):
                 per_target_results.append(TargetSimilarityResult(
                     target_name=target_name,
                     target_smiles=target_smiles,
@@ -794,9 +795,7 @@ class SimilarityEvaluator:
                 ))
                 continue
 
-            # Build SynthesisRoute objects for baseline ranking
-            baseline_cands = [self._build_candidate_route(r) for r in baseline_ranked]
-            valid_baseline = [(r, c) for r, c in zip(baseline_ranked, baseline_cands) if c is not None]
+            baseline_selected = self._build_candidate_route(baseline_ranked[0])
 
             # Compare each graded reference against all valid candidates
             reference_matches = []
@@ -826,8 +825,7 @@ class SimilarityEvaluator:
                 # Compare against reagent-ranked candidates
                 best_sim_for_ref = None
 
-                for rank, (orig_route, cand_route) in enumerate(valid_cands, 1):
-                    cand_derived = derived_cands_for_hash[rank - 1]  # Same index
+                for rank, (cand_route, cand_derived) in enumerate(zip(reagent_built, derived_cands_for_hash), 1):
                     comp_result = self._compare_pair(
                         ref, cand_route,
                         candidate_route_id=cand_derived.route_id,
@@ -848,11 +846,10 @@ class SimilarityEvaluator:
                 baseline_sim = None
                 baseline_atom = None
                 baseline_bond = None
-                if valid_baseline:
-                    orig_route, cand_route = valid_baseline[0]
+                if baseline_ranked:
                     cand_derived = baseline_derived_cands[0]
                     comp_result = self._compare_pair(
-                        ref, cand_route,
+                        ref, baseline_selected,
                         candidate_route_id=cand_derived.route_id,
                         candidate_content_hash=cand_derived.content_hash(),
                         reagent_rank=None, baseline_rank=1
@@ -872,7 +869,7 @@ class SimilarityEvaluator:
             selected_sim = None
             selected_atom = None
             selected_bond = None
-            if valid_cands:
+            if reagent_built:
                 # Find the best similarity for the rank 1 candidate across all references
                 rank1_sims = [m.route_similarity for m in reference_matches
                               if m.reagent_rank == 1 and m.status == SimilarityStatus.SUCCESS and m.route_similarity is not None]
@@ -907,7 +904,7 @@ class SimilarityEvaluator:
             baseline_sim = None
             baseline_atom = None
             baseline_bond = None
-            if valid_baseline:
+            if baseline_ranked:
                 baseline_sims = [m.route_similarity for m in reference_matches
                                  if m.baseline_rank == 1 and m.status == SimilarityStatus.SUCCESS and m.route_similarity is not None]
                 baseline_atoms = [m.atom_similarity for m in reference_matches
