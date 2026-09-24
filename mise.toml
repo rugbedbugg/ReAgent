@@ -9,8 +9,8 @@ python.uv_venv_auto = true
 _.python.venv = { path = ".venv", create = true }
 
 [tasks.install]
-description = "Install the package and dev extras into the project venv"
-run = 'uv pip install -e ".[dev]"'
+description = "Install the package with dev and literature extras into the project venv"
+run = 'uv pip install -e ".[dev,literature]"'
 
 [tasks.test]
 description = "Run the test suite"

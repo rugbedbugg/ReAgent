@@ -107,14 +107,14 @@ git clone https://github.com/rugbedbugg/ReAgent.git
 cd ReAgent
 mise trust
 mise install        # Python 3.11 + uv; creates .venv
-mise run install    # editable install with dev extras
+mise run install    # editable install with dev and literature extras
 ```
 
 Without mise, any Python 3.10 or 3.11 interpreter works:
 
 ```bash
 uv venv --python 3.11
-uv pip install --python .venv/bin/python -e ".[dev]"
+uv pip install --python .venv/bin/python -e ".[dev,literature]"
 ```
 
 Two optional extras are declared:
@@ -128,8 +128,11 @@ Two optional extras are declared:
 uv pip install --python .venv/bin/python -e ".[dev,literature]"
 ```
 
-`reaction-utils` is currently satisfied anyway, because AiZynthFinder requires
-it, but the literature code imports it directly and so declares it.
+The `literature` extra pins `reaction-utils==1.9.4` exactly. AiZynthFinder also
+requires `reaction-utils`, but only as `>=1.9.3,<2.0.0`; the graded-similarity
+baseline and its tests were validated on 1.9.4, which in turn requires
+`scipy<1.14.1` on Python below 3.13. The test suite imports this extra, so
+install it alongside `dev`.
 
 ### Data and configuration
 
