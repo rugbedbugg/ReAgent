@@ -554,13 +554,22 @@ rule that uses no tuned weights: take the Pareto front, normalize the objectives
 across the candidate set, and pick the route closest to the ideal point of 1.0
 on everything.
 
-On the hard set at <=14, against the same candidates:
+On the original ten-target hard set at <=14, against the same candidates:
 
 | rule | safety | sustainability | cost | agrees with weighted |
 |---|---|---|---|---|
 | feasibility-only baseline | 0.529 | 0.898 | 0.535 | n/a |
 | tuned weights (REAGENT, safety-tilted) | 0.628 | 0.914 | 0.578 | n/a |
 | closest to the ideal point | 0.370 | 0.837 | 0.498 | 1 of 10 |
+
+On the widened 24-target hard set, same configuration
+(`docs/measurements/widened-sets-2026-09-06.log`):
+
+| rule | safety | sustainability | cost | agrees with weighted |
+|---|---|---|---|---|
+| feasibility-only baseline | 0.502 | 0.867 | 0.505 | n/a |
+| tuned weights (REAGENT, safety-tilted) | 0.599 | 0.890 | 0.540 | n/a |
+| closest to the ideal point | 0.416 | 0.838 | 0.441 | 2 of 24 |
 
 These figures were the least stable in the project before ties were made
 deterministic: the rule selects off the Pareto front, so a candidate set
@@ -569,11 +578,12 @@ Three runs then gave safety 0.344, 0.414 and 0.418; the row now reproduces. The
 conclusion never depended on that: every one of those values, and this one, sits
 well below the baseline.
 
-The ideal-point rule loses to the plain baseline on every objective. Equal
-distance on every axis is not the absence of a weighting: it *is* a uniform
-one, which cuts feasibility from 0.30 to 1/7 and lifts the noisier proxies to
-equal standing. Balancing seven objectives beats optimizing none of them and
-loses to optimizing the right ones.
+The ideal-point rule loses to the plain baseline on every objective, on both
+sets. Equal distance on every axis is not the absence of a weighting: it *is* a
+uniform one, which cuts feasibility from 0.30 to 1/7 and lifts the noisier
+proxies to equal standing. Spreading weight evenly across seven objectives does
+worse than the feasibility-only baseline, while weighting the right objectives
+does better than both.
 
 It stays in the evaluation output as a control rather than a recommendation. The
 profiles agreeing with each other says the objectives are correlated across the
@@ -693,6 +703,21 @@ routes preferred on cost usually differ in safety too, so the update credits it.
 Cost is recovered less well than safety for the same reason: less spread to
 learn from. Read the learned vector as a direction, not as the user's true
 preference.
+
+Re-run over the saved vectors from all 49 targets (306 routes, 40 rounds with a
+genuine choice), `reagent check-adaptive --vectors
+docs/measurements/adaptive-vectors-49-targets.json --max-targets 49`:
+
+| hidden preference | regret | agreement | learned safety | learned cost |
+|---|---|---|---|---|
+| safety-loving | 0.118 to 0.029 | 75% to 75% | 0.905 | 0.070 |
+| cost-loving | 0.077 to 0.000 | 70% to 95% | 0.090 | 0.697 |
+
+Regret falls 75% for the safety-loving user and to exactly zero for the
+cost-loving one, so the "about 90%" above describes the 20-target run only. The
+learned weights pick the preferred route on 30 of 40 targets for safety and 33
+of 40 for cost. These vectors come from MCTS on hashed ZINC, not from the
+Retro* runs against ZINC plus eMolecules.
 
 The striking part is what happens to the objectives nobody weighted: feasibility
 falls from 0.300 to 0.029 and 0.112, and availability to ~0.00, under *both*
