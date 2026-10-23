@@ -252,6 +252,132 @@ Keep raw references and reviewer worksheets under ignored `data/`. Commit review
 aggregate measurements under `docs/measurements/` and describe conclusions here;
 do not commit expert identities or copied publication content without permission.
 
+## v0.3.0 results, rescored October 23
+
+These are the current numbers of record. They come from the v0.3.0 queue
+(September 7 to 10), which saved full routes for every target, rescored on
+October 23 with the current ranking code:
+
+```sh
+uv run --no-sync python docs/measurements/summarize_checkpoint.py \
+  data/evaluations/v0.3.0/control-hard --hard
+```
+
+One summary per job is committed under `docs/measurements/v0.3.0-rescored/`.
+Two rescoring passes produced byte-identical output, the search implementation
+recorded in every manifest matches the current code, and the September 7
+source-mode summary (`source-hard-2026-09-07.json`) reproduces exactly.
+
+Unless stated otherwise: Retro\*, 500 iterations, 1,800 s, ZINC unioned with
+eMolecules capped at 14 heavy atoms, and **up to 40 candidates per target**.
+The September 6 sections further down used a cap of 15 and saved no routes, so
+they cannot be rescored; they are kept as history. "Solved by building" counts
+a target when the selected route's largest leaf is below 0.8 of the target.
+
+### Selection over identical candidates
+
+| set | baseline safety | feasibility-led | safety-tilted | picks changed |
+|---|---|---|---|---|
+| moderate, 25 | 0.431 | 0.531 | 0.754 | 7 / 16 |
+| hard, 24 | 0.505 | 0.600 | 0.600 | 15 / 15 |
+
+The default profile lifts safety by about 0.10 on both sets. **One conclusion
+changed:** on the hard set the safety-tilted profile now selects routes with the
+same mean safety, sustainability and cost as the default. With 40 candidates
+the default already reaches the safer routes, so tilting adds nothing there. On
+the moderate set the tilted lift is still partly earned by buying: it selects
+13 routes with a leaf of at least 0.8, against 12 for the default.
+
+### Build mode against unconstrained search
+
+Each mode is ranked with its own profile (`feasibility-led` for the
+unconstrained run, `build-it-yourself` for build).
+
+| | moderate, plain | moderate, build | hard, plain | hard, build |
+|---|---|---|---|---|
+| solve-rate | 1.00 | 0.84 | 1.00 | 0.92 |
+| **solved by building** | **0.52** | **0.84** | **0.96** | **0.92** |
+| mean route length | 1.12 | 2.29 | 2.00 | 2.41 |
+| mean largest leaf | 0.78 | 0.51 | 0.59 | 0.48 |
+| buys the answer | 12 of 25 | 0 of 25 | 1 of 24 | 0 of 24 |
+| selected safety | 0.531 | 0.425 | 0.600 | 0.528 |
+
+The finding holds and is slightly stronger. Unconstrained, 12 moderate targets
+buy a nearly finished molecule. Under build mode 8 of them are still solved, and
+for 7 of those 8 none of the 40 retained unconstrained candidates had a leaf at
+or below 0.6: the constrained search found routes the unconstrained one had not
+retained. Lidocaine already had one. Salicylamide, naproxen, vanillin and
+pregabalin become unsolved. On the hard set build mode loses sumatriptan and
+ketamine.
+
+### Choosing the purchasing fraction
+
+Build mode at three fractions, ranked with `build-it-yourself`:
+
+| fraction | moderate solved | moderate length | moderate leaf | hard solved | hard length | hard leaf |
+|---|---|---|---|---|---|---|
+| 0.5 | 0.68 | 2.88 | 0.45 | 0.88 | 3.00 | 0.45 |
+| 0.6 | 0.84 | 2.29 | 0.51 | 0.92 | 2.41 | 0.48 |
+| 0.7 | 1.00 | 2.00 | 0.57 | 0.96 | 2.13 | 0.54 |
+
+Every solve here is a solve by building, since no leaf can exceed the cap. A
+higher fraction solves more targets with shorter routes and larger purchased
+leaves. At 0.7 build mode solves all 25 moderate targets, against 0.52 solved
+by building without a constraint, and matches the unconstrained 0.96 on the
+hard set. The 0.4 pilot on the first five targets of each set solved 1 of 5
+moderate and 4 of 5 hard targets; five targets cannot support a general
+conclusion. The default stays at 0.6: these are two convenience sets that were
+also used for tuning, and the right fraction depends on how much of the molecule
+the user wants to make.
+
+### Pooling and budget
+
+Arms with equal candidate caps (40). Pooled runs `mcts,retrostar` at 500
+iterations and 1,800 s per algorithm; the budget arm runs Retro\* alone at 1,000
+iterations and 3,600 s, which matches the pooled nominal ceilings but not actual
+work or time.
+
+| arm | mode | moderate solved | moderate candidates | hard solved | hard candidates |
+|---|---|---|---|---|---|
+| Retro\* | balanced | 1.00 | 320 | 1.00 | 363 |
+| pooled | balanced | 1.00 | 364 | 1.00 | 479 |
+| Retro\*, doubled | balanced | 1.00 | 315 | 1.00 | 381 |
+| Retro\* | build | 0.84 | 368 | 0.92 | 364 |
+| pooled | build | 0.88 | 517 | 0.96 | 602 |
+| Retro\*, doubled | build | 0.96 | 350 | 0.92 | 391 |
+
+Unconstrained, every arm solves every target and more candidates do not buy a
+better selection: on the hard set the default profile's selected safety is
+0.600 for Retro\*, 0.524 pooled and 0.592 doubled. Under build mode both
+extensions help. Pooling adds one solved target on each set. Doubling the
+Retro\* budget adds three on the moderate set (0.84 to 0.96) and none on the
+hard set.
+
+Wall-clock time is not comparable across these arms: several jobs were stopped
+for low memory and resumed from their checkpoints, so their elapsed times
+include abandoned work and replays. Of the jobs that ran in one attempt, the
+moderate Retro\*, pooled and doubled balanced arms took 1.13, 1.34 and 2.04
+hours. Two moderate targets hit the clock in each balanced arm; no other job
+reported a time-capped target.
+
+### The Pareto control
+
+| set | rule | safety | sustainability | cost | agrees with weighted |
+|---|---|---|---|---|---|
+| hard | feasibility-only baseline | 0.505 | 0.867 | 0.498 | n/a |
+| hard | safety-tilted | 0.600 | 0.891 | 0.543 | n/a |
+| hard | closest to the ideal point | 0.387 | 0.828 | 0.435 | 2 of 24 |
+| moderate | feasibility-only baseline | 0.431 | 0.805 | 0.695 | n/a |
+| moderate | safety-tilted | 0.754 | 0.905 | 0.727 | n/a |
+| moderate | closest to the ideal point | 0.446 | 0.774 | 0.674 | 1 of 25 |
+
+On the hard set the ideal-point rule is below the baseline on all three
+objectives, as before. **On the moderate set it is not:** its safety, 0.446,
+is slightly above the baseline's 0.431, though below the baseline on
+sustainability and cost and far below the weighted selection everywhere. The
+earlier statement that it loses to the baseline on every objective on both sets
+applied to the 15-candidate runs only.
+
 ## The standard target set
 
 ```sh
@@ -363,6 +489,9 @@ answer.
 
 ## The widened sets: 20 targets to 49
 
+*History: September 6 run, up to 15 candidates per target, routes not saved.
+Superseded by [the rescored v0.3.0 results](#v030-results-rescored-october-23).*
+
 Everything above was measured on ten targets, several conclusions on eight. The
 sets were widened to 25 moderate and 24 hard, spanning 9 to 33 heavy atoms, and
 re-measured under the same configuration (`retrostar`, 500 iterations, 1800 s,
@@ -429,6 +558,9 @@ Two of the twenty-five searches stopped on the 1800 s clock rather than the
 iteration budget, so those two measure the timeout.
 
 ## Modes: what the constraint costs and buys
+
+*History: September 6 run, up to 15 candidates per target, routes not saved.
+Superseded by [the rescored v0.3.0 results](#v030-results-rescored-october-23).*
 
 `--mode build` treats a leaf as purchasable only if it is at most 60% of the
 target's heavy atoms, enforced in the stock layer so a degenerate route is never
@@ -547,6 +679,10 @@ does vary across candidates, so this is where the selection layer has something
 real to express a preference over.
 
 ## Are the weights doing anything? A control says yes
+
+*History: 15-candidate runs. The rescored 40-candidate control, including one
+changed conclusion on the moderate set, is under [the v0.3.0
+results](#v030-results-rescored-october-23).*
 
 Two weight profiles picking identical routes looks like evidence that the
 weights are decoration. It is not, and the test that settles it is a selection
@@ -883,8 +1019,9 @@ A cap of 15, which is what the evaluations here have used, binds on half of them
 and costs propranolol 18 of its 33 candidates. Retro* alone returned 9 on
 naproxen, but that observation does not establish that cap 15 is harmless for
 every single search: the September 7 hard-set run reaches it on 13 targets.
-The first pooled evaluation used a clipped candidate pool; the next comparisons
-raise the cap for both arms.
+The first pooled evaluation used a clipped candidate pool; the v0.3.0 comparisons
+raised the cap to 40 for both arms, and their results are under [the v0.3.0
+results](#v030-results-rescored-october-23).
 
 Use `--max-routes 40` with a pooled search. The number is not a swept optimum,
 it is simply above the largest count observed.
@@ -913,6 +1050,8 @@ small exploratory 0.4 arm. This is a compute allocation decision, not proof that
 other values are unhelpful. The 0.6 build controls are reused rather than rerun.
 The local queue definition records the exact order and controls; experiment
 plans and live execution state are kept under ignored `data/evaluations/`.
+The completed sweep is reported under [the v0.3.0
+results](#v030-results-rescored-october-23).
 
 ## Measured dead ends
 
