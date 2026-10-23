@@ -37,9 +37,9 @@ Write-Host "Using interpreter: $python"
 # learning library), so 'pip install reagent' would fetch the wrong package.
 $wheelArgs = @{
     packageName    = 'reagent'
-    fileFullPath   = Join-Path $toolsDir 'reagent-0.2.0-py3-none-any.whl'
-    url            = 'https://github.com/rugbedbugg/ReAgent/releases/download/v0.2.0/reagent-0.2.0-py3-none-any.whl'
-    checksum       = 'a2746be9ec377bac6b720cb5653160db03ee7f52871d6f1b7baf26f92ed1659b'
+    fileFullPath   = Join-Path $toolsDir 'reagent-0.3.0-py3-none-any.whl'
+    url            = 'https://github.com/rugbedbugg/ReAgent/releases/download/v0.3.0/reagent-0.3.0-py3-none-any.whl'
+    checksum       = 'e0fa63990c1599b8ee900f66289397653a6dc43fe723250d3a5c4002170d83b2'
     checksumType   = 'sha256'
 }
 Get-ChocolateyWebFile @wheelArgs

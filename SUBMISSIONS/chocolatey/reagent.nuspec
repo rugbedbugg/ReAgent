@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
   <metadata>
     <id>reagent</id>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
     <title>ReAgent</title>
     <authors>Partha Pratim Gogoi</authors>
     <owners>rugbedbugg</owners>
@@ -34,7 +34,7 @@ The agent layer is optional and needs either a local Ollama server (--local)
 or ANTHROPIC_API_KEY (--assess). Planning, features and evaluation run without
 either.</description>
     <summary>Agentic retrosynthesis planner that scores routes on seven objectives with RDKit-grounded chemistry.</summary>
-    <releaseNotes>https://github.com/rugbedbugg/ReAgent/releases/tag/v0.2.0</releaseNotes>
+    <releaseNotes>https://github.com/rugbedbugg/ReAgent/releases/tag/v0.3.0</releaseNotes>
     <tags>chemistry cheminformatics retrosynthesis rdkit molecules science cli python</tags>
     <projectSourceUrl>https://github.com/rugbedbugg/ReAgent</projectSourceUrl>
     <packageSourceUrl>https://github.com/rugbedbugg/ReAgent/tree/main/SUBMISSIONS/chocolatey</packageSourceUrl>

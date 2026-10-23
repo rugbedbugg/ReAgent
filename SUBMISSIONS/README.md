@@ -1,6 +1,6 @@
 # Packaging submissions
 
-Downstream packaging for ReAgent v0.2.0. One directory per ecosystem.
+Downstream packaging for ReAgent v0.3.0. One directory per ecosystem.
 
 ReAgent is a Python package with a pinned interpreter, not a standalone
 binary, which is what shapes every decision below.
