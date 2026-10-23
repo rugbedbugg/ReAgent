@@ -482,17 +482,22 @@ atoms reaches 1.00 with routes that get *longer* rather than shorter. Uncapped
 at 20 it also reaches 1.00, but by buying the penultimate compound on 3 of 10,
 which is not the same achievement.
 
-**The feedback loop learns.** Twenty targets, a hidden user preference the loop
-cannot see, regret measured as the utility gap against that hidden preference:
+**The feedback loop learns.** A simulated user with a hidden preference the loop
+cannot see picks a route for each target in turn. Regret is the utility gap
+against that hidden preference, from the first half of the sequence to the
+second. "Matched" replays every round with the final learned weights:
 
-| Hidden preference | Regret | Agreement | Matched route |
-|---|---|---|---|
-| Safety-loving | 0.077 to 0.006 | 70% to 80% | 17 of 20 |
-| Cost-loving | 0.174 to 0.023 | 60% to 70% | 13 of 20 |
+| Targets | Hidden preference | Regret | Agreement | Matched |
+|---|---|---|---|---|
+| 20 | Safety-loving | 0.327 to 0.015 | 43% to 88% | 13 of 15 |
+| 20 | Cost-loving | 0.170 to 0.028 | 43% to 88% | 14 of 15 |
+| 49 | Safety-loving | 0.118 to 0.029 | 75% to 75% | 33 of 40 |
+| 49 | Cost-loving | 0.077 to 0.000 | 70% to 95% | 34 of 40 |
 
-Rerun over the saved vectors from all 49 targets (40 rounds with a genuine
-choice), regret falls from 0.118 to 0.029 for the safety-loving user and from
-0.077 to 0.000 for the cost-loving one.
+Rounds count only targets with at least two distinguishable solved routes. Both
+runs use MCTS on hashed ZINC, and their candidate vectors are saved under
+[docs/measurements](docs/measurements), so `reagent check-adaptive --vectors ...`
+reproduces each row exactly.
 
 **It runs on 8 GB.** `--hashed-stock` takes a planning run from 4.91 GB to
 0.63 GB peak RSS with identical results.

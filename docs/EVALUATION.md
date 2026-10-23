@@ -823,23 +823,33 @@ cost-loving. That matters: a loop that drifts toward one objective whatever it
 is told would look like learning under a single preference, and only fails
 visibly when the opposite preference has to move the weights the other way.
 
-Measured over 20 targets and 209 real candidate routes:
+Measured on the first 20 targets, the ten moderate and ten hard targets the sets
+held before they were widened. MCTS on hashed ZINC, up to 15 routes per target.
+The candidate vectors are saved, so this reproduces exactly:
+`reagent check-adaptive --vectors docs/measurements/adaptive-vectors-20-targets.json`.
+The search returned 157 candidates. 17 targets were solved, giving 127 solved
+routes and 15 rounds with a genuine choice.
 
 | hidden preference | regret | agreement | learned safety | learned cost |
 |---|---|---|---|---|
-| safety-loving | 0.077 to 0.006 | 70% to 80% | 0.672 | 0.155 |
-| cost-loving | 0.174 to 0.023 | 60% to 70% | 0.335 | 0.417 |
+| safety-loving | 0.327 to 0.015 | 43% to 88% | 0.402 | 0.279 |
+| cost-loving | 0.170 to 0.028 | 43% to 88% | 0.179 | 0.377 |
 
-Both start from safety 0.150 and cost 0.150. The loop learns: regret falls about
-90%, each user's own objective ends on top, and the learned weights pick that
-user's preferred route on 17 of 20 targets for safety and 13 of 20 for cost.
+Both start from safety 0.150 and cost 0.150. The loop learns: regret falls 95%
+for the safety-loving user and 84% for the cost-loving one, and each user's own
+objective ends on top. Replaying all 15 rounds with the final learned weights
+matches the preferred route on 13 for safety and 14 for cost.
 
-It is not a clean recovery, though. The cost-loving user still lifts safety from
-0.150 to 0.335, because safety has the widest spread in real candidate sets and
-routes preferred on cost usually differ in safety too, so the update credits it.
-Cost is recovered less well than safety for the same reason: less spread to
-learn from. Read the learned vector as a direction, not as the user's true
+It is not a clean recovery, though. The safety-loving user also lifts cost from
+0.150 to 0.279, and the cost-loving user lifts safety slightly, to 0.179. Routes
+preferred for one objective usually differ on others too, so the update credits
+those as well. Read the learned vector as a direction, not as the user's true
 preference.
+
+An earlier record of this measurement reported 209 candidate routes, a regret
+fall of about 90% and matches on 17 and 13 of 20 targets. Its routes were not
+saved, and the counts do not reproduce on a fresh search with the current code,
+so the table above replaces it.
 
 Re-run over the saved vectors from all 49 targets (306 routes, 40 rounds with a
 genuine choice), `reagent check-adaptive --vectors
@@ -851,17 +861,16 @@ docs/measurements/adaptive-vectors-49-targets.json --max-targets 49`:
 | cost-loving | 0.077 to 0.000 | 70% to 95% | 0.090 | 0.697 |
 
 Regret falls 75% for the safety-loving user and to exactly zero for the
-cost-loving one, so the "about 90%" above describes the 20-target run only. The
-weights in force at each round picked the preferred route on 30 of 40 rounds for
+cost-loving one. The weights in force at each round picked the preferred route on 30 of 40 rounds for
 safety and 33 of 40 for cost, which is the agreement column summed over both
 halves. Replaying all 40 rounds with the final learned weights matches 33 and
 34. These vectors come from MCTS on hashed ZINC, not from the Retro* runs
 against ZINC plus eMolecules.
 
-The striking part is what happens to the objectives nobody weighted. In the
-20-target run feasibility falls from 0.300 to 0.029 and 0.112, and availability
-to ~0.00, under *both* users; in the 49-target rerun feasibility falls further,
-to 0.002 and 0.006, and availability to 0.000. The feedback loop rediscovers on its own what the spread measurement
+The striking part is what happens to the objectives nobody weighted. Under
+*both* users feasibility falls from 0.300 to 0.100 and 0.190 on 20 targets, and
+to 0.002 and 0.006 on 49, while availability falls from 0.100 to below 0.01 in
+every run. The feedback loop rediscovers on its own what the spread measurement
 found separately. Those two objectives barely discriminate between candidates.
 Two unrelated methods agreeing that feasibility's nominal 0.30 buys little is
 stronger evidence than either on its own.
