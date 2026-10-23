@@ -470,6 +470,10 @@ cannot see, regret measured as the utility gap against that hidden preference:
 | Safety-loving | 0.077 to 0.006 | 70% to 80% | 17 of 20 |
 | Cost-loving | 0.174 to 0.023 | 60% to 70% | 13 of 20 |
 
+Rerun over the saved vectors from all 49 targets (40 rounds with a genuine
+choice), regret falls from 0.118 to 0.029 for the safety-loving user and from
+0.077 to 0.000 for the cost-loving one.
+
 **It runs on 8 GB.** `--hashed-stock` takes a planning run from 4.91 GB to
 0.63 GB peak RSS with identical results.
 

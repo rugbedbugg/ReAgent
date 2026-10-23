@@ -715,13 +715,16 @@ docs/measurements/adaptive-vectors-49-targets.json --max-targets 49`:
 
 Regret falls 75% for the safety-loving user and to exactly zero for the
 cost-loving one, so the "about 90%" above describes the 20-target run only. The
-learned weights pick the preferred route on 30 of 40 targets for safety and 33
-of 40 for cost. These vectors come from MCTS on hashed ZINC, not from the
-Retro* runs against ZINC plus eMolecules.
+weights in force at each round picked the preferred route on 30 of 40 rounds for
+safety and 33 of 40 for cost, which is the agreement column summed over both
+halves. Replaying all 40 rounds with the final learned weights matches 33 and
+34. These vectors come from MCTS on hashed ZINC, not from the Retro* runs
+against ZINC plus eMolecules.
 
-The striking part is what happens to the objectives nobody weighted: feasibility
-falls from 0.300 to 0.029 and 0.112, and availability to ~0.00, under *both*
-users. The feedback loop rediscovers on its own what the spread measurement
+The striking part is what happens to the objectives nobody weighted. In the
+20-target run feasibility falls from 0.300 to 0.029 and 0.112, and availability
+to ~0.00, under *both* users; in the 49-target rerun feasibility falls further,
+to 0.002 and 0.006, and availability to 0.000. The feedback loop rediscovers on its own what the spread measurement
 found separately. Those two objectives barely discriminate between candidates.
 Two unrelated methods agreeing that feasibility's nominal 0.30 buys little is
 stronger evidence than either on its own.
