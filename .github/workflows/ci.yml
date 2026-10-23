@@ -36,7 +36,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ steps.uv-cache.outputs.dir }}
-          key: uv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+          key: uv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
       - name: Install package with dev and literature extras
         run: mise run install
       - name: Verify matrix interpreter

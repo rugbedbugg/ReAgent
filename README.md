@@ -107,15 +107,16 @@ git clone https://github.com/rugbedbugg/ReAgent.git
 cd ReAgent
 mise trust
 mise install        # Python 3.11 + uv; creates .venv
-mise run install    # editable install with dev and literature extras
+mise run install    # locked editable install with dev and literature extras
 ```
 
 Without mise, any Python 3.10 or 3.11 interpreter works:
 
 ```bash
-uv venv --python 3.11
-uv pip install --python .venv/bin/python -e ".[dev,literature]"
+uv sync --locked --extra dev --extra literature --python 3.11
 ```
+
+Both install the exact versions recorded in `uv.lock`.
 
 Two optional extras are declared:
 
@@ -595,7 +596,7 @@ shared CI/CD and README structure.
 
 Run `mise run install`, `mise run lint`, and `mise run test` locally. mise selects
 Python from the existing project pin and uses uv to create the environment and
-install dependencies. CI runs the same tasks on Linux and Windows with Python
+install the exact dependency versions in `uv.lock`. CI runs the same tasks on Linux and Windows with Python
 3.10 and 3.11, then builds distributions with `mise run build`, checks metadata
 with `mise run check-dist`, and smoke-tests the wheel in an isolated environment.
 
