@@ -7,8 +7,8 @@ binary, which is what shapes every decision below.
 
 | | Status | Verified |
 |---|---|---|
-| [`aur/`](aur/) | Ready to submit | Built and 127 tests run on this machine |
-| [`chocolatey/`](chocolatey/) | Ready to review | Structure only, no Windows machine |
+| [`aur/`](aur/) | Published (0.2.0); 0.3.0 ready | Built and 479 tests run on this machine |
+| [`chocolatey/`](chocolatey/) | Ready to review | Installed and shims tested by the `Packaging` workflow on Windows |
 | winget | Not submitted | See below |
 
 ## Why the interpreter is bundled
@@ -47,7 +47,7 @@ makepkg -si
 ```
 
 Note that `python311` is itself an AUR package, so an AUR helper is the easier
-route. The package is large: 395 MB compressed, 1.5 GB installed. That is
+route. The package is large: 415 MB compressed, 1.5 GB installed. That is
 RDKit, ONNX Runtime, SciPy, PyArrow and llvmlite, all vendored.
 
 `namcap` is clean on the PKGBUILD. On the built package it reports ELF files
