@@ -26,7 +26,7 @@ only the first belongs to somebody else:
 Layer 2 is why this is not simply a re-ranker. Constraining what counts as
 purchasable changes which routes the search *finds*, not merely their order:
 removing the option to buy a nearly finished molecule made the search locate
-genuine multi-step routes for 6 of 10 targets it had previously been buying.
+genuine multi-step routes for 7 of the 12 targets it had previously been buying.
 
 No model is trained here. Route quality is bounded by the pretrained
 single-step model, and that bound is the project's main limitation.
@@ -412,36 +412,25 @@ Working from a checkout rather than an installed package, substitute
 Measured on consumer hardware without a GPU. Scoring is deterministic, so these
 isolate the selection strategy rather than LLM variance.
 
-**Stock coverage is the finding.** Ten multi-step drugs, Retro\* at 500
-iterations, against three stocks:
+**Current numbers.** Both evaluation sets, 25 moderate and 24 hard drug
+targets, Retro\* at 500 iterations, ZINC plus eMolecules capped at 14 heavy
+atoms, up to 40 candidates per target. Rescored from saved routes with the
+current code; the summaries are in
+[docs/measurements/v0.3.0-rescored](docs/measurements/v0.3.0-rescored).
 
-| | ZINC | + eMolecules <=20 | + eMolecules <=14 |
+Selection over identical candidates, mean safety of the selected route:
+
+| | Baseline | Default weights | Safety-tilted |
 |---|---|---|---|
-| Solve-rate | 0.70 | 1.00 | 1.00 |
-| Mean route length | 1.71 | 1.10 | 2.00 |
-| Routes buying an advanced intermediate | 0 of 7 | 3 of 10 | 1 of 10 |
-| Baseline safety | 0.496 | 0.566 | 0.529 |
-| REAGENT safety | 0.618 | 0.622 | 0.555 |
+| Moderate (25) | 0.431 | 0.531 | 0.754 |
+| Hard (24) | 0.505 | 0.600 | 0.600 |
 
-ZINC leaves 3 of 10 hard targets unsolved. A real catalogue capped at 14 heavy
-atoms reaches 1.00 with routes that get *longer* rather than shorter. Uncapped
-at 20 it also reaches 1.00, but by buying the penultimate compound on 3 of 10,
-which is not the same achievement.
+The default weights lift safety by about 0.10 on both sets at an unchanged
+solve-rate. On the hard set, tilting toward safety selects routes no safer than
+the default does. On the moderate set the tilted figure is partly earned by
+buying finished molecules, which really are safer to handle.
 
-**It holds on a wider set.** The evaluation sets were widened from 20 targets to
-49, and the hard set re-measured at 24:
-
-| | 10 targets | 24 targets |
-|---|---|---|
-| Solve-rate | 1.00 | 1.00 |
-| Mean route length | 2.00 | 2.00 |
-| Routes buying an advanced intermediate | 1 of 10 | 1 of 24 |
-| Safety lift over the baseline | +0.026 | **+0.065** |
-
-The lift grew because the baseline fell on the more varied targets while
-REAGENT's pick held.
-
-**Buying the answer is now a mode, not an accident.** A catalogue cap in absolute
+**Buying the answer is a mode, not an accident.** A catalogue cap in absolute
 heavy atoms cannot serve targets of different sizes: 14 atoms is 62% of the mean
 hard target and 93% of the mean moderate one. So `--mode build` caps a purchased
 leaf as a *fraction* of the target, enforced during the search:
@@ -449,18 +438,49 @@ leaf as a *fraction* of the target, enforced during the search:
 | | moderate, plain | moderate, `build` | hard, plain | hard, `build` |
 |---|---|---|---|---|
 | Solve-rate | 1.00 | 0.84 | 1.00 | 0.92 |
-| **Solved by building** | **0.60** | **0.84** | **0.96** | **0.92** |
-| Mean route length | 1.08 | 2.24 | 2.00 | 2.45 |
-| Buys the answer | 10 of 25 | 0 of 25 | 1 of 24 | 0 of 24 |
+| **Solved by building** | **0.52** | **0.84** | **0.96** | **0.92** |
+| Mean route length | 1.12 | 2.29 | 2.00 | 2.41 |
+| Buys the answer | 12 of 25 | 0 of 25 | 1 of 24 | 0 of 24 |
 
-On small targets this pays twice over. The honest solve-rate rises from 0.60 to
-0.84, because removing the shortcut did not just relabel failures: the search
-found genuine multi-step routes for 6 of the 10 targets it had been buying. A
-one-step purchase terminates the search before anything better is explored.
+On small targets this pays twice over. The honest solve-rate rises from 0.52 to
+0.84, because removing the shortcut did not just relabel failures: for 7 of the
+12 targets that had been buying the answer, the constrained search found
+genuine routes that none of the 40 unconstrained candidates offered. A one-step
+purchase terminates the search before anything better is explored. On large
+targets it costs a little, 0.96 to 0.92, and there was barely any degeneracy to
+fix.
 
-On large targets it costs a little, 0.96 to 0.92, and there was barely any
-degeneracy to fix. `--max-leaf-fraction` tunes it; 0.6 is one measured point,
-not a swept optimum.
+**The fraction is a dial.** `--max-leaf-fraction` sets it; the default is 0.6:
+
+| Fraction | Moderate solved | Hard solved | Moderate route length |
+|---|---|---|---|
+| 0.5 | 0.68 | 0.88 | 2.88 |
+| 0.6 | 0.84 | 0.92 | 2.29 |
+| 0.7 | 1.00 | 0.96 | 2.00 |
+
+A higher fraction solves more targets with shorter routes and larger purchased
+pieces. Whether 0.6 or 0.7 is right depends on how much of the molecule you want
+to make.
+
+**More search helps build mode, not selection.** Under build mode, pooling
+`mcts,retrostar` solves one more target on each set, and doubling the Retro\*
+budget takes the moderate set from 0.84 to 0.96. Without the constraint every
+arm already solves everything, and the extra candidates do not produce a safer
+selection.
+
+**Stock coverage was the first finding.** An earlier run on ten multi-step drugs
+(up to 15 candidates, routes not saved) against three stocks:
+
+| | ZINC | + eMolecules <=20 | + eMolecules <=14 |
+|---|---|---|---|
+| Solve-rate | 0.70 | 1.00 | 1.00 |
+| Mean route length | 1.71 | 1.10 | 2.00 |
+| Routes buying an advanced intermediate | 0 of 7 | 3 of 10 | 1 of 10 |
+
+ZINC leaves 3 of 10 hard targets unsolved. A real catalogue capped at 14 heavy
+atoms reaches 1.00 with routes that get *longer* rather than shorter. Uncapped
+at 20 it also reaches 1.00, but by buying the penultimate compound on 3 of 10,
+which is not the same achievement.
 
 **The feedback loop learns.** Twenty targets, a hidden user preference the loop
 cannot see, regret measured as the utility gap against that hidden preference:

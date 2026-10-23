@@ -591,8 +591,9 @@ no degeneracy to fix there, so the constraint mostly just bites.
 
 That is the calibration answer for 0.6: well judged for targets around 15 heavy
 atoms, slightly strict for targets around 23. `--max-leaf-fraction` overrides it
-on both `plan` and `evaluate`. It has not been swept; 0.6 is one measured point,
-not an optimum.
+on both `plan` and `evaluate`. At the time it had not been swept; the v0.3.0
+sweep over 0.5, 0.6 and 0.7 is reported
+[above](#choosing-the-purchasing-fraction).
 
 **Safety scores fall under `build`, and that is the honest direction.** Moderate
 REAGENT safety goes 0.556 to 0.443. Buying a finished molecule scores well on
