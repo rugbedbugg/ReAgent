@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       refresh_metadata:
-        description: "Submit author/icon corrections for the three existing packages"
+        description: "Submit author/icon corrections for the two existing ResonanceID and Retro-Tetris packages"
         type: boolean
         default: false
       publish:
@@ -159,9 +159,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: reagent
-      - uses: actions/checkout@v4
-        with:
           repository: rugbedbugg/ResonanceID-cli
           ref: 5652f4c90497bb8e4128b6797aff805a84e2b80e
           path: resonanceid-cli
@@ -180,9 +177,11 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($id in @('reagent', 'resonanceid-cli', 'retro-tetris')) {
-            $version = if ($id -eq 'reagent') { '0.2.0' } else { '1.0.0' }
-            $expectedVersion = if ($id -eq 'reagent') { '0.2.0' } else { '1.0.0.20260907' }
+          # ReAgent is not listed: its 0.2.0 was rejected and 0.3.0 was submitted
+          # with corrected metadata, so it has nothing to correct.
+          foreach ($id in @('resonanceid-cli', 'retro-tetris')) {
+            $version = '1.0.0'
+            $expectedVersion = '1.0.0.20260907'
             $source = Join-Path $PWD "$id/SUBMISSIONS/chocolatey"
             $archive = Join-Path $env:RUNNER_TEMP "$id.zip"
             $original = Join-Path $env:RUNNER_TEMP "$id-original"
@@ -230,7 +229,7 @@ jobs:
         run: |
           choco apikey --key $env:CHOCOLATEY_API_KEY --source https://push.chocolatey.org/
           if ($LASTEXITCODE -ne 0) { throw 'Setting Chocolatey API key failed' }
-          foreach ($id in @('resonanceid-cli', 'retro-tetris', 'reagent')) {
+          foreach ($id in @('resonanceid-cli', 'retro-tetris')) {
             $pkg = Get-ChildItem "$id/SUBMISSIONS/chocolatey/*.nupkg" | Select-Object -First 1
             choco push $pkg.FullName --source https://push.chocolatey.org/
             if ($LASTEXITCODE -ne 0) { throw "$id push failed" }
