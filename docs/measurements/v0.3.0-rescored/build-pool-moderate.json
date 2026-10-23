@@ -1,0 +1,1139 @@
+{
+  "weights": {
+    "feasibility-led": {
+      "feasibility": 0.3,
+      "availability": 0.1,
+      "cost": 0.15,
+      "safety": 0.15,
+      "construction": 0.15,
+      "sustainability": 0.08,
+      "efficiency": 0.07
+    },
+    "safety-tilted": {
+      "feasibility": 0.2,
+      "availability": 0.05,
+      "cost": 0.15,
+      "safety": 0.28,
+      "construction": 0.1,
+      "sustainability": 0.14,
+      "efficiency": 0.08
+    },
+    "build-it-yourself": {
+      "feasibility": 0.2,
+      "availability": 0.05,
+      "cost": 0.1,
+      "safety": 0.1,
+      "construction": 0.3,
+      "sustainability": 0.15,
+      "efficiency": 0.1
+    },
+    "source-led": {
+      "feasibility": 0.25,
+      "availability": 0.1,
+      "cost": 0.3,
+      "safety": 0.1,
+      "construction": 0.02,
+      "sustainability": 0.05,
+      "efficiency": 0.18
+    }
+  },
+  "manifest": {
+    "schema": 1,
+    "parameters": {
+      "permissive_stock": null,
+      "hashed_stock": true,
+      "stock_cache": "/home/rugbedbugg/Projects/Python/ReAgent/data/catalogues/zinc_plus_emol14.hashes.npy",
+      "iterations": 500,
+      "time_limit": 1800,
+      "expansion": [
+        "uspto"
+      ],
+      "algorithm": [
+        "mcts",
+        "retrostar"
+      ],
+      "cutoff_number": null,
+      "molecule_cost": null,
+      "max_leaf_fraction": 0.6
+    },
+    "max_routes": 40,
+    "assets": {
+      "/home/rugbedbugg/Projects/Python/ReAgent/data/config.yml": "ceb6fd362048a7e5217425a2d4dd757cc26bebfb7c75b532552494690de0006f",
+      "/home/rugbedbugg/Projects/Python/ReAgent/data/uspto_model.onnx": "bd0a3cb74cd7068de474c8fb789a00a66bc42c75636d66510ccac585ebe928f8",
+      "/home/rugbedbugg/Projects/Python/ReAgent/data/uspto_templates.csv.gz": "a4f1945e90cfa195538320833d68aed38f14e2fcc2f8afb5d958bc920edcafbe",
+      "/home/rugbedbugg/Projects/Python/ReAgent/data/uspto_filter_model.onnx": "ad29aa32bdfcbe37065045546493806cf04899c55386c438905d83fb14bb6320",
+      "/home/rugbedbugg/Projects/Python/ReAgent/data/catalogues/zinc_plus_emol14.hashes.npy": "b44529b88fb796d21894e1ca32d68cce8149222846568367e62803b934a2f358"
+    },
+    "implementation": {
+      "core/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "core/chem.py": "10f6fd09092ef7c4ffd63bb1779b9c77f8aea57a0e924f635e605f13cae497f4",
+      "core/config.py": "fd610680c4e3679019cba65083ef8f5f5794aba90996cd2e78fe080d96c55fc9",
+      "core/models.py": "7b266e5ede89c513b5806dc8cc8c5502fb58616225462f78aafb360f06af41c5",
+      "singlestep/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "singlestep/aizynth.py": "57aee4f105490d1a7aa4a142870d29ce9539f33bde80e7795d7e40a97f0c7163",
+      "singlestep/stock.py": "ff7ba81edf768164d4269c4a6bf4efcf9e78d10a0ad61164cd04f5b34df93497",
+      "search/__init__.py": "a3decc437b3ece62db10ea7ee1588471834c41a73732fa8fc5b61d3d7d54403f",
+      "search/cost.py": "3a75288156e8c9b504a4531776c29c574ad0ebb6dedbe3ffb08deaf3bdefe7bc"
+    },
+    "dependencies": {
+      "aizynthfinder": "4.4.1",
+      "rdkit": "2023.9.6",
+      "numpy": "1.26.4",
+      "onnxruntime": "1.29.0",
+      "reaction-utils": "1.9.3"
+    }
+  },
+  "record_sha256": {
+    "CC(=O)Oc1ccccc1C(=O)O": "037f592a28ff1d5beaba0ee8fb1df0867deb2d7ac15417041d1dd4ac07493c6f",
+    "CC(=O)Nc1ccc(O)cc1": "13b9039e13cf3eb80d50f70d8a135af63274b5a0ee2f4fd8b1b5d65637be6371",
+    "CC(C)Cc1ccc(C(C)C(=O)O)cc1": "c0f40410b8e25ca5ef5a13805d5d7ab7a5fd3675ec29d3442027b742f0e420ed",
+    "CCOC(=O)c1ccc(N)cc1": "421848624c6722a201fbde0e9b3d5ffb0eac8aabd3d999aab9e115b07617c2eb",
+    "CCOc1ccc(NC(C)=O)cc1": "22eb5aaad3feb2baeb6419e706707e5de81e821279f4f648599467140f911282",
+    "NC(=O)c1ccccc1O": "f4e5c88da98c59a9b40f6d043d15c6ba9ac5b61b5b5d37583ac46703c6db7fb0",
+    "CCN(CC)CCOC(=O)c1ccc(N)cc1": "b5d10f76f8eda9e02c615796fe41c1815921eada1a2c25c2bc1bad7b7b74306c",
+    "CCN(CC)CC(=O)Nc1c(C)cccc1C": "a4e65b04d56bee8eb7930812c8f00ed4910ca30d7ed9adfec6c9d4a09ca72ac2",
+    "COc1ccc2cc(C(C)C(=O)O)ccc2c1": "311c4ec1e364d6bcdf57b7d4712db92b0c09913c39cdd54d43d5702d44717b79",
+    "CC(C(=O)O)c1cccc(C(=O)c2ccccc2)c1": "eebca164607d3a32ee860095f6454eed310cfb3a9c0bcea0aba4775c511a9108",
+    "CC(=O)Nc1ccccc1": "087d12a92bdd22a0cac88bd0b79b94e929ef5065cf10e7935ab86c3647cd6c0d",
+    "COC(=O)c1ccccc1O": "4642a54106fe48c08eab1e24eedf5b1262fd1ce3450495ddabf5fa30f518472e",
+    "Cn1c(=O)c2c(ncn2C)n(C)c1=O": "7799a4497b1a60c5ada0ad56e1e2ebeb2bb3b21ceee824ea13a96b90668ab429",
+    "Cn1c(=O)c2[nH]cnc2n(C)c1=O": "1712cf1324314839773aba7970bc82b923d62274d51d5aa03998389bf567cb92",
+    "COc1cc(C=O)ccc1O": "1ace93ea0ce3ac85d038b9bf4e6f63bfa402a8c34096f0d9dd3cdf9fd7448354",
+    "CN(C)CCOC(c1ccccc1)c1ccccc1": "69738b34060700a40b342e3511781ef6302089bf486f18b1c07f517420280a06",
+    "O=C(O)Cc1ccccc1Nc1c(Cl)cccc1Cl": "4320179b8392cc775c1e450566bf52bedcd35c3fcea531269952ce89a7ffcc59",
+    "CC(C(=O)O)c1ccc(-c2ccccc2)c(F)c1": "a32026cb191773969db7c6cd22273e723ac19c305fc1296b62b9c695afd1e1be",
+    "Cc1cccc(C)c1Nc1ccccc1C(=O)O": "85e7c812df0cf14b33567b53e401ddede791ee15abb56e0452bfcd5c4689806b",
+    "CCCCC1C(=O)N(c2ccccc2)N(c2ccccc2)C1=O": "d1c55e74f550aae7b0d83d168fb219350421e1d507c7a25f3559b499d614ca0e",
+    "NCC1(CC(=O)O)CCCCC1": "0cd0e17229da3a68763e4be74d19e3de3a8fce121f7320ecb9e8f16d0188ffde",
+    "CC(C)CC(CN)CC(=O)O": "370d11b9f5032f40612c91357bb9ac8d546c5c018fc0529cd5329a4745edbaca",
+    "CN(C)C(=N)NC(=N)N": "29ce077686692e5882fa26e5661daaa8b14048fb4f4756172b0783111cd3a117",
+    "CC(C)NCC(O)COc1ccc(CC(N)=O)cc1": "eb9e4dbd5274ea382165d7d322b4898c33a3c9bdfb2f58298203c0dfe89e0860",
+    "COc1ccc2c(c1)c(CC(=O)O)c(C)n2C(=O)c1ccc(Cl)cc1": "8daaf55ea996dfb83bd8e9d7eda6d2c64f673b4e657ea84fbfb99832103cf70e"
+  },
+  "time_capped_targets": 0,
+  "candidate_counts": {
+    "aspirin": 17,
+    "paracetamol": 35,
+    "ibuprofen": 31,
+    "benzocaine": 12,
+    "phenacetin": 29,
+    "salicylamide": 24,
+    "procaine": 34,
+    "lidocaine": 21,
+    "naproxen": 30,
+    "ketoprofen": 20,
+    "acetanilide": 15,
+    "methyl salicylate": 20,
+    "caffeine": 19,
+    "theophylline": 12,
+    "vanillin": 30,
+    "diphenhydramine": 14,
+    "diclofenac": 9,
+    "flurbiprofen": 28,
+    "mefenamic acid": 10,
+    "phenylbutazone": 34,
+    "gabapentin": 17,
+    "pregabalin": 12,
+    "metformin": 6,
+    "atenolol": 29,
+    "indomethacin": 9
+  },
+  "profiles": {
+    "feasibility-led": {
+      "n_targets": 25,
+      "solve_rate": 0.88,
+      "build_solve_rate": 0.88,
+      "avg_route_length": 2.590909090909091,
+      "avg_largest_leaf_fraction": 0.5186419656925292,
+      "advanced_intermediate_routes": 0,
+      "baseline_quality": {
+        "safety": 0.34030303030303033,
+        "sustainability": 0.8431472074113185,
+        "cost": 0.49696969696969695
+      },
+      "compromise_quality": {
+        "safety": 0.3940269578905943,
+        "sustainability": 0.7800810996615464,
+        "cost": 0.43446969696969695
+      },
+      "compromise_largest_leaf_fraction": 0.5308827950386217,
+      "compromise_agrees_with_weighted": 4,
+      "reagent_quality": {
+        "safety": 0.47382305194805197,
+        "sustainability": 0.8752839307482756,
+        "cost": 0.5401515151515152
+      },
+      "reagent_weight_vector": {
+        "feasibility": 0.3,
+        "availability": 0.1,
+        "cost": 0.15,
+        "safety": 0.15,
+        "construction": 0.15,
+        "sustainability": 0.08,
+        "efficiency": 0.07
+      },
+      "per_target": [
+        {
+          "name": "aspirin",
+          "solved": true,
+          "candidates": 17,
+          "baseline_safety": 0.42333333333333334,
+          "reagent_safety": 0.42333333333333334,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5384615384615384
+        },
+        {
+          "name": "paracetamol",
+          "solved": true,
+          "candidates": 12,
+          "baseline_safety": 0.280952380952381,
+          "reagent_safety": 0.280952380952381,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "ibuprofen",
+          "solved": true,
+          "candidates": 31,
+          "baseline_safety": 0.2916666666666667,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4666666666666667
+        },
+        {
+          "name": "benzocaine",
+          "solved": true,
+          "candidates": 12,
+          "baseline_safety": 0.2616666666666667,
+          "reagent_safety": 0.2616666666666667,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5
+        },
+        {
+          "name": "phenacetin",
+          "solved": true,
+          "candidates": 29,
+          "baseline_safety": 0.280952380952381,
+          "reagent_safety": 0.44047619047619047,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5384615384615384
+        },
+        {
+          "name": "salicylamide",
+          "solved": false,
+          "candidates": 24
+        },
+        {
+          "name": "procaine",
+          "solved": true,
+          "candidates": 34,
+          "baseline_safety": 0.38333333333333336,
+          "reagent_safety": 0.38333333333333336,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5882352941176471
+        },
+        {
+          "name": "lidocaine",
+          "solved": true,
+          "candidates": 21,
+          "baseline_safety": 0.2766666666666667,
+          "reagent_safety": 0.2766666666666667,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5294117647058824
+        },
+        {
+          "name": "naproxen",
+          "solved": false,
+          "candidates": 30
+        },
+        {
+          "name": "ketoprofen",
+          "solved": true,
+          "candidates": 20,
+          "baseline_safety": 0.45333333333333337,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5263157894736842
+        },
+        {
+          "name": "acetanilide",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.2766666666666667,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6
+        },
+        {
+          "name": "methyl salicylate",
+          "solved": true,
+          "candidates": 8,
+          "baseline_safety": 0.44583333333333336,
+          "reagent_safety": 0.46458333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "caffeine",
+          "solved": true,
+          "candidates": 19,
+          "baseline_safety": 0.3216666666666667,
+          "reagent_safety": 0.3216666666666667,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.42857142857142855
+        },
+        {
+          "name": "theophylline",
+          "solved": true,
+          "candidates": 12,
+          "baseline_safety": 0.44583333333333336,
+          "reagent_safety": 0.44583333333333336,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.46153846153846156
+        },
+        {
+          "name": "vanillin",
+          "solved": false,
+          "candidates": 30
+        },
+        {
+          "name": "diphenhydramine",
+          "solved": true,
+          "candidates": 14,
+          "baseline_safety": 0.42333333333333334,
+          "reagent_safety": 0.42333333333333334,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.42105263157894735
+        },
+        {
+          "name": "diclofenac",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5789473684210527
+        },
+        {
+          "name": "flurbiprofen",
+          "solved": true,
+          "candidates": 28,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.4583333333333333,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4444444444444444
+        },
+        {
+          "name": "mefenamic acid",
+          "solved": true,
+          "candidates": 10,
+          "baseline_safety": 0.38333333333333336,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5555555555555556
+        },
+        {
+          "name": "phenylbutazone",
+          "solved": true,
+          "candidates": 34,
+          "baseline_safety": 0.23809523809523814,
+          "reagent_safety": 0.23809523809523814,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4782608695652174
+        },
+        {
+          "name": "gabapentin",
+          "solved": true,
+          "candidates": 17,
+          "baseline_safety": 0.3166666666666667,
+          "reagent_safety": 0.3291666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5833333333333334
+        },
+        {
+          "name": "pregabalin",
+          "solved": true,
+          "candidates": 1,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "metformin",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.2166666666666667,
+          "reagent_safety": 0.2166666666666667,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5555555555555556
+        },
+        {
+          "name": "atenolol",
+          "solved": true,
+          "candidates": 29,
+          "baseline_safety": 0.3066666666666667,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5789473684210527
+        },
+        {
+          "name": "indomethacin",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 0.16,
+          "reagent_safety": 0.16,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.4
+        }
+      ]
+    },
+    "safety-tilted": {
+      "n_targets": 25,
+      "solve_rate": 0.88,
+      "build_solve_rate": 0.88,
+      "avg_route_length": 2.3181818181818183,
+      "avg_largest_leaf_fraction": 0.5256765977271612,
+      "advanced_intermediate_routes": 0,
+      "baseline_quality": {
+        "safety": 0.34030303030303033,
+        "sustainability": 0.8431472074113185,
+        "cost": 0.49696969696969695
+      },
+      "compromise_quality": {
+        "safety": 0.3940269578905943,
+        "sustainability": 0.7800810996615464,
+        "cost": 0.43446969696969695
+      },
+      "compromise_largest_leaf_fraction": 0.5308827950386217,
+      "compromise_agrees_with_weighted": 3,
+      "reagent_quality": {
+        "safety": 0.5137824675324676,
+        "sustainability": 0.8709759863764052,
+        "cost": 0.5564393939393939
+      },
+      "reagent_weight_vector": {
+        "feasibility": 0.2,
+        "availability": 0.05,
+        "cost": 0.15,
+        "safety": 0.28,
+        "construction": 0.1,
+        "sustainability": 0.14,
+        "efficiency": 0.08
+      },
+      "per_target": [
+        {
+          "name": "aspirin",
+          "solved": true,
+          "candidates": 17,
+          "baseline_safety": 0.42333333333333334,
+          "reagent_safety": 0.42333333333333334,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5384615384615384
+        },
+        {
+          "name": "paracetamol",
+          "solved": true,
+          "candidates": 12,
+          "baseline_safety": 0.280952380952381,
+          "reagent_safety": 0.280952380952381,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "ibuprofen",
+          "solved": true,
+          "candidates": 31,
+          "baseline_safety": 0.2916666666666667,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4666666666666667
+        },
+        {
+          "name": "benzocaine",
+          "solved": true,
+          "candidates": 12,
+          "baseline_safety": 0.2616666666666667,
+          "reagent_safety": 0.280952380952381,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5833333333333334
+        },
+        {
+          "name": "phenacetin",
+          "solved": true,
+          "candidates": 29,
+          "baseline_safety": 0.280952380952381,
+          "reagent_safety": 0.44047619047619047,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5384615384615384
+        },
+        {
+          "name": "salicylamide",
+          "solved": false,
+          "candidates": 24
+        },
+        {
+          "name": "procaine",
+          "solved": true,
+          "candidates": 34,
+          "baseline_safety": 0.38333333333333336,
+          "reagent_safety": 0.38333333333333336,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5882352941176471
+        },
+        {
+          "name": "lidocaine",
+          "solved": true,
+          "candidates": 21,
+          "baseline_safety": 0.2766666666666667,
+          "reagent_safety": 0.45333333333333337,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5294117647058824
+        },
+        {
+          "name": "naproxen",
+          "solved": false,
+          "candidates": 30
+        },
+        {
+          "name": "ketoprofen",
+          "solved": true,
+          "candidates": 20,
+          "baseline_safety": 0.45333333333333337,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5263157894736842
+        },
+        {
+          "name": "acetanilide",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.2766666666666667,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6
+        },
+        {
+          "name": "methyl salicylate",
+          "solved": true,
+          "candidates": 8,
+          "baseline_safety": 0.44583333333333336,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "caffeine",
+          "solved": true,
+          "candidates": 19,
+          "baseline_safety": 0.3216666666666667,
+          "reagent_safety": 0.46190476190476193,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5
+        },
+        {
+          "name": "theophylline",
+          "solved": true,
+          "candidates": 12,
+          "baseline_safety": 0.44583333333333336,
+          "reagent_safety": 0.45333333333333337,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.46153846153846156
+        },
+        {
+          "name": "vanillin",
+          "solved": false,
+          "candidates": 30
+        },
+        {
+          "name": "diphenhydramine",
+          "solved": true,
+          "candidates": 14,
+          "baseline_safety": 0.42333333333333334,
+          "reagent_safety": 0.42333333333333334,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.42105263157894735
+        },
+        {
+          "name": "diclofenac",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5789473684210527
+        },
+        {
+          "name": "flurbiprofen",
+          "solved": true,
+          "candidates": 28,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.4583333333333333,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4444444444444444
+        },
+        {
+          "name": "mefenamic acid",
+          "solved": true,
+          "candidates": 10,
+          "baseline_safety": 0.38333333333333336,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5555555555555556
+        },
+        {
+          "name": "phenylbutazone",
+          "solved": true,
+          "candidates": 34,
+          "baseline_safety": 0.23809523809523814,
+          "reagent_safety": 0.23809523809523814,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4782608695652174
+        },
+        {
+          "name": "gabapentin",
+          "solved": true,
+          "candidates": 17,
+          "baseline_safety": 0.3166666666666667,
+          "reagent_safety": 0.3291666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5833333333333334
+        },
+        {
+          "name": "pregabalin",
+          "solved": true,
+          "candidates": 1,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "metformin",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.2166666666666667,
+          "reagent_safety": 0.2166666666666667,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5555555555555556
+        },
+        {
+          "name": "atenolol",
+          "solved": true,
+          "candidates": 29,
+          "baseline_safety": 0.3066666666666667,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5789473684210527
+        },
+        {
+          "name": "indomethacin",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 0.16,
+          "reagent_safety": 0.16,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.4
+        }
+      ]
+    },
+    "build-it-yourself": {
+      "n_targets": 25,
+      "solve_rate": 0.88,
+      "build_solve_rate": 0.88,
+      "avg_route_length": 2.590909090909091,
+      "avg_largest_leaf_fraction": 0.5061486110939114,
+      "advanced_intermediate_routes": 0,
+      "baseline_quality": {
+        "safety": 0.34030303030303033,
+        "sustainability": 0.8431472074113185,
+        "cost": 0.49696969696969695
+      },
+      "compromise_quality": {
+        "safety": 0.3940269578905943,
+        "sustainability": 0.7800810996615464,
+        "cost": 0.43446969696969695
+      },
+      "compromise_largest_leaf_fraction": 0.5308827950386217,
+      "compromise_agrees_with_weighted": 3,
+      "reagent_quality": {
+        "safety": 0.430094696969697,
+        "sustainability": 0.878669765947836,
+        "cost": 0.5371212121212121
+      },
+      "reagent_weight_vector": {
+        "feasibility": 0.2,
+        "availability": 0.05,
+        "cost": 0.1,
+        "safety": 0.1,
+        "construction": 0.3,
+        "sustainability": 0.15,
+        "efficiency": 0.1
+      },
+      "per_target": [
+        {
+          "name": "aspirin",
+          "solved": true,
+          "candidates": 17,
+          "baseline_safety": 0.42333333333333334,
+          "reagent_safety": 0.42333333333333334,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5384615384615384
+        },
+        {
+          "name": "paracetamol",
+          "solved": true,
+          "candidates": 12,
+          "baseline_safety": 0.280952380952381,
+          "reagent_safety": 0.280952380952381,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "ibuprofen",
+          "solved": true,
+          "candidates": 31,
+          "baseline_safety": 0.2916666666666667,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4666666666666667
+        },
+        {
+          "name": "benzocaine",
+          "solved": true,
+          "candidates": 12,
+          "baseline_safety": 0.2616666666666667,
+          "reagent_safety": 0.2616666666666667,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5
+        },
+        {
+          "name": "phenacetin",
+          "solved": true,
+          "candidates": 29,
+          "baseline_safety": 0.280952380952381,
+          "reagent_safety": 0.44047619047619047,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5384615384615384
+        },
+        {
+          "name": "salicylamide",
+          "solved": false,
+          "candidates": 24
+        },
+        {
+          "name": "procaine",
+          "solved": true,
+          "candidates": 34,
+          "baseline_safety": 0.38333333333333336,
+          "reagent_safety": 0.38333333333333336,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5882352941176471
+        },
+        {
+          "name": "lidocaine",
+          "solved": true,
+          "candidates": 21,
+          "baseline_safety": 0.2766666666666667,
+          "reagent_safety": 0.2766666666666667,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5294117647058824
+        },
+        {
+          "name": "naproxen",
+          "solved": false,
+          "candidates": 30
+        },
+        {
+          "name": "ketoprofen",
+          "solved": true,
+          "candidates": 20,
+          "baseline_safety": 0.45333333333333337,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5263157894736842
+        },
+        {
+          "name": "acetanilide",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.2766666666666667,
+          "reagent_safety": 0.45333333333333337,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6
+        },
+        {
+          "name": "methyl salicylate",
+          "solved": true,
+          "candidates": 8,
+          "baseline_safety": 0.44583333333333336,
+          "reagent_safety": 0.46458333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "caffeine",
+          "solved": true,
+          "candidates": 19,
+          "baseline_safety": 0.3216666666666667,
+          "reagent_safety": 0.44047619047619047,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.42857142857142855
+        },
+        {
+          "name": "theophylline",
+          "solved": true,
+          "candidates": 12,
+          "baseline_safety": 0.44583333333333336,
+          "reagent_safety": 0.44583333333333336,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.46153846153846156
+        },
+        {
+          "name": "vanillin",
+          "solved": false,
+          "candidates": 30
+        },
+        {
+          "name": "diphenhydramine",
+          "solved": true,
+          "candidates": 14,
+          "baseline_safety": 0.42333333333333334,
+          "reagent_safety": 0.42333333333333334,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.42105263157894735
+        },
+        {
+          "name": "diclofenac",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5789473684210527
+        },
+        {
+          "name": "flurbiprofen",
+          "solved": true,
+          "candidates": 28,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4444444444444444
+        },
+        {
+          "name": "mefenamic acid",
+          "solved": true,
+          "candidates": 10,
+          "baseline_safety": 0.38333333333333336,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5555555555555556
+        },
+        {
+          "name": "phenylbutazone",
+          "solved": true,
+          "candidates": 34,
+          "baseline_safety": 0.23809523809523814,
+          "reagent_safety": 0.23809523809523814,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4782608695652174
+        },
+        {
+          "name": "gabapentin",
+          "solved": true,
+          "candidates": 17,
+          "baseline_safety": 0.3166666666666667,
+          "reagent_safety": 0.3291666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5833333333333334
+        },
+        {
+          "name": "pregabalin",
+          "solved": true,
+          "candidates": 1,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "metformin",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.2166666666666667,
+          "reagent_safety": 0.2541666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.3333333333333333
+        },
+        {
+          "name": "atenolol",
+          "solved": true,
+          "candidates": 29,
+          "baseline_safety": 0.3066666666666667,
+          "reagent_safety": 0.45333333333333337,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5263157894736842
+        },
+        {
+          "name": "indomethacin",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 0.16,
+          "reagent_safety": 0.16,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.4
+        }
+      ]
+    },
+    "source-led": {
+      "n_targets": 25,
+      "solve_rate": 0.88,
+      "build_solve_rate": 0.88,
+      "avg_route_length": 2.272727272727273,
+      "avg_largest_leaf_fraction": 0.522429844480408,
+      "advanced_intermediate_routes": 0,
+      "baseline_quality": {
+        "safety": 0.34030303030303033,
+        "sustainability": 0.8431472074113185,
+        "cost": 0.49696969696969695
+      },
+      "compromise_quality": {
+        "safety": 0.3940269578905943,
+        "sustainability": 0.7800810996615464,
+        "cost": 0.43446969696969695
+      },
+      "compromise_largest_leaf_fraction": 0.5308827950386217,
+      "compromise_agrees_with_weighted": 4,
+      "reagent_quality": {
+        "safety": 0.47484577922077925,
+        "sustainability": 0.8658186803363513,
+        "cost": 0.5685606060606061
+      },
+      "reagent_weight_vector": {
+        "feasibility": 0.25,
+        "availability": 0.1,
+        "cost": 0.3,
+        "safety": 0.1,
+        "construction": 0.02,
+        "sustainability": 0.05,
+        "efficiency": 0.18
+      },
+      "per_target": [
+        {
+          "name": "aspirin",
+          "solved": true,
+          "candidates": 17,
+          "baseline_safety": 0.42333333333333334,
+          "reagent_safety": 0.42333333333333334,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5384615384615384
+        },
+        {
+          "name": "paracetamol",
+          "solved": true,
+          "candidates": 12,
+          "baseline_safety": 0.280952380952381,
+          "reagent_safety": 0.280952380952381,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "ibuprofen",
+          "solved": true,
+          "candidates": 31,
+          "baseline_safety": 0.2916666666666667,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4666666666666667
+        },
+        {
+          "name": "benzocaine",
+          "solved": true,
+          "candidates": 12,
+          "baseline_safety": 0.2616666666666667,
+          "reagent_safety": 0.280952380952381,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5833333333333334
+        },
+        {
+          "name": "phenacetin",
+          "solved": true,
+          "candidates": 29,
+          "baseline_safety": 0.280952380952381,
+          "reagent_safety": 0.3023809523809524,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5384615384615384
+        },
+        {
+          "name": "salicylamide",
+          "solved": false,
+          "candidates": 24
+        },
+        {
+          "name": "procaine",
+          "solved": true,
+          "candidates": 34,
+          "baseline_safety": 0.38333333333333336,
+          "reagent_safety": 0.38333333333333336,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5882352941176471
+        },
+        {
+          "name": "lidocaine",
+          "solved": true,
+          "candidates": 21,
+          "baseline_safety": 0.2766666666666667,
+          "reagent_safety": 0.2916666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5294117647058824
+        },
+        {
+          "name": "naproxen",
+          "solved": false,
+          "candidates": 30
+        },
+        {
+          "name": "ketoprofen",
+          "solved": true,
+          "candidates": 20,
+          "baseline_safety": 0.45333333333333337,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5263157894736842
+        },
+        {
+          "name": "acetanilide",
+          "solved": true,
+          "candidates": 15,
+          "baseline_safety": 0.2766666666666667,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.6
+        },
+        {
+          "name": "methyl salicylate",
+          "solved": true,
+          "candidates": 8,
+          "baseline_safety": 0.44583333333333336,
+          "reagent_safety": 0.46458333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "caffeine",
+          "solved": true,
+          "candidates": 19,
+          "baseline_safety": 0.3216666666666667,
+          "reagent_safety": 0.44047619047619047,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.42857142857142855
+        },
+        {
+          "name": "theophylline",
+          "solved": true,
+          "candidates": 12,
+          "baseline_safety": 0.44583333333333336,
+          "reagent_safety": 0.45333333333333337,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.46153846153846156
+        },
+        {
+          "name": "vanillin",
+          "solved": false,
+          "candidates": 30
+        },
+        {
+          "name": "diphenhydramine",
+          "solved": true,
+          "candidates": 14,
+          "baseline_safety": 0.42333333333333334,
+          "reagent_safety": 0.42333333333333334,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.42105263157894735
+        },
+        {
+          "name": "diclofenac",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5789473684210527
+        },
+        {
+          "name": "flurbiprofen",
+          "solved": true,
+          "candidates": 28,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.4583333333333333,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4444444444444444
+        },
+        {
+          "name": "mefenamic acid",
+          "solved": true,
+          "candidates": 10,
+          "baseline_safety": 0.38333333333333336,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5555555555555556
+        },
+        {
+          "name": "phenylbutazone",
+          "solved": true,
+          "candidates": 34,
+          "baseline_safety": 0.23809523809523814,
+          "reagent_safety": 0.23809523809523814,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.4782608695652174
+        },
+        {
+          "name": "gabapentin",
+          "solved": true,
+          "candidates": 17,
+          "baseline_safety": 0.3166666666666667,
+          "reagent_safety": 0.3291666666666667,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5833333333333334
+        },
+        {
+          "name": "pregabalin",
+          "solved": true,
+          "candidates": 1,
+          "baseline_safety": 0.43333333333333335,
+          "reagent_safety": 0.43333333333333335,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5454545454545454
+        },
+        {
+          "name": "metformin",
+          "solved": true,
+          "candidates": 6,
+          "baseline_safety": 0.2166666666666667,
+          "reagent_safety": 0.2166666666666667,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.5555555555555556
+        },
+        {
+          "name": "atenolol",
+          "solved": true,
+          "candidates": 29,
+          "baseline_safety": 0.3066666666666667,
+          "reagent_safety": 1.0,
+          "changed_pick": true,
+          "largest_leaf_fraction": 0.5789473684210527
+        },
+        {
+          "name": "indomethacin",
+          "solved": true,
+          "candidates": 9,
+          "baseline_safety": 0.16,
+          "reagent_safety": 0.16,
+          "changed_pick": false,
+          "largest_leaf_fraction": 0.4
+        }
+      ]
+    }
+  }
+}

@@ -17,9 +17,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("checkpoint", type=Path)
     parser.add_argument("--hard", action="store_true")
+    parser.add_argument("--max-targets", type=int, default=None,
+                        help="Leading targets the run covered, for pilots on a subset.")
     args = parser.parse_args()
     saved = Checkpoint.open_readonly(args.checkpoint)
-    targets = HARD_TARGETS if args.hard else TARGETS
+    targets = (HARD_TARGETS if args.hard else TARGETS)[:args.max_targets]
     records = {}
     for name, smiles in targets:
         target = canonical(smiles) or smiles
