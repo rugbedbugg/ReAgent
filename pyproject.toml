@@ -15,6 +15,10 @@ dependencies = [
     "pydantic>=2.0",
     "click>=8.0",
     "numpy>=1.26",
+    # Not imported directly: it arrives through aizynthfinder and reaction-utils.
+    # pyarrow 26 refuses to load with NumPy 1.x, and aizynthfinder 4.4.1 still
+    # requires numpy<2. Lift this cap once aizynthfinder allows NumPy 2.
+    "pyarrow<26",
     "pandas>=2.0",
     "requests>=2.30",
 ]

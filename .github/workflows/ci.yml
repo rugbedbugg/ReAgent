@@ -73,6 +73,9 @@ jobs:
           mise exec -- uv pip install --python "$RUNNER_TEMP/wheel-env/bin/python" dist/*.whl
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/wheel-env/bin/reagent" --help
+          # Unlocked installs resolve fresh; importing the literature modules
+          # catches transitive releases that cannot load with NumPy 1.x.
+          "$RUNNER_TEMP/wheel-env/bin/python" -c "import reagent.eval.literature_mapping, reagent.eval.literature_similarity"
       - name: Record artifact checksums
         working-directory: dist
         run: sha256sum *.whl *.tar.gz > SHA256SUMS
