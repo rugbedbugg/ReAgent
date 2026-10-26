@@ -88,8 +88,9 @@ on failure. This checks unattended installation on the GitHub runner, which is
 not the same Windows Server 2019 image used by the community verifier.
 
 The installer logs each Python setup stage through Chocolatey's process helper,
-closes standard input, and disables pip prompts and progress bars. Dependencies
-must have wheels; pip fails rather than attempting a source build.
+closes standard input, and disables pip prompts and progress bars. Native
+dependencies must have wheels; the only source-build exception is the pure
+Python dependency `swifter`, whose locked release has no wheel.
 
 ### Publishing it
 

@@ -75,8 +75,10 @@ Invoke-ReAgentPython -Executable $venvPython -Stage 'Upgrade pip' `
 # hashes deliberately: the lock is resolved per platform, and requiring hashes
 # here would reject the Windows wheels that pip correctly selects.
 $requirements = Join-Path $toolsDir 'requirements.txt'
+# swifter 1.4.0 is the lockfile's only source-only dependency and is pure Python.
+# Keep native dependencies wheel-only so an unavailable wheel fails promptly.
 Invoke-ReAgentPython -Executable $venvPython -Stage 'Install dependencies' `
-    -Arguments "$pipInstall -r `"$requirements`""
+    -Arguments "$pipInstall --no-binary=swifter -r `"$requirements`""
 
 Invoke-ReAgentPython -Executable $venvPython -Stage 'Install ReAgent wheel' `
     -Arguments "$pipInstall --no-deps `"$($wheelArgs.fileFullPath)`""

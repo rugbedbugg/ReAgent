@@ -95,14 +95,21 @@ jobs:
       - name: Uninstall cleanly
         run: choco uninstall reagent -y
 
+      - name: Collect installation logs
+        if: always()
+        shell: powershell
+        run: |
+          $log = Join-Path $env:ChocolateyInstall 'logs/chocolatey.log'
+          if (Test-Path $log) {
+            Copy-Item $log (Join-Path $env:RUNNER_TEMP 'reagent-chocolatey.log')
+          }
+
       - name: Preserve installation logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: reagent-chocolatey-logs
-          path: |
-            ${{ runner.temp }}/reagent-install.*.log
-            C:/ProgramData/chocolatey/logs/chocolatey.log
+          path: ${{ runner.temp }}/reagent-*.log
 
       - name: Preserve the tested package
         uses: actions/upload-artifact@v4
