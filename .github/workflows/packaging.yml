@@ -23,6 +23,7 @@ on:
     branches: [main]
     paths:
       - "SUBMISSIONS/**"
+      - ".github/workflows/packaging.yml"
 
 permissions:
   contents: read
@@ -37,6 +38,7 @@ jobs:
     name: chocolatey install
     if: ${{ !inputs.refresh_metadata }}
     runs-on: windows-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -46,9 +48,23 @@ jobs:
 
       # Both sources: the local folder holds reagent.nupkg, the community feed
       # holds the python311 dependency. "-s ." alone cannot resolve the latter.
-      - name: Install from the local package
+      - name: Install from the local package without a console
         working-directory: SUBMISSIONS/chocolatey
-        run: choco install reagent -s ".;https://community.chocolatey.org/api/v2/" -y --no-progress
+        timeout-minutes: 30
+        shell: powershell
+        run: |
+          $version = ([xml](Get-Content reagent.nuspec)).package.metadata.version
+          $stdin = Join-Path $env:RUNNER_TEMP 'reagent-stdin.txt'
+          $stdout = Join-Path $env:RUNNER_TEMP 'reagent-install.stdout.log'
+          $stderr = Join-Path $env:RUNNER_TEMP 'reagent-install.stderr.log'
+          New-Item $stdin -ItemType File -Force | Out-Null
+          $process = Start-Process -FilePath (Get-Command choco.exe).Source `
+            -ArgumentList "install reagent --version=$version -s `".;https://community.chocolatey.org/api/v2/`" -y --no-progress --debug --verbose --execution-timeout=1500" `
+            -RedirectStandardInput $stdin -RedirectStandardOutput $stdout `
+            -RedirectStandardError $stderr -WindowStyle Hidden -Wait -PassThru
+          Get-Content $stdout
+          Get-Content $stderr
+          if ($process.ExitCode -ne 0) { throw "Chocolatey install exited with $($process.ExitCode)" }
 
       - name: The shims work
         run: |
@@ -78,6 +94,15 @@ jobs:
 
       - name: Uninstall cleanly
         run: choco uninstall reagent -y
+
+      - name: Preserve installation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reagent-chocolatey-logs
+          path: |
+            ${{ runner.temp }}/reagent-install.*.log
+            C:/ProgramData/chocolatey/logs/chocolatey.log
 
       - name: Preserve the tested package
         uses: actions/upload-artifact@v4

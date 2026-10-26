@@ -44,23 +44,45 @@ $wheelArgs = @{
 }
 Get-ChocolateyWebFile @wheelArgs
 
+# The verifier runs without an interactive console. Use Chocolatey's process
+# helper to capture output and reject nonzero exits, and give Python EOF on
+# stdin so neither venv/ensurepip nor pip can wait for input from that host.
+function Invoke-ReAgentPython {
+    param([string]$Executable, [string]$Arguments, [string]$Stage)
+
+    Write-Host "ReAgent: $Stage"
+    Start-ChocolateyProcessAsAdmin -ExeToRun $env:ComSpec `
+        -Statements "/d /s /c `"`"$Executable`" -I -u $Arguments <NUL`"" `
+        -ValidExitCodes @(0) -NoSleep
+    Write-Host "ReAgent: $Stage completed"
+}
+
 if (Test-Path $venvDir) { Remove-Item -Recurse -Force $venvDir }
-& $python -m venv $venvDir
-if ($LASTEXITCODE -ne 0) { throw "Failed to create the virtualenv at $venvDir." }
+Invoke-ReAgentPython -Executable $python -Stage 'Create virtualenv' `
+    -Arguments "-m venv --without-pip `"$venvDir`""
 
 $venvPython = Join-Path $venvDir 'Scripts\python.exe'
 
-& $venvPython -m pip install --upgrade --quiet pip
-if ($LASTEXITCODE -ne 0) { throw "Failed to upgrade pip inside the virtualenv." }
+# Keep pip bootstrap separate so a failed verifier log names the stalled stage.
+Invoke-ReAgentPython -Executable $venvPython -Stage 'Bootstrap pip' `
+    -Arguments '-m ensurepip --upgrade --default-pip'
+
+$pipInstall = '-m pip --disable-pip-version-check --no-input install --progress-bar off --only-binary=:all:'
+Invoke-ReAgentPython -Executable $venvPython -Stage 'Upgrade pip' `
+    -Arguments "$pipInstall --upgrade pip"
 
 # Versions are pinned from the project's uv.lock. They are pinned without
 # hashes deliberately: the lock is resolved per platform, and requiring hashes
 # here would reject the Windows wheels that pip correctly selects.
-& $venvPython -m pip install --quiet -r (Join-Path $toolsDir 'requirements.txt')
-if ($LASTEXITCODE -ne 0) { throw "Failed to install ReAgent's dependencies." }
+$requirements = Join-Path $toolsDir 'requirements.txt'
+Invoke-ReAgentPython -Executable $venvPython -Stage 'Install dependencies' `
+    -Arguments "$pipInstall -r `"$requirements`""
 
-& $venvPython -m pip install --quiet --no-deps $wheelArgs.fileFullPath
-if ($LASTEXITCODE -ne 0) { throw "Failed to install the ReAgent wheel." }
+Invoke-ReAgentPython -Executable $venvPython -Stage 'Install ReAgent wheel' `
+    -Arguments "$pipInstall --no-deps `"$($wheelArgs.fileFullPath)`""
+
+Invoke-ReAgentPython -Executable $venvPython -Stage 'Check installed dependencies' `
+    -Arguments '-m pip --disable-pip-version-check --no-input check'
 
 # All entry points are registered explicitly below. The reagent wrapper sets
 # the per-user data path at runtime, rather than capturing the installer's home.

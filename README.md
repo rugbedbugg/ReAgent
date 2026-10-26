@@ -93,9 +93,10 @@ yay -S reagent
 
 ### Windows (Chocolatey)
 
-Not yet on the community feed. The package is complete and lives in
-[`SUBMISSIONS/chocolatey`](SUBMISSIONS/chocolatey); build it locally with
-`choco pack` and `choco install reagent -s .`.
+Version 0.3.0 is submitted to the community feed but awaits approval after a
+verification timeout. The package lives in
+[`SUBMISSIONS/chocolatey`](SUBMISSIONS/chocolatey); see the
+[local install instructions](SUBMISSIONS/README.md#chocolatey).
 
 ### From Source
 

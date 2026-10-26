@@ -8,7 +8,7 @@ binary, which is what shapes every decision below.
 | | Status | Verified |
 |---|---|---|
 | [`aur/`](aur/) | Published (0.2.0); 0.3.0 ready | Built and 479 tests run on this machine |
-| [`chocolatey/`](chocolatey/) | Ready to review | Installed and shims tested by the `Packaging` workflow on Windows |
+| [`chocolatey/`](chocolatey/) | 0.3.0 submitted; verifier timed out | Installed and shims tested by the `Packaging` workflow on Windows; community verification pending |
 | winget | Not submitted | See below |
 
 ## Why the interpreter is bundled
@@ -82,13 +82,25 @@ Both sources are needed. The local folder holds `reagent.nupkg`; the community
 feed holds the `python311` dependency, which `-s .` alone cannot resolve.
 
 The `Packaging` workflow runs exactly this on a Windows runner whenever
-`SUBMISSIONS/` changes, so the package is no longer untested.
+`SUBMISSIONS/` or the workflow changes. Installation runs in a hidden process
+with redirected input and output; Chocolatey and process logs are retained even
+on failure. This checks unattended installation on the GitHub runner, which is
+not the same Windows Server 2019 image used by the community verifier.
+
+The installer logs each Python setup stage through Chocolatey's process helper,
+closes standard input, and disables pip prompts and progress bars. Dependencies
+must have wheels; pip fails rather than attempting a source build.
 
 ### Publishing it
 
-Not yet on the community feed. Publishing needs a Windows machine, since `choco`
-runs nowhere else, and an API key from a chocolatey.org account. The workflow
-does both:
+Version 0.3.0 was submitted on 23 October 2026 and passed metadata validation,
+but [community verification timed out](https://gist.github.com/choco-bot/aa77a1b7584662a39271dc90d1b41812).
+The log ends after the release wheel's checksum passed, before any Python setup
+stage reported completion; it does not establish which Python command stalled.
+The package is waiting for maintainer action and is not approved.
+
+Publishing needs a Windows machine and an API key from a chocolatey.org account.
+The workflow provides the Windows runner and reads the key from a secret:
 
 1. Add the key as a repository secret named `CHOCOLATEY_API_KEY`
 2. Run the `Packaging` workflow manually, ticking the `publish` input
@@ -96,6 +108,9 @@ does both:
 The install test must pass before the push job runs, and the push is opt-in on
 every run rather than riding on a tag, because a push to the community feed is
 public and cannot be withdrawn. Moderation review follows and can take days.
+While 0.3.0 remains under moderation, submit installer corrections with that same
+version, as requested by Chocolatey's moderation notice. A successful push only
+confirms submission; check the package page for subsequent verification results.
 
 ## winget
 
